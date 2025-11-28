@@ -2,6 +2,22 @@
 
 /* Atlas Eidolon Design Tokens */
 :root {
+  /* ═══════════════════════════════════════════════════════════════
+     SPACING SYSTEM
+
+     Consistent spacing scale for all components.
+     Use these for padding, margins, and positioning.
+
+     Rule: Content should never feel cramped against borders.
+     Minimum edge padding for framed elements: --space-md (16px)
+     ═══════════════════════════════════════════════════════════════ */
+  --space-xs: 8px;    /* Micro gaps, inline element spacing */
+  --space-sm: 12px;   /* Small internal spacing, tight groups */
+  --space-md: 16px;   /* Default card padding, element offsets from edges */
+  --space-lg: 20px;   /* Larger component padding */
+  --space-xl: 24px;   /* Modal sections, generous breathing room */
+  --space-2xl: 32px;  /* Major section separation */
+
   /* Void backgrounds */
   --void: #050403;
   --surface-0: #0A0908;

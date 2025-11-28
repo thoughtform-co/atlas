@@ -180,7 +180,7 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
           </div>
 
           {/* Identity */}
-          <div className="p-5 flex-1 flex flex-col">
+          <div className="p-6 flex-1 flex flex-col">
             <div
               className="mb-2"
               style={{

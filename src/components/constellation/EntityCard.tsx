@@ -140,7 +140,7 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
 
           {/* Alien glyphs */}
           <div
-            className="absolute top-3.5 right-3 opacity-40 group-hover:opacity-75 transition-opacity duration-300"
+            className="absolute top-4 right-4 opacity-40 group-hover:opacity-75 transition-opacity duration-300"
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '7px',
@@ -154,7 +154,7 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
           </div>
 
           {/* Threat indicator */}
-          <div className="absolute top-3.5 left-3 flex items-center gap-[5px]">
+          <div className="absolute top-4 left-4 flex items-center gap-[5px]">
             <div
               className={`
                 threat-dot w-[5px] h-[5px] rounded-full opacity-80
@@ -184,7 +184,7 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
 
           {/* Info overlay */}
           <div
-            className="absolute bottom-0 left-0 right-0 p-3.5 pt-12"
+            className="absolute bottom-0 left-0 right-0 p-4 pt-12"
             style={{
               background: 'linear-gradient(to top, rgba(5, 4, 3, 0.98) 0%, rgba(5, 4, 3, 0.92) 35%, rgba(5, 4, 3, 0.6) 65%, transparent 100%)',
             }}
