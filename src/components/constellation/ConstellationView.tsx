@@ -17,7 +17,6 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
-  const [modalOrigin, setModalOrigin] = useState<Position | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
@@ -49,10 +48,16 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
 
   // Handle card click
   const handleCardClick = useCallback((denizen: Denizen) => {
-    const pos = getScreenPosition(denizen.id);
-    setModalOrigin(pos);
     setSelectedDenizen(denizen);
-  }, [getScreenPosition]);
+  }, []);
+
+  // Handle navigation to a connected denizen from modal
+  const handleNavigate = useCallback((denizenId: string) => {
+    const denizen = denizens.find((d) => d.id === denizenId);
+    if (denizen) {
+      setSelectedDenizen(denizen);
+    }
+  }, [denizens]);
 
   // Handle mouse down for dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -139,7 +144,8 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       <DenizenModal
         denizen={selectedDenizen}
         onClose={() => setSelectedDenizen(null)}
-        originPosition={modalOrigin}
+        onNavigate={handleNavigate}
+        allDenizens={denizens}
       />
 
       {/* Legend */}
