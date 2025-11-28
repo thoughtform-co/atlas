@@ -128,7 +128,8 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
                 top: `${pos.y}px`,
                 transform: `translate(-50%, -50%) scale(${scale})`,
               }}
-              onClick={() => handleCardClick(denizen)}
+              onClick={handleCardClick}
+              isSelected={selectedDenizen?.id === denizen.id}
             />
           );
         })}

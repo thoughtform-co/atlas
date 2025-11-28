@@ -18,6 +18,13 @@
 
   /* Tensor Gold (Astrolabe accent) */
   --gold: #CAA554;
+  --gold-dim: rgba(202, 165, 84, 0.4);
+
+  /* Threat Levels */
+  --threat-benign: #5B8A7A;
+  --threat-cautious: #7A7868;
+  --threat-volatile: #CAA554;
+  --threat-existential: #8B5A5A;
 
   /* Cardinal Colors */
   --cardinal-geometry: #CAA554;
@@ -65,7 +72,17 @@ body {
   overflow: hidden;
 }
 
-/* Ensure no rounded corners anywhere */
-* {
+/* Ensure no rounded corners anywhere - except threat dots */
+*:not(.threat-dot) {
   border-radius: 0 !important;
+}
+
+/* Existential threat pulse animation */
+@keyframes pulse-threat {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-threat {
+  animation: pulse-threat 2s ease-in-out infinite;
 }
