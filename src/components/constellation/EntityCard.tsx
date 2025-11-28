@@ -222,10 +222,11 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
 
             {/* Meta row */}
             <div
-              className="flex items-center justify-between mt-2 pt-2"
+              className="flex items-center justify-between mt-2 pt-2 overflow-hidden"
               style={{ borderTop: '1px solid var(--dawn-08)' }}
             >
               <span
+                className="shrink-0"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: '7px',
@@ -238,7 +239,7 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
               </span>
 
               <div
-                className="flex gap-1.5"
+                className="flex gap-1"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: '7px',

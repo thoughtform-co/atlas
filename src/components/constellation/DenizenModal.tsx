@@ -549,7 +549,7 @@ function CoordinateRow({ symbol, symbolClass, name, value, percent, fillClass }:
       >
         {value}
       </span>
-      <div className="flex-1 h-0.5 bg-[var(--dawn-08)] ml-2 relative">
+      <div className="flex-1 h-0.5 bg-[var(--dawn-08)] ml-2 mr-2 relative">
         <div
           className={`absolute top-0 left-0 h-full ${fillClass}`}
           style={{
