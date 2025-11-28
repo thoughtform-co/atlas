@@ -184,8 +184,12 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
 
       {/* Info overlay */}
       <div
-        className="absolute bottom-0 left-0 right-0 px-[14px] pb-4 pt-12"
+        className="absolute bottom-0 left-0 right-0"
         style={{
+          paddingLeft: '14px',
+          paddingRight: '14px',
+          paddingBottom: '16px',
+          paddingTop: '48px',
           background: 'linear-gradient(to top, rgba(5, 4, 3, 0.98) 0%, rgba(5, 4, 3, 0.92) 35%, rgba(5, 4, 3, 0.6) 65%, transparent 100%)',
         }}
       >
@@ -222,8 +226,13 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
 
             {/* Meta row */}
             <div
-              className="flex items-center mt-2 pt-2 overflow-hidden gap-4"
-              style={{ borderTop: '1px solid var(--dawn-08)' }}
+              className="flex items-center overflow-hidden"
+              style={{
+                marginTop: '8px',
+                paddingTop: '8px',
+                borderTop: '1px solid var(--dawn-08)',
+                columnGap: '16px',
+              }}
             >
               <span
                 className="shrink-0"
@@ -239,8 +248,9 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
               </span>
 
               <div
-                className="flex gap-1 shrink-0"
+                className="flex shrink-0"
                 style={{
+                  columnGap: '4px',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '7px',
                   letterSpacing: '0.03em',

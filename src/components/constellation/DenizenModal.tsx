@@ -180,7 +180,15 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
           </div>
 
           {/* Identity */}
-          <div className="px-7 md:px-9 pt-6 pb-8 flex-1 flex flex-col">
+          <div
+            className="identity-section flex-1 flex flex-col"
+            style={{
+              paddingLeft: '28px',
+              paddingRight: '28px',
+              paddingTop: '24px',
+              paddingBottom: '32px',
+            }}
+          >
             <div
               className="mb-2"
               style={{
@@ -275,8 +283,12 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
             RIGHT COLUMN — Details
             ═══════════════════════════════════════════════════════════════ */}
         <div
-          className="modal__content px-7 md:px-9 py-6 md:py-8 md:pt-14 flex flex-col gap-6 max-h-[60vh] md:max-h-[520px] overflow-y-auto"
+          className="modal__content flex flex-col gap-[24px] max-h-[60vh] md:max-h-[520px] overflow-y-auto"
           style={{
+            paddingLeft: '28px',
+            paddingRight: '28px',
+            paddingTop: '24px',
+            paddingBottom: '24px',
             scrollbarWidth: 'thin',
             scrollbarColor: 'var(--dawn-15) var(--dawn-04)',
           }}
@@ -486,6 +498,20 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
         .modal__content::-webkit-scrollbar-thumb {
           background: var(--dawn-15);
         }
+
+        /* Desktop padding overrides - pixel-exact from mockups */
+        @media (min-width: 768px) {
+          .identity-section {
+            padding-left: 36px;
+            padding-right: 36px;
+          }
+
+          .modal__content {
+            padding-left: 36px;
+            padding-right: 36px;
+            padding-top: 56px;
+          }
+        }
       `}</style>
     </div>
   );
@@ -549,7 +575,16 @@ function CoordinateRow({ symbol, symbolClass, name, value, percent, fillClass }:
       >
         {value}
       </span>
-      <div className="flex-1 h-0.5 bg-[var(--dawn-08)] ml-2 mr-4 relative">
+      <div
+        className="relative"
+        style={{
+          flex: 1,
+          height: '2px',
+          background: 'var(--dawn-08)',
+          marginLeft: '8px',
+          marginRight: '16px',
+        }}
+      >
         <div
           className={`absolute top-0 left-0 h-full ${fillClass}`}
           style={{
