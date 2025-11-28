@@ -1,0 +1,140 @@
+'use client';
+
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Denizen, Position } from '@/lib/types';
+import { denizens, connections } from '@/data/denizens';
+import { BackgroundCanvas } from './BackgroundCanvas';
+import { ConnectorCanvas } from './ConnectorCanvas';
+import { EntityCard } from './EntityCard';
+import { DetailPanel } from './DetailPanel';
+import { clamp } from '@/lib/utils';
+
+export function ConstellationView() {
+  const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
+  const [hoveredDenizen, setHoveredDenizen] = useState<Denizen | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate screen position for a denizen
+  const getScreenPosition = useCallback(
+    (id: string): Position | null => {
+      const denizen = denizens.find((d) => d.id === id);
+      if (!denizen) return null;
+
+      const centerX = (typeof window !== 'undefined' ? window.innerWidth : 0) / 2 + offset.x;
+      const centerY = (typeof window !== 'undefined' ? window.innerHeight : 0) / 2 + offset.y;
+
+      return {
+        x: centerX + denizen.position.x * scale,
+        y: centerY + denizen.position.y * scale,
+      };
+    },
+    [offset, scale]
+  );
+
+  // Handle mouse down for dragging
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only start drag if clicking on the canvas area, not on cards
+    if ((e.target as HTMLElement).closest('.entity-card')) return;
+
+    setIsDragging(true);
+    lastMouseRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  // Handle mouse move for dragging
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const dx = e.clientX - lastMouseRef.current.x;
+      const dy = e.clientY - lastMouseRef.current.y;
+
+      setOffset((prev) => ({
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+
+      lastMouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  // Handle wheel for zooming
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.95 : 1.05;
+    setScale((prev) => clamp(prev * zoomFactor, 0.4, 2.5));
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="fixed inset-0 w-screen h-screen"
+      onMouseDown={handleMouseDown}
+      onWheel={handleWheel}
+      style={{ cursor: isDragging ? 'grabbing' : 'default' }}
+    >
+      {/* Background canvas layer */}
+      <BackgroundCanvas />
+
+      {/* Connector canvas layer */}
+      <ConnectorCanvas connections={connections} getPosition={getScreenPosition} />
+
+      {/* Cards container */}
+      <div className="absolute inset-0 z-[3]">
+        {denizens.map((denizen) => {
+          const pos = getScreenPosition(denizen.id);
+          if (!pos) return null;
+
+          return (
+            <EntityCard
+              key={denizen.id}
+              denizen={denizen}
+              style={{
+                left: `${pos.x}px`,
+                top: `${pos.y}px`,
+                transform: `translate(-50%, -50%) scale(${scale})`,
+              }}
+              onMouseEnter={() => setHoveredDenizen(denizen)}
+              onMouseLeave={() => setHoveredDenizen(null)}
+            />
+          );
+        })}
+      </div>
+
+      {/* Detail panel */}
+      <DetailPanel denizen={hoveredDenizen} />
+
+      {/* Legend */}
+      <div
+        className="fixed bottom-8 left-8 z-50 text-[10px] text-[var(--dawn-30)]"
+        style={{ fontFamily: 'var(--font-mono)' }}
+      >
+        <div className="mb-1">Drag — Pan</div>
+        <div>Scroll — Zoom</div>
+      </div>
+
+      {/* Stats bars */}
+      <div className="fixed bottom-8 right-8 z-50 flex items-end gap-[3px]">
+        <div className="w-[3px] h-3 bg-[var(--dawn-30)]" />
+        <div className="w-[3px] h-5 bg-[var(--dawn-30)]" />
+        <div className="w-[3px] h-2 bg-[var(--dawn-30)]" />
+        <div className="w-[3px] h-4 bg-[var(--dawn-30)]" />
+        <div className="w-[3px] h-6 bg-[var(--dawn-30)]" />
+      </div>
+    </div>
+  );
+}

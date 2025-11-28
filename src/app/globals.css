@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* Atlas Eidolon Design Tokens */
+:root {
+  /* Void backgrounds */
+  --void: #050403;
+  --surface-0: #0A0908;
+  --surface-1: #0F0E0C;
+
+  /* Semantic Dawn (primary text/particles) */
+  --dawn: #ECE3D6;
+  --dawn-70: rgba(236, 227, 214, 0.7);
+  --dawn-50: rgba(236, 227, 214, 0.5);
+  --dawn-30: rgba(236, 227, 214, 0.3);
+  --dawn-15: rgba(236, 227, 214, 0.15);
+  --dawn-08: rgba(236, 227, 214, 0.08);
+  --dawn-04: rgba(236, 227, 214, 0.04);
+
+  /* Tensor Gold (Astrolabe accent) */
+  --gold: #CAA554;
+
+  /* Cardinal Colors */
+  --cardinal-geometry: #CAA554;
+  --cardinal-alterity: #ECE3D6;
+  --cardinal-dynamics: #5B8A7A;
+
+  /* Fonts */
+  --font-mono: 'PT Mono', monospace;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+}
+
+@theme inline {
+  /* Colors */
+  --color-void: var(--void);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-dawn: var(--dawn);
+  --color-dawn-70: var(--dawn-70);
+  --color-dawn-50: var(--dawn-50);
+  --color-dawn-30: var(--dawn-30);
+  --color-dawn-15: var(--dawn-15);
+  --color-dawn-08: var(--dawn-08);
+  --color-dawn-04: var(--dawn-04);
+  --color-gold: var(--gold);
+  --color-cardinal-geometry: var(--cardinal-geometry);
+  --color-cardinal-alterity: var(--cardinal-alterity);
+  --color-cardinal-dynamics: var(--cardinal-dynamics);
+
+  /* Fonts */
+  --font-mono: var(--font-mono);
+  --font-sans: var(--font-sans);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--void);
+  color: var(--dawn);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Ensure no rounded corners anywhere */
+* {
+  border-radius: 0 !important;
+}
