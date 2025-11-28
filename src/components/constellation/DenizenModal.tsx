@@ -180,7 +180,10 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
           </div>
 
           {/* Identity */}
-          <div className="px-8 pt-6 pb-8 md:px-10 flex-1 flex flex-col">
+          <div
+            className="pt-6 pb-8 md:pb-10 flex-1 flex flex-col"
+            style={{ paddingInline: 'clamp(24px, 6vw, 48px)' }}
+          >
             <div
               className="mb-2"
               style={{
@@ -275,10 +278,11 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
             RIGHT COLUMN — Details
             ═══════════════════════════════════════════════════════════════ */}
         <div
-          className="modal__content p-6 md:p-8 md:pt-14 flex flex-col gap-6 max-h-[60vh] md:max-h-[520px] overflow-y-auto"
+          className="modal__content py-6 md:py-8 md:pt-14 flex flex-col gap-6 max-h-[60vh] md:max-h-[520px] overflow-y-auto"
           style={{
             scrollbarWidth: 'thin',
             scrollbarColor: 'var(--dawn-15) var(--dawn-04)',
+            paddingInline: 'clamp(24px, 5vw, 48px)',
           }}
         >
           {/* Description */}
@@ -406,11 +410,11 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
                     <button
                       key={connectionId}
                       onClick={() => onNavigate?.(connectionId)}
-                      className="flex items-center gap-2 p-2 pr-3 border border-[var(--dawn-08)] hover:border-[var(--dawn-30)] transition-all duration-200"
+                      className="flex items-center gap-2.5 px-3.5 py-2.5 border border-[var(--dawn-08)] hover:border-[var(--dawn-30)] rounded-sm transition-all duration-200"
                       style={{ background: 'var(--surface-1)' }}
                     >
                       <div
-                        className="w-6 h-6 flex items-center justify-center"
+                        className="w-7 h-7 flex items-center justify-center rounded-[2px]"
                         style={{
                           fontFamily: 'var(--font-mono)',
                           fontSize: '12px',

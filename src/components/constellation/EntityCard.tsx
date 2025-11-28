@@ -182,13 +182,14 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
             </span>
           </div>
 
-          {/* Info overlay */}
-          <div
-            className="absolute bottom-0 left-0 right-0 px-6 pb-4 pt-12"
-            style={{
-              background: 'linear-gradient(to top, rgba(5, 4, 3, 0.98) 0%, rgba(5, 4, 3, 0.92) 35%, rgba(5, 4, 3, 0.6) 65%, transparent 100%)',
-            }}
-          >
+      {/* Info overlay */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pb-5 pt-12"
+        style={{
+          background: 'linear-gradient(to top, rgba(5, 4, 3, 0.98) 0%, rgba(5, 4, 3, 0.92) 35%, rgba(5, 4, 3, 0.6) 65%, transparent 100%)',
+          paddingInline: 'clamp(22px, 18%, 30px)',
+        }}
+      >
             {/* Name */}
             <h3
               className="leading-[1.35] group-hover:text-white transition-colors duration-200"
