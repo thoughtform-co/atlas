@@ -1,11 +1,17 @@
 import { Navigation } from '@/components/ui/Navigation';
 import { ConstellationView } from '@/components/constellation';
+import { fetchDenizens, fetchConnections } from '@/lib/data';
 
-export default function Home() {
+export default async function Home() {
+  const [denizens, connections] = await Promise.all([
+    fetchDenizens(),
+    fetchConnections(),
+  ]);
+
   return (
     <main>
       <Navigation />
-      <ConstellationView />
+      <ConstellationView denizens={denizens} connections={connections} />
     </main>
   );
 }

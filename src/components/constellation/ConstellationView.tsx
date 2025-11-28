@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Denizen, Position } from '@/lib/types';
-import { denizens, connections } from '@/data/denizens';
+import { Denizen, Connection, Position } from '@/lib/types';
 import { BackgroundCanvas } from './BackgroundCanvas';
 import { ConnectorCanvas } from './ConnectorCanvas';
 import { EntityCard } from './EntityCard';
 import { DetailPanel } from './DetailPanel';
 import { clamp } from '@/lib/utils';
 
-export function ConstellationView() {
+interface ConstellationViewProps {
+  denizens: Denizen[];
+  connections: Connection[];
+}
+
+export function ConstellationView({ denizens, connections }: ConstellationViewProps) {
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [hoveredDenizen, setHoveredDenizen] = useState<Denizen | null>(null);
@@ -31,7 +35,7 @@ export function ConstellationView() {
         y: centerY + denizen.position.y * scale,
       };
     },
-    [offset, scale]
+    [denizens, offset, scale]
   );
 
   // Handle mouse down for dragging
