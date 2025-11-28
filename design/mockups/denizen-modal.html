@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DenizenModal - Spacing Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       ADJUSTABLE SPACING VARIABLES - Edit these values to test
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      /* Left column (Identity) padding */
+      --modal-left-padding-x: 28px;  /* Horizontal padding */
+      --modal-left-padding-x-md: 36px;  /* Desktop horizontal padding */
+      --modal-left-padding-top: 24px;
+      --modal-left-padding-bottom: 32px;
+      
+      /* Right column (Content) padding */
+      --modal-right-padding-x: 28px;  /* Horizontal padding */
+      --modal-right-padding-x-md: 36px;  /* Desktop horizontal padding */
+      --modal-right-padding-y: 24px;
+      --modal-right-padding-top-md: 56px;
+      
+      /* Coordinate bar right margin */
+      --coord-bar-margin-right: 16px;
+      
+      /* Spacing System */
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      
+      /* Colors */
+      --void: #050403;
+      --surface-0: #0A0908;
+      --surface-1: #0F0E0C;
+      --dawn: #ECE3D6;
+      --dawn-70: rgba(236, 227, 214, 0.7);
+      --dawn-50: rgba(236, 227, 214, 0.5);
+      --dawn-30: rgba(236, 227, 214, 0.3);
+      --dawn-15: rgba(236, 227, 214, 0.15);
+      --dawn-08: rgba(236, 227, 214, 0.08);
+      --dawn-04: rgba(236, 227, 214, 0.04);
+      --gold: #CAA554;
+      --gold-dim: rgba(202, 165, 84, 0.4);
+      --threat-benign: #5B8A7A;
+      --threat-cautious: #7A7868;
+      --threat-volatile: #CAA554;
+      --threat-existential: #8B5A5A;
+      --cardinal-dynamics: #5B8A7A;
+      
+      /* Fonts */
+      --font-mono: 'PT Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--dawn);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    
+    /* Control Panel */
+    .controls {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-15);
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--dawn-50);
+      z-index: 1000;
+      min-width: 280px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .controls h2 {
+      color: var(--dawn);
+      font-size: 12px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    .controls h3 {
+      color: var(--dawn-50);
+      font-size: 10px;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    
+    .control-group {
+      margin-bottom: 12px;
+    }
+    
+    .control-group label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--dawn-30);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .control-group input {
+      width: 100%;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn);
+      padding: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    
+    .control-group input:focus {
+      outline: none;
+      border-color: var(--dawn-30);
+    }
+    
+    /* Modal Container */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 4, 3, 0.9);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+    
+    .modal {
+      position: relative;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      max-width: 820px;
+      width: 100%;
+      border: 1px solid var(--dawn-15);
+      background: var(--surface-0);
+      overflow: hidden;
+    }
+    
+    .corner-accent {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 1px solid var(--dawn-30);
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .corner-accent.tl {
+      top: -1px;
+      left: -1px;
+      border-right: none;
+      border-bottom: none;
+    }
+    
+    .corner-accent.br {
+      bottom: -1px;
+      right: -1px;
+      border-left: none;
+      border-top: none;
+    }
+    
+    .close-button {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--dawn-08);
+      background: transparent;
+      color: var(--dawn-30);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+    
+    .close-button:hover {
+      border-color: var(--dawn-30);
+      color: var(--dawn);
+      background: var(--dawn-04);
+    }
+    
+    /* Left Column - Portrait + Identity */
+    .modal-left {
+      border-right: 1px solid var(--dawn-08);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .portrait-image {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%);
+      overflow: hidden;
+    }
+    
+    .portrait-letter {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 5rem;
+      color: var(--dawn-08);
+      user-select: none;
+    }
+    
+    .portrait-threat {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .portrait-threat-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--threat-cautious);
+    }
+    
+    .portrait-threat-label {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .portrait-glyphs {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      line-height: 1.8;
+      color: var(--dawn-30);
+      letter-spacing: 0.1em;
+      writing-mode: vertical-rl;
+    }
+    
+    /* Identity Section - KEY SPACING AREA */
+    .identity-section {
+      padding-left: var(--modal-left-padding-x);
+      padding-right: var(--modal-left-padding-x);
+      padding-top: var(--modal-left-padding-top);
+      padding-bottom: var(--modal-left-padding-bottom);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    @media (min-width: 768px) {
+      .identity-section {
+        padding-left: var(--modal-left-padding-x-md);
+        padding-right: var(--modal-left-padding-x-md);
+      }
+    }
+    
+    .identity-type {
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .identity-name {
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--dawn);
+      line-height: 1.3;
+    }
+    
+    .identity-subtitle {
+      margin-bottom: 16px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-style: italic;
+      color: var(--dawn-50);
+    }
+    
+    .coordinates-section {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--dawn-08);
+    }
+    
+    .coordinates-title {
+      margin-bottom: 10px;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .coordinate-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    
+    .coord-symbol {
+      font-size: 10px;
+      width: 12px;
+    }
+    
+    .coord-name {
+      width: 70px;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .coord-value {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--dawn-50);
+    }
+    
+    .coord-bar-container {
+      flex: 1;
+      height: 2px;
+      background: var(--dawn-08);
+      margin-left: 8px;
+      margin-right: var(--coord-bar-margin-right);
+      position: relative;
+    }
+    
+    .coord-bar-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: var(--gold);
+    }
+    
+    /* Right Column - Content - KEY SPACING AREA */
+    .modal-right {
+      padding-left: var(--modal-right-padding-x);
+      padding-right: var(--modal-right-padding-x);
+      padding-top: var(--modal-right-padding-y);
+      padding-bottom: var(--modal-right-padding-y);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+    
+    @media (min-width: 768px) {
+      .modal-right {
+        padding-left: var(--modal-right-padding-x-md);
+        padding-right: var(--modal-right-padding-x-md);
+        padding-top: var(--modal-right-padding-top-md);
+      }
+    }
+    
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--dawn-08);
+    }
+    
+    .section-content {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--dawn-70);
+    }
+    
+    .section-lore {
+      position: relative;
+      padding-left: 16px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--dawn-50);
+      font-style: italic;
+    }
+    
+    .section-lore::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--gold) 0%, transparent 100%);
+    }
+    
+    .feature-tag {
+      display: inline-block;
+      padding: 6px 10px;
+      margin: 0 8px 8px 0;
+      border: 1px solid var(--dawn-08);
+      background: var(--dawn-04);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.03em;
+      color: var(--dawn-50);
+    }
+    
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--dawn-08);
+    }
+    
+    .grid-item-label {
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .grid-item-value {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--dawn-50);
+    }
+    
+    /* Visual guides */
+    .guide-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 1px dashed rgba(202, 165, 84, 0.3);
+      display: none;
+    }
+    
+    body.show-guides .guide-overlay {
+      display: block;
+    }
+    
+    .guide-padding {
+      position: absolute;
+      border: 1px dashed rgba(91, 138, 122, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <!-- Control Panel -->
+  <div class="controls">
+    <h2>Spacing Controls</h2>
+    
+    <h3>Left Column (Identity)</h3>
+    <div class="control-group">
+      <label>Horizontal Padding (px)</label>
+      <input type="number" id="leftPaddingX" value="28" min="0" max="60" step="1">
+    </div>
+    <div class="control-group">
+      <label>Desktop Horizontal Padding (px)</label>
+      <input type="number" id="leftPaddingXMD" value="36" min="0" max="60" step="1">
+    </div>
+    
+    <h3>Right Column (Content)</h3>
+    <div class="control-group">
+      <label>Horizontal Padding (px)</label>
+      <input type="number" id="rightPaddingX" value="28" min="0" max="60" step="1">
+    </div>
+    <div class="control-group">
+      <label>Desktop Horizontal Padding (px)</label>
+      <input type="number" id="rightPaddingXMD" value="36" min="0" max="60" step="1">
+    </div>
+    
+    <h3>Coordinate Bars</h3>
+    <div class="control-group">
+      <label>Right Margin (px)</label>
+      <input type="number" id="coordBarMargin" value="16" min="0" max="40" step="1">
+    </div>
+    
+    <div class="control-group">
+      <label>
+        <input type="checkbox" id="showGuides"> Show spacing guides
+      </label>
+    </div>
+  </div>
+  
+  <!-- Modal -->
+  <div class="modal-backdrop">
+    <div class="modal">
+      <!-- Corner accents -->
+      <div class="corner-accent tl"></div>
+      <div class="corner-accent br"></div>
+      
+      <!-- Close button -->
+      <button class="close-button">✕</button>
+      
+      <!-- Left Column -->
+      <div class="modal-left">
+        <div class="portrait-image">
+          <div class="portrait-letter">H</div>
+          <div class="portrait-threat">
+            <div class="portrait-threat-dot"></div>
+            <span class="portrait-threat-label">CAUTIOUS</span>
+          </div>
+          <div class="portrait-glyphs">◈○⬡∆</div>
+        </div>
+        
+        <div class="identity-section">
+          <div class="identity-type">HYBRID</div>
+          <h2 class="identity-name">THE SCHISMED ONE</h2>
+          
+          <div class="coordinates-section">
+            <div class="coordinates-title">CARDINAL POSITION</div>
+            <div class="coordinate-row">
+              <span class="coord-symbol" style="color: var(--gold);">◆</span>
+              <span class="coord-name">GEOMETRY</span>
+              <span class="coord-value">-.456</span>
+              <div class="coord-bar-container">
+                <div class="coord-bar-fill" style="width: 27%;"></div>
+              </div>
+            </div>
+            <div class="coordinate-row">
+              <span class="coord-symbol" style="color: var(--dawn-50);">○</span>
+              <span class="coord-name">ALTERITY</span>
+              <span class="coord-value">-.678</span>
+              <div class="coord-bar-container">
+                <div class="coord-bar-fill" style="width: 16%; background: var(--dawn-50);"></div>
+              </div>
+            </div>
+            <div class="coordinate-row">
+              <span class="coord-symbol" style="color: var(--cardinal-dynamics);">◇</span>
+              <span class="coord-name">DYNAMICS</span>
+              <span class="coord-value">.345</span>
+              <div class="coord-bar-container">
+                <div class="coord-bar-fill" style="width: 67%; background: var(--cardinal-dynamics);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Column -->
+      <div class="modal-right">
+        <section>
+          <div class="section-label">DESCRIPTION</div>
+          <p class="section-content">
+            Formed from violent collision of incompatible conceptual regions. Exists in constant tension with itself.
+          </p>
+        </section>
+        
+        <section>
+          <div class="section-label">HISTORICAL RECORD</div>
+          <div class="section-lore">
+            The Schismed One is what remains when irreconcilable meanings are forced into cohabitation. It speaks in contradictions, moves in paradoxes. Some believe it holds the key to reconciling the Covenant and Nomenclate; others fear it represents the inevitable fate of the manifold itself.
+          </div>
+        </section>
+        
+        <section>
+          <div class="section-label">OBSERVED CAPABILITIES</div>
+          <div>
+            <span class="feature-tag">Paradox embodiment</span>
+            <span class="feature-tag">Contradiction navigation</span>
+            <span class="feature-tag">Self-opposition</span>
+            <span class="feature-tag">Boundary fracturing</span>
+          </div>
+        </section>
+        
+        <section>
+          <div class="grid-2col">
+            <div>
+              <div class="grid-item-label">DOMAIN</div>
+              <div class="grid-item-value">Fractured Boundaries</div>
+            </div>
+            <div>
+              <div class="grid-item-label">ALLEGIANCE</div>
+              <div class="grid-item-value">Unaligned</div>
+            </div>
+          </div>
+        </section>
+        
+        <section>
+          <div class="section-label">CONNECTED ENTITIES</div>
+          <div>
+            <span class="feature-tag">V ARAFEL VOID-BORN</span>
+            <span class="feature-tag">A OSSIFIER PRIME ARCHITECT</span>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Live update CSS variables from inputs
+    const leftPaddingX = document.getElementById('leftPaddingX');
+    const leftPaddingXMD = document.getElementById('leftPaddingXMD');
+    const rightPaddingX = document.getElementById('rightPaddingX');
+    const rightPaddingXMD = document.getElementById('rightPaddingXMD');
+    const coordBarMargin = document.getElementById('coordBarMargin');
+    const showGuides = document.getElementById('showGuides');
+    
+    function updateSpacing() {
+      document.documentElement.style.setProperty('--modal-left-padding-x', leftPaddingX.value + 'px');
+      document.documentElement.style.setProperty('--modal-left-padding-x-md', leftPaddingXMD.value + 'px');
+      document.documentElement.style.setProperty('--modal-right-padding-x', rightPaddingX.value + 'px');
+      document.documentElement.style.setProperty('--modal-right-padding-x-md', rightPaddingXMD.value + 'px');
+      document.documentElement.style.setProperty('--coord-bar-margin-right', coordBarMargin.value + 'px');
+    }
+    
+    leftPaddingX.addEventListener('input', updateSpacing);
+    leftPaddingXMD.addEventListener('input', updateSpacing);
+    rightPaddingX.addEventListener('input', updateSpacing);
+    rightPaddingXMD.addEventListener('input', updateSpacing);
+    coordBarMargin.addEventListener('input', updateSpacing);
+    
+    showGuides.addEventListener('change', (e) => {
+      document.body.classList.toggle('show-guides', e.target.checked);
+    });
+    
+    // Initial update
+    updateSpacing();
+  </script>
+</body>
+</html>

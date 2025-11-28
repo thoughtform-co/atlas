@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EntityCard - Spacing Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       ADJUSTABLE SPACING VARIABLES - Edit these values to test
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      /* Card info overlay padding */
+      --card-padding-x: 20px;  /* Horizontal padding (left/right) */
+      --card-padding-bottom: 16px;  /* Bottom padding */
+      --card-padding-top: 48px;  /* Top padding (gradient fade) */
+      
+      /* Meta row spacing */
+      --meta-gap: 16px;  /* Gap between type and coordinates */
+      
+      /* Spacing System */
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      
+      /* Colors */
+      --void: #050403;
+      --surface-0: #0A0908;
+      --surface-1: #0F0E0C;
+      --dawn: #ECE3D6;
+      --dawn-70: rgba(236, 227, 214, 0.7);
+      --dawn-50: rgba(236, 227, 214, 0.5);
+      --dawn-30: rgba(236, 227, 214, 0.3);
+      --dawn-15: rgba(236, 227, 214, 0.15);
+      --dawn-08: rgba(236, 227, 214, 0.08);
+      --dawn-04: rgba(236, 227, 214, 0.04);
+      --gold: #CAA554;
+      --gold-dim: rgba(202, 165, 84, 0.4);
+      --threat-benign: #5B8A7A;
+      --threat-cautious: #7A7868;
+      --threat-volatile: #CAA554;
+      --threat-existential: #8B5A5A;
+      --cardinal-dynamics: #5B8A7A;
+      
+      /* Fonts */
+      --font-mono: 'PT Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--dawn);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    
+    /* Control Panel */
+    .controls {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-15);
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--dawn-50);
+      z-index: 1000;
+      min-width: 250px;
+    }
+    
+    .controls h2 {
+      color: var(--dawn);
+      font-size: 12px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    .control-group {
+      margin-bottom: 12px;
+    }
+    
+    .control-group label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--dawn-30);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .control-group input {
+      width: 100%;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn);
+      padding: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    
+    .control-group input:focus {
+      outline: none;
+      border-color: var(--dawn-30);
+    }
+    
+    /* Entity Card */
+    .entity-card {
+      position: relative;
+      width: 172px;
+      overflow: visible;
+    }
+    
+    .card-frame {
+      position: relative;
+      width: 172px;
+      overflow: hidden;
+      border: 1px solid var(--dawn-08);
+      background: var(--surface-0);
+      transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    
+    .card-frame:hover {
+      border-color: var(--dawn-30);
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 1px rgba(236, 227, 214, 0.03), 0 20px 50px -15px rgba(0, 0, 0, 0.5);
+    }
+    
+    .corner-accent {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border: 1px solid var(--dawn-15);
+      pointer-events: none;
+    }
+    
+    .corner-accent.tl {
+      top: -1px;
+      left: -1px;
+      border-right: none;
+      border-bottom: none;
+    }
+    
+    .corner-accent.br {
+      bottom: -1px;
+      right: -1px;
+      border-left: none;
+      border-top: none;
+    }
+    
+    .card-image {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%);
+      overflow: hidden;
+    }
+    
+    .card-letter {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 3.5rem;
+      color: var(--dawn-08);
+      user-select: none;
+    }
+    
+    .threat-indicator {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .threat-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--threat-volatile);
+      opacity: 0.8;
+    }
+    
+    .threat-label {
+      opacity: 0;
+      font-family: var(--font-mono);
+      font-size: 6px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      transform: translateX(-4px);
+      transition: all 0.25s;
+    }
+    
+    .entity-card:hover .threat-label {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    .glyphs {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      opacity: 0.4;
+      font-family: var(--font-mono);
+      font-size: 7px;
+      line-height: 1.6;
+      color: var(--dawn-30);
+      letter-spacing: 0.1em;
+      writing-mode: vertical-rl;
+    }
+    
+    /* Info Overlay - KEY SPACING AREA */
+    .info-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding-left: var(--card-padding-x);
+      padding-right: var(--card-padding-x);
+      padding-bottom: var(--card-padding-bottom);
+      padding-top: var(--card-padding-top);
+      background: linear-gradient(to top, rgba(5, 4, 3, 0.98) 0%, rgba(5, 4, 3, 0.92) 35%, rgba(5, 4, 3, 0.6) 65%, transparent 100%);
+    }
+    
+    .card-name {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--dawn);
+      line-height: 1.35;
+      transition: color 0.2s;
+    }
+    
+    .entity-card:hover .card-name {
+      color: white;
+    }
+    
+    .card-subtitle {
+      margin-top: 2px;
+      opacity: 0.8;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+    }
+    
+    /* Meta Row - KEY SPACING AREA */
+    .meta-row {
+      display: flex;
+      align-items: center;
+      margin-top: 8px;
+      padding-top: 8px;
+      gap: var(--meta-gap);
+      border-top: 1px solid var(--dawn-08);
+      overflow: hidden;
+    }
+    
+    .card-type {
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+      font-size: 7px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .coordinates {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+      font-size: 7px;
+      letter-spacing: 0.03em;
+      color: var(--dawn-30);
+    }
+    
+    .coord-item {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+    }
+    
+    .coord-icon {
+      font-size: 8px;
+    }
+    
+    .coord-icon.geometry { color: var(--gold); }
+    .coord-icon.alterity { color: var(--dawn-50); }
+    .coord-icon.dynamics { color: var(--cardinal-dynamics); }
+    
+    /* Visual guides */
+    .guide-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 1px dashed rgba(202, 165, 84, 0.3);
+      display: none;
+    }
+    
+    body.show-guides .guide-overlay {
+      display: block;
+    }
+    
+    .guide-padding {
+      position: absolute;
+      border: 1px dashed rgba(91, 138, 122, 0.3);
+    }
+    
+    .guide-padding-x {
+      left: var(--card-padding-x);
+      right: var(--card-padding-x);
+      bottom: 0;
+      height: 100px;
+    }
+    
+    .guide-padding-bottom {
+      bottom: var(--card-padding-bottom);
+      left: var(--card-padding-x);
+      right: var(--card-padding-x);
+      height: 1px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Control Panel -->
+  <div class="controls">
+    <h2>Spacing Controls</h2>
+    <div class="control-group">
+      <label>Horizontal Padding (px)</label>
+      <input type="number" id="paddingX" value="20" min="0" max="40" step="1">
+    </div>
+    <div class="control-group">
+      <label>Bottom Padding (px)</label>
+      <input type="number" id="paddingBottom" value="16" min="0" max="30" step="1">
+    </div>
+    <div class="control-group">
+      <label>Meta Row Gap (px)</label>
+      <input type="number" id="metaGap" value="16" min="0" max="30" step="1">
+    </div>
+    <div class="control-group">
+      <label>
+        <input type="checkbox" id="showGuides"> Show spacing guides
+      </label>
+    </div>
+  </div>
+  
+  <!-- Entity Card -->
+  <article class="entity-card">
+    <div class="card-frame">
+      <!-- Corner accents -->
+      <div class="corner-accent tl"></div>
+      <div class="corner-accent br"></div>
+      
+      <!-- Image container -->
+      <div class="card-image">
+        <div class="card-letter">V</div>
+        
+        <!-- Threat indicator -->
+        <div class="threat-indicator">
+          <div class="threat-dot"></div>
+          <span class="threat-label">VOLATILE</span>
+        </div>
+        
+        <!-- Glyphs -->
+        <div class="glyphs">◆●∇⊗</div>
+        
+        <!-- Info overlay -->
+        <div class="info-overlay">
+          <div class="guide-padding guide-padding-x"></div>
+          <div class="guide-padding guide-padding-bottom"></div>
+          
+          <h3 class="card-name">ARAFEL</h3>
+          <p class="card-subtitle">THE VOIDWALKER</p>
+          
+          <div class="meta-row">
+            <span class="card-type">VOID-BORN</span>
+            <div class="coordinates">
+              <span class="coord-item">
+                <span class="coord-icon geometry">◆</span>
+                <span>-.847</span>
+              </span>
+              <span class="coord-item">
+                <span class="coord-icon alterity">○</span>
+                <span>.923</span>
+              </span>
+              <span class="coord-item">
+                <span class="coord-icon dynamics">◇</span>
+                <span>.156</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+  
+  <script>
+    // Live update CSS variables from inputs
+    const paddingX = document.getElementById('paddingX');
+    const paddingBottom = document.getElementById('paddingBottom');
+    const metaGap = document.getElementById('metaGap');
+    const showGuides = document.getElementById('showGuides');
+    
+    function updateSpacing() {
+      document.documentElement.style.setProperty('--card-padding-x', paddingX.value + 'px');
+      document.documentElement.style.setProperty('--card-padding-bottom', paddingBottom.value + 'px');
+      document.documentElement.style.setProperty('--meta-gap', metaGap.value + 'px');
+    }
+    
+    paddingX.addEventListener('input', updateSpacing);
+    paddingBottom.addEventListener('input', updateSpacing);
+    metaGap.addEventListener('input', updateSpacing);
+    
+    showGuides.addEventListener('change', (e) => {
+      document.body.classList.toggle('show-guides', e.target.checked);
+    });
+    
+    // Initial update
+    updateSpacing();
+  </script>
+</body>
+</html>
