@@ -18,24 +18,32 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   const [scale, setScale] = useState(1);
   const [hoveredDenizen, setHoveredDenizen] = useState<Denizen | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Wait for mount to ensure window dimensions are available
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Calculate screen position for a denizen
   const getScreenPosition = useCallback(
     (id: string): Position | null => {
+      if (!mounted) return null;
+
       const denizen = denizens.find((d) => d.id === id);
       if (!denizen) return null;
 
-      const centerX = (typeof window !== 'undefined' ? window.innerWidth : 0) / 2 + offset.x;
-      const centerY = (typeof window !== 'undefined' ? window.innerHeight : 0) / 2 + offset.y;
+      const centerX = window.innerWidth / 2 + offset.x;
+      const centerY = window.innerHeight / 2 + offset.y;
 
       return {
         x: centerX + denizen.position.x * scale,
         y: centerY + denizen.position.y * scale,
       };
     },
-    [denizens, offset, scale]
+    [denizens, offset, scale, mounted]
   );
 
   // Handle mouse down for dragging
