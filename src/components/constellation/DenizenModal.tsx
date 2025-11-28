@@ -180,7 +180,7 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
           </div>
 
           {/* Identity */}
-          <div className="p-8 flex-1 flex flex-col">
+          <div className="px-8 pt-6 pb-8 md:px-10 flex-1 flex flex-col">
             <div
               className="mb-2"
               style={{
@@ -549,7 +549,7 @@ function CoordinateRow({ symbol, symbolClass, name, value, percent, fillClass }:
       >
         {value}
       </span>
-      <div className="flex-1 h-0.5 bg-[var(--dawn-08)] ml-2 mr-2 relative">
+      <div className="flex-1 h-0.5 bg-[var(--dawn-08)] ml-2 mr-4 relative">
         <div
           className={`absolute top-0 left-0 h-full ${fillClass}`}
           style={{

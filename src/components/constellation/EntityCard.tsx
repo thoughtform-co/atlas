@@ -184,7 +184,7 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
 
           {/* Info overlay */}
           <div
-            className="absolute bottom-0 left-0 right-0 p-5 pt-12"
+            className="absolute bottom-0 left-0 right-0 px-6 pb-4 pt-12"
             style={{
               background: 'linear-gradient(to top, rgba(5, 4, 3, 0.98) 0%, rgba(5, 4, 3, 0.92) 35%, rgba(5, 4, 3, 0.6) 65%, transparent 100%)',
             }}
@@ -222,7 +222,7 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
 
             {/* Meta row */}
             <div
-              className="flex items-center justify-between mt-2 pt-2 overflow-hidden"
+              className="flex items-center mt-2 pt-2 overflow-hidden gap-4"
               style={{ borderTop: '1px solid var(--dawn-08)' }}
             >
               <span
@@ -239,7 +239,7 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
               </span>
 
               <div
-                className="flex gap-1"
+                className="flex gap-1 shrink-0"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: '7px',
