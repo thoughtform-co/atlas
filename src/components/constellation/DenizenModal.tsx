@@ -180,10 +180,7 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
           </div>
 
           {/* Identity */}
-          <div
-            className="pt-6 pb-8 md:pb-10 flex-1 flex flex-col"
-            style={{ paddingInline: 'clamp(24px, 6vw, 48px)' }}
-          >
+          <div className="px-6 md:px-8 pt-6 pb-8 flex-1 flex flex-col">
             <div
               className="mb-2"
               style={{
@@ -278,11 +275,10 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
             RIGHT COLUMN — Details
             ═══════════════════════════════════════════════════════════════ */}
         <div
-          className="modal__content py-6 md:py-8 md:pt-14 flex flex-col gap-6 max-h-[60vh] md:max-h-[520px] overflow-y-auto"
+          className="modal__content px-6 md:px-8 py-6 md:py-8 md:pt-14 flex flex-col gap-6 max-h-[60vh] md:max-h-[520px] overflow-y-auto"
           style={{
             scrollbarWidth: 'thin',
             scrollbarColor: 'var(--dawn-15) var(--dawn-04)',
-            paddingInline: 'clamp(24px, 5vw, 48px)',
           }}
         >
           {/* Description */}
