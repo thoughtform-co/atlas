@@ -5,24 +5,18 @@ import { Denizen } from '@/lib/types';
 interface EntityCardProps {
   denizen: Denizen;
   style?: React.CSSProperties;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
   onClick?: () => void;
 }
 
 export function EntityCard({
   denizen,
   style,
-  onMouseEnter,
-  onMouseLeave,
   onClick,
 }: EntityCardProps) {
   return (
     <div
       className="entity-card absolute w-[120px] cursor-pointer transition-all duration-300 ease-out group"
       style={style}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       onClick={onClick}
       data-id={denizen.id}
     >

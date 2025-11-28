@@ -5,7 +5,7 @@ import { Denizen, Connection, Position } from '@/lib/types';
 import { BackgroundCanvas } from './BackgroundCanvas';
 import { ConnectorCanvas } from './ConnectorCanvas';
 import { EntityCard } from './EntityCard';
-import { DetailPanel } from './DetailPanel';
+import { DenizenModal } from './DenizenModal';
 import { clamp } from '@/lib/utils';
 
 interface ConstellationViewProps {
@@ -16,7 +16,8 @@ interface ConstellationViewProps {
 export function ConstellationView({ denizens, connections }: ConstellationViewProps) {
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
-  const [hoveredDenizen, setHoveredDenizen] = useState<Denizen | null>(null);
+  const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
+  const [modalOrigin, setModalOrigin] = useState<Position | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
@@ -45,6 +46,13 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     },
     [denizens, offset, scale, mounted]
   );
+
+  // Handle card click
+  const handleCardClick = useCallback((denizen: Denizen) => {
+    const pos = getScreenPosition(denizen.id);
+    setModalOrigin(pos);
+    setSelectedDenizen(denizen);
+  }, [getScreenPosition]);
 
   // Handle mouse down for dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -120,15 +128,18 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
                 top: `${pos.y}px`,
                 transform: `translate(-50%, -50%) scale(${scale})`,
               }}
-              onMouseEnter={() => setHoveredDenizen(denizen)}
-              onMouseLeave={() => setHoveredDenizen(null)}
+              onClick={() => handleCardClick(denizen)}
             />
           );
         })}
       </div>
 
-      {/* Detail panel */}
-      <DetailPanel denizen={hoveredDenizen} />
+      {/* Denizen modal */}
+      <DenizenModal
+        denizen={selectedDenizen}
+        onClose={() => setSelectedDenizen(null)}
+        originPosition={modalOrigin}
+      />
 
       {/* Legend */}
       <div
