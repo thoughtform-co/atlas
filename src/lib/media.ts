@@ -67,7 +67,8 @@ export async function fetchDenizenMedia(denizenId: string): Promise<DenizenMedia
   }
 
   try {
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('denizen_media')
       .select('*')
       .eq('denizen_id', denizenId)
@@ -125,7 +126,8 @@ export async function uploadDenizenMedia(
 
     // If this is marked as primary, unset other primaries for this denizen/type
     if (options?.isPrimary) {
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('denizen_media')
         .update({ is_primary: false })
         .eq('denizen_id', denizenId)
@@ -133,7 +135,8 @@ export async function uploadDenizenMedia(
     }
 
     // Create database record
-    const { data, error: insertError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error: insertError } = await (supabase as any)
       .from('denizen_media')
       .insert({
         denizen_id: denizenId,
@@ -174,7 +177,8 @@ export async function deleteDenizenMedia(mediaId: string): Promise<boolean> {
 
   try {
     // First get the record to find the storage path
-    const { data: media, error: fetchError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: media, error: fetchError } = await (supabase as any)
       .from('denizen_media')
       .select('storage_path')
       .eq('id', mediaId)
@@ -196,7 +200,8 @@ export async function deleteDenizenMedia(mediaId: string): Promise<boolean> {
     }
 
     // Delete database record
-    const { error: deleteError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: deleteError } = await (supabase as any)
       .from('denizen_media')
       .delete()
       .eq('id', mediaId);
@@ -233,14 +238,16 @@ export async function updateDenizenMedia(
     // If setting as primary, first unset others
     if (updates.isPrimary) {
       // Get the media to find its denizen and type
-      const { data: existing } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing } = await (supabase as any)
         .from('denizen_media')
         .select('denizen_id, media_type')
         .eq('id', mediaId)
         .single();
 
       if (existing) {
-        await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
           .from('denizen_media')
           .update({ is_primary: false })
           .eq('denizen_id', existing.denizen_id)
@@ -248,7 +255,8 @@ export async function updateDenizenMedia(
       }
     }
 
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('denizen_media')
       .update({
         is_primary: updates.isPrimary,
@@ -281,7 +289,8 @@ export async function getPrimaryImage(denizenId: string): Promise<string | null>
   }
 
   try {
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('denizen_media')
       .select('storage_path')
       .eq('denizen_id', denizenId)
@@ -299,4 +308,3 @@ export async function getPrimaryImage(denizenId: string): Promise<string | null>
     return null;
   }
 }
-

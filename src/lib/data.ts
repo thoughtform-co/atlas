@@ -1,6 +1,11 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { Denizen, Connection } from './types';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
+import type { Database } from './database.types';
+
+// Type aliases for Supabase table operations
+type DenizenInsert = Database['public']['Tables']['denizens']['Insert'];
+type DenizenUpdate = Database['public']['Tables']['denizens']['Update'];
 
 // Row types for Supabase responses
 interface DenizenRow {
@@ -217,30 +222,33 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
   }
 
   try {
-    const { data, error } = await supabase
+    const insertData: DenizenInsert = {
+      id: denizen.id,
+      name: denizen.name,
+      subtitle: denizen.subtitle ?? null,
+      type: denizen.type,
+      image: denizen.image ?? null,
+      thumbnail: denizen.thumbnail ?? null,
+      video_url: denizen.videoUrl ?? null,
+      glyphs: denizen.glyphs,
+      position_x: denizen.position.x,
+      position_y: denizen.position.y,
+      coord_geometry: denizen.coordinates.geometry,
+      coord_alterity: denizen.coordinates.alterity,
+      coord_dynamics: denizen.coordinates.dynamics,
+      allegiance: denizen.allegiance,
+      threat_level: denizen.threatLevel,
+      domain: denizen.domain,
+      description: denizen.description,
+      lore: denizen.lore ?? null,
+      features: denizen.features ?? null,
+      first_observed: denizen.firstObserved ?? null,
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('denizens')
-      .insert({
-        id: denizen.id,
-        name: denizen.name,
-        subtitle: denizen.subtitle ?? null,
-        type: denizen.type,
-        image: denizen.image ?? null,
-        thumbnail: denizen.thumbnail ?? null,
-        video_url: denizen.videoUrl ?? null,
-        glyphs: denizen.glyphs,
-        position_x: denizen.position.x,
-        position_y: denizen.position.y,
-        coord_geometry: denizen.coordinates.geometry,
-        coord_alterity: denizen.coordinates.alterity,
-        coord_dynamics: denizen.coordinates.dynamics,
-        allegiance: denizen.allegiance,
-        threat_level: denizen.threatLevel,
-        domain: denizen.domain,
-        description: denizen.description,
-        lore: denizen.lore ?? null,
-        features: denizen.features ?? null,
-        first_observed: denizen.firstObserved ?? null,
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -270,7 +278,7 @@ export async function updateDenizen(
 
   try {
     // Build update object with only defined fields
-    const updateData: Record<string, unknown> = {};
+    const updateData: DenizenUpdate = {};
     
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.subtitle !== undefined) updateData.subtitle = updates.subtitle ?? null;
@@ -296,7 +304,8 @@ export async function updateDenizen(
     if (updates.features !== undefined) updateData.features = updates.features ?? null;
     if (updates.firstObserved !== undefined) updateData.first_observed = updates.firstObserved ?? null;
 
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('denizens')
       .update(updateData)
       .eq('id', id)
@@ -309,7 +318,8 @@ export async function updateDenizen(
     }
 
     // Fetch connections for this denizen
-    const { data: connectionRows } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: connectionRows } = await (supabase as any)
       .from('connections')
       .select('from_denizen_id, to_denizen_id')
       .or(`from_denizen_id.eq.${id},to_denizen_id.eq.${id}`);
@@ -335,7 +345,8 @@ export async function deleteDenizen(id: string): Promise<boolean> {
   }
 
   try {
-    const { error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
       .from('denizens')
       .delete()
       .eq('id', id);
