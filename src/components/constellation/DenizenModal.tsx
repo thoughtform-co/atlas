@@ -283,12 +283,13 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
             RIGHT COLUMN — Details
             ═══════════════════════════════════════════════════════════════ */}
         <div
-          className="modal__content flex flex-col gap-[24px] max-h-[60vh] md:max-h-[520px] overflow-y-auto"
+          className="modal__content flex flex-col max-h-[60vh] md:max-h-[520px] overflow-y-auto"
           style={{
             paddingLeft: '28px',
             paddingRight: '48px',
             paddingTop: '24px',
             paddingBottom: '24px',
+            gap: '28px',
             scrollbarWidth: 'thin',
             scrollbarColor: 'var(--dawn-15) var(--dawn-04)',
           }}
@@ -313,8 +314,9 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
             <section>
               <SectionLabel>Historical Record</SectionLabel>
               <div
-                className="relative pl-4"
+                className="relative"
                 style={{
+                  paddingLeft: '20px',
                   fontFamily: 'var(--font-sans)',
                   fontSize: '13px',
                   lineHeight: 1.7,
@@ -323,8 +325,11 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
                 }}
               >
                 <div
-                  className="absolute left-0 top-0 bottom-0 w-0.5"
-                  style={{ background: 'linear-gradient(180deg, var(--gold) 0%, transparent 100%)' }}
+                  className="absolute left-0 top-0 bottom-0"
+                  style={{ 
+                    width: '2px',
+                    background: 'linear-gradient(180deg, var(--gold) 0%, transparent 100%)' 
+                  }}
                 />
                 {denizen.lore}
               </div>
@@ -523,8 +528,9 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="flex items-center gap-2 mb-2.5"
+      className="flex items-center gap-2"
       style={{
+        marginBottom: '12px',
         fontFamily: 'var(--font-mono)',
         fontSize: '8px',
         letterSpacing: '0.15em',
