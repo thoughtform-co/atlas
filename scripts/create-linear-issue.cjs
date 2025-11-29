@@ -11,22 +11,21 @@
  *   - LINEAR_TEAM_ID in .env.local (optional, will use default team if not set)
  */
 
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { config } from 'dotenv';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const { readFileSync } = require('fs');
+const { join } = require('path');
+const { config } = require('dotenv');
 
 // Load environment variables
+// __dirname is automatically available in CommonJS
 config({ path: join(__dirname, '..', '.env.local') });
 
-const LINEAR_API_KEY = process.env.LINEAR_API_KEY;
+// Allow API key to be passed as environment variable or read from .env.local
+let LINEAR_API_KEY = process.env.LINEAR_API_KEY;
 const LINEAR_TEAM_ID = process.env.LINEAR_TEAM_ID;
 
 if (!LINEAR_API_KEY) {
-  console.error('❌ LINEAR_API_KEY not found in .env.local');
+  console.error('❌ LINEAR_API_KEY not found');
+  console.error('   Set it in .env.local or as environment variable');
   console.error('   Get your API key from: https://linear.app/settings/api');
   process.exit(1);
 }

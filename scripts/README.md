@@ -22,7 +22,11 @@ Creates a Linear issue from a formatted markdown file.
 ### Usage
 
 ```bash
-node scripts/create-linear-issue.js .linear-issues/ATL-001-spacing-fix.md
+# Using API key from .env.local
+node scripts/create-linear-issue.cjs .linear-issues/ATL-001-spacing-fix.md
+
+# Or pass API key as environment variable
+LINEAR_API_KEY=your-key node scripts/create-linear-issue.cjs .linear-issues/ATL-001-spacing-fix.md
 ```
 
 The script will:
