@@ -4,7 +4,10 @@ Utility scripts for project automation.
 
 ## Create Linear Issue
 
-Creates a Linear issue from a formatted markdown file.
+Creates a Linear issue from a formatted markdown file. Automatically:
+- Uses "ATL-XXX: [Title]" format in the issue title
+- Includes full description with all sections
+- Links issue to the Atlas project
 
 ### Setup
 
@@ -35,11 +38,30 @@ The script will:
 - Create the issue in Linear
 - Output the issue URL
 
+## Update Linear Issue
+
+Updates an existing Linear issue with description from a markdown file.
+
+### Usage
+
+```bash
+node scripts/update-linear-issue.cjs <issue-id> <file-path>
+
+# Example:
+node scripts/update-linear-issue.cjs THO-68 .linear-issues/ATL-001-spacing-fix.md
+```
+
+The script will:
+- Parse the markdown file
+- Update the issue title (with "ATL-XXX: " prefix)
+- Update the full description with all sections
+- Link to the Atlas project if not already linked
+
 ### Manual Alternative
 
-If you prefer to create issues manually:
+If you prefer to create/update issues manually:
 1. Open Linear
 2. Copy the content from `.linear-issues/ATL-001-spacing-fix.md`
 3. Paste into the issue description
-4. Fill in title, team, and labels as needed
+4. Fill in title (with "ATL-XXX: " prefix), team, and labels as needed
 

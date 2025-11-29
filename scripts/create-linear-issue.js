@@ -12,11 +12,12 @@
  */
 
 const { readFileSync } = require('fs');
-const { join } = require('path');
+const { join, dirname } = require('path');
 const { config } = require('dotenv');
 
+const __dirname = dirname(__filename || require.main.filename || process.cwd());
+
 // Load environment variables
-// __dirname is automatically available in CommonJS
 config({ path: join(__dirname, '..', '.env.local') });
 
 // Allow API key to be passed as environment variable or read from .env.local
@@ -35,54 +36,35 @@ if (!LINEAR_API_KEY) {
  */
 function parseIssueFile(filePath) {
   const content = readFileSync(filePath, 'utf-8');
-  // Normalize line endings and split
-  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const lines = content.split('\n');
   
-  // Extract full title including ID prefix (e.g., "ATL-001: Fix spacing")
-  const titleMatch = content.match(/^#\s+(.+)$/m);
-  const fullTitle = titleMatch ? titleMatch[1].trim() : 'Untitled Issue';
+  // Extract title (first line after #)
+  const titleMatch = content.match(/^#\s+(.+?):\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[2].trim() : 'Untitled Issue';
   
   // Extract issue ID (from first line)
-  const idMatch = content.match(/^#\s+([A-Z]+-\d+):\s*(.+)$/m);
+  const idMatch = content.match(/^#\s+([A-Z]+-\d+):/);
   const issueId = idMatch ? idMatch[1] : null;
   
-  // Use full title with ID prefix (e.g., "ATL-001: Fix spacing")
-  const title = fullTitle;
-  
-  // Extract sections - parse everything after the title
+  // Extract sections
   const sections = {};
   let currentSection = null;
   let currentContent = [];
   
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check if this is a section header
-    const sectionMatch = line.match(/^##\s+(.+)$/);
-    if (sectionMatch) {
-      // Save previous section
+  for (const line of lines) {
+    if (line.match(/^##\s+(.+)$/)) {
       if (currentSection) {
         sections[currentSection] = currentContent.join('\n').trim();
       }
-      // Start new section
-      currentSection = sectionMatch[1].trim();
+      currentSection = line.replace(/^##\s+/, '').trim();
       currentContent = [];
-    } else if (currentSection) {
-      // Add line to current section (including empty lines to preserve formatting)
+    } else if (currentSection && line.trim()) {
       currentContent.push(line);
     }
   }
   
-  // Save the last section
   if (currentSection) {
     sections[currentSection] = currentContent.join('\n').trim();
-  }
-  
-  // Remove empty sections
-  for (const key in sections) {
-    if (!sections[key] || sections[key].length === 0) {
-      delete sections[key];
-    }
   }
   
   return { title, issueId, sections };
@@ -113,59 +95,16 @@ function formatLinearDescription(sections) {
 }
 
 /**
- * Get projects and find Atlas project
- */
-async function getAtlasProject(teamId) {
-  const query = `
-    query GetProjects($teamId: String!) {
-      team(id: $teamId) {
-        projects(first: 50) {
-          nodes {
-            id
-            name
-          }
-        }
-      }
-    }
-  `;
-  
-  const response = await fetch('https://api.linear.app/graphql', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': LINEAR_API_KEY,
-    },
-    body: JSON.stringify({ query, variables: { teamId } }),
-  });
-  
-  const result = await response.json();
-  
-  if (result.errors) {
-    throw new Error(result.errors.map(e => e.message).join(', '));
-  }
-  
-  const projects = result.data.team.projects.nodes;
-  
-  // Find Atlas project (case-insensitive match)
-  const atlasProject = projects.find(
-    p => p.name.toLowerCase().includes('atlas')
-  );
-  
-  return atlasProject;
-}
-
-/**
  * Create issue in Linear
  */
-async function createLinearIssue(title, description, teamId, projectId) {
+async function createLinearIssue(title, description, teamId) {
   const query = `
-    mutation CreateIssue($title: String!, $description: String, $teamId: String!, $projectId: String) {
+    mutation CreateIssue($title: String!, $description: String, $teamId: String!) {
       issueCreate(
         input: {
           title: $title
           description: $description
           teamId: $teamId
-          projectId: $projectId
         }
       ) {
         success
@@ -182,8 +121,7 @@ async function createLinearIssue(title, description, teamId, projectId) {
   const variables = {
     title,
     description,
-    teamId: teamId || undefined,
-    projectId: projectId || undefined
+    teamId: teamId || undefined
   };
   
   const response = await fetch('https://api.linear.app/graphql', {
@@ -256,13 +194,7 @@ async function main() {
       console.log(`   ID: ${issueId}`);
     }
     
-    // Debug: show sections found
-    console.log(`\n📋 Found sections: ${Object.keys(sections).join(', ')}`);
-    
     const description = formatLinearDescription(sections);
-    
-    // Debug: show description length
-    console.log(`📄 Description length: ${description.length} characters`);
     
     // Get team ID
     let teamId = LINEAR_TEAM_ID;
@@ -290,19 +222,8 @@ async function main() {
       }
     }
     
-    // Get Atlas project
-    console.log('🔍 Finding Atlas project...');
-    const atlasProject = await getAtlasProject(teamId);
-    
-    if (!atlasProject) {
-      console.warn('⚠️  Atlas project not found. Creating issue without project link.');
-      console.warn('   Make sure a project named "Atlas" exists in your Linear workspace.');
-    } else {
-      console.log(`✅ Found project: ${atlasProject.name}`);
-    }
-    
     console.log('\n🚀 Creating issue in Linear...');
-    const result = await createLinearIssue(title, description, teamId, atlasProject?.id);
+    const result = await createLinearIssue(title, description, teamId);
     
     if (result.success) {
       console.log('\n✅ Issue created successfully!');

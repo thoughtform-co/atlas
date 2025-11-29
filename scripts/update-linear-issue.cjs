@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Create a Linear issue from a formatted markdown file
+ * Update an existing Linear issue with description from a markdown file
  * 
  * Usage:
- *   node scripts/create-linear-issue.js .linear-issues/ATL-001-spacing-fix.md
+ *   node scripts/update-linear-issue.cjs <issue-identifier> .linear-issues/ATL-001-spacing-fix.md
  * 
- * Requires:
- *   - LINEAR_API_KEY in .env.local
- *   - LINEAR_TEAM_ID in .env.local (optional, will use default team if not set)
+ * Example:
+ *   node scripts/update-linear-issue.cjs THO-68 .linear-issues/ATL-001-spacing-fix.md
  */
 
 const { readFileSync } = require('fs');
@@ -16,22 +15,18 @@ const { join } = require('path');
 const { config } = require('dotenv');
 
 // Load environment variables
-// __dirname is automatically available in CommonJS
 config({ path: join(__dirname, '..', '.env.local') });
 
-// Allow API key to be passed as environment variable or read from .env.local
 let LINEAR_API_KEY = process.env.LINEAR_API_KEY;
-const LINEAR_TEAM_ID = process.env.LINEAR_TEAM_ID;
 
 if (!LINEAR_API_KEY) {
   console.error('❌ LINEAR_API_KEY not found');
   console.error('   Set it in .env.local or as environment variable');
-  console.error('   Get your API key from: https://linear.app/settings/api');
   process.exit(1);
 }
 
 /**
- * Parse markdown issue file and extract sections
+ * Parse markdown issue file and extract sections (same as create script)
  */
 function parseIssueFile(filePath) {
   const content = readFileSync(filePath, 'utf-8');
@@ -68,7 +63,7 @@ function parseIssueFile(filePath) {
       currentSection = sectionMatch[1].trim();
       currentContent = [];
     } else if (currentSection) {
-      // Add line to current section (including empty lines to preserve formatting)
+      // Add line to current section
       currentContent.push(line);
     }
   }
@@ -113,78 +108,25 @@ function formatLinearDescription(sections) {
 }
 
 /**
- * Get projects and find Atlas project
+ * Get issue by identifier using Linear's API
  */
-async function getAtlasProject(teamId) {
+async function getIssue(identifier) {
+  // Extract team key and number from identifier (e.g., "THO-68")
+  const [teamKey, issueNumber] = identifier.split('-');
+  
+  // Linear API: search all teams and filter by identifier
   const query = `
-    query GetProjects($teamId: String!) {
-      team(id: $teamId) {
-        projects(first: 50) {
-          nodes {
-            id
-            name
-          }
-        }
-      }
-    }
-  `;
-  
-  const response = await fetch('https://api.linear.app/graphql', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': LINEAR_API_KEY,
-    },
-    body: JSON.stringify({ query, variables: { teamId } }),
-  });
-  
-  const result = await response.json();
-  
-  if (result.errors) {
-    throw new Error(result.errors.map(e => e.message).join(', '));
-  }
-  
-  const projects = result.data.team.projects.nodes;
-  
-  // Find Atlas project (case-insensitive match)
-  const atlasProject = projects.find(
-    p => p.name.toLowerCase().includes('atlas')
-  );
-  
-  return atlasProject;
-}
-
-/**
- * Create issue in Linear
- */
-async function createLinearIssue(title, description, teamId, projectId) {
-  const query = `
-    mutation CreateIssue($title: String!, $description: String, $teamId: String!, $projectId: String) {
-      issueCreate(
-        input: {
-          title: $title
-          description: $description
-          teamId: $teamId
-          projectId: $projectId
-        }
-      ) {
-        success
-        issue {
+    query GetIssue {
+      issues(first: 100) {
+        nodes {
           id
           identifier
           title
-          url
+          description
         }
       }
     }
   `;
-  
-  const variables = {
-    title,
-    description,
-    teamId: teamId || undefined,
-    projectId: projectId || undefined
-  };
   
   const response = await fetch('https://api.linear.app/graphql', {
     method: 'POST',
@@ -192,7 +134,7 @@ async function createLinearIssue(title, description, teamId, projectId) {
       'Content-Type': 'application/json',
       'Authorization': LINEAR_API_KEY,
     },
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query }),
   });
   
   const result = await response.json();
@@ -201,19 +143,26 @@ async function createLinearIssue(title, description, teamId, projectId) {
     throw new Error(result.errors.map(e => e.message).join(', '));
   }
   
-  return result.data.issueCreate;
+  // Find the issue by identifier
+  const issues = result.data?.issues?.nodes || [];
+  const issue = issues.find(iss => iss.identifier === identifier);
+  
+  if (!issue) {
+    throw new Error(`Issue ${identifier} not found`);
+  }
+  
+  return issue;
 }
 
 /**
- * Get teams (to find team ID if not provided)
+ * Get Atlas project
  */
-async function getTeams() {
+async function getAtlasProject() {
   const query = `
     query {
-      teams {
+      projects(first: 50) {
         nodes {
           id
-          key
           name
         }
       }
@@ -235,15 +184,70 @@ async function getTeams() {
     throw new Error(result.errors.map(e => e.message).join(', '));
   }
   
-  return result.data.teams.nodes;
+  const projects = result.data.projects.nodes;
+  const atlasProject = projects.find(p => p.name.toLowerCase().includes('atlas'));
+  
+  return atlasProject;
+}
+
+/**
+ * Update issue in Linear
+ */
+async function updateLinearIssue(issueId, title, description, projectId) {
+  const query = `
+    mutation UpdateIssue($issueId: String!, $title: String, $description: String, $projectId: String) {
+      issueUpdate(
+        id: $issueId
+        input: {
+          title: $title
+          description: $description
+          projectId: $projectId
+        }
+      ) {
+        success
+        issue {
+          id
+          identifier
+          title
+          url
+        }
+      }
+    }
+  `;
+  
+  const variables = {
+    issueId,
+    title: title || undefined,
+    description: description || undefined,
+    projectId: projectId || undefined
+  };
+  
+  const response = await fetch('https://api.linear.app/graphql', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': LINEAR_API_KEY,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  
+  const result = await response.json();
+  
+  if (result.errors) {
+    throw new Error(result.errors.map(e => e.message).join(', '));
+  }
+  
+  return result.data.issueUpdate;
 }
 
 async function main() {
-  const filePath = process.argv[2];
+  const issueIdentifier = process.argv[2];
+  const filePath = process.argv[3];
   
-  if (!filePath) {
-    console.error('❌ Please provide a markdown file path');
-    console.error('   Usage: node scripts/create-linear-issue.js .linear-issues/ATL-001-spacing-fix.md');
+  if (!issueIdentifier || !filePath) {
+    console.error('❌ Please provide issue identifier and markdown file path');
+    console.error('   Usage: node scripts/update-linear-issue.cjs <issue-id> <file-path>');
+    console.error('   Example: node scripts/update-linear-issue.cjs THO-68 .linear-issues/ATL-001-spacing-fix.md');
     process.exit(1);
   }
   
@@ -252,65 +256,46 @@ async function main() {
     const { title, issueId, sections } = parseIssueFile(filePath);
     
     console.log(`📝 Title: ${title}`);
-    if (issueId) {
-      console.log(`   ID: ${issueId}`);
-    }
-    
-    // Debug: show sections found
-    console.log(`\n📋 Found sections: ${Object.keys(sections).join(', ')}`);
+    console.log(`📋 Found sections: ${Object.keys(sections).join(', ')}`);
     
     const description = formatLinearDescription(sections);
-    
-    // Debug: show description length
     console.log(`📄 Description length: ${description.length} characters`);
     
-    // Get team ID
-    let teamId = LINEAR_TEAM_ID;
+    console.log(`\n🔍 Fetching issue ${issueIdentifier}...`);
+    const existingIssue = await getIssue(issueIdentifier);
     
-    if (!teamId) {
-      console.log('🔍 Fetching teams...');
-      const teams = await getTeams();
-      
-      if (teams.length === 0) {
-        console.error('❌ No teams found. Please set LINEAR_TEAM_ID in .env.local');
-        process.exit(1);
-      }
-      
-      if (teams.length === 1) {
-        teamId = teams[0].id;
-        console.log(`✅ Using team: ${teams[0].name} (${teams[0].key})`);
-      } else {
-        console.log('\nAvailable teams:');
-        teams.forEach((team, i) => {
-          console.log(`  ${i + 1}. ${team.name} (${team.key})`);
-        });
-        console.error('\n❌ Multiple teams found. Please set LINEAR_TEAM_ID in .env.local');
-        console.error('   Example: LINEAR_TEAM_ID=team-id-here');
-        process.exit(1);
-      }
+    if (!existingIssue) {
+      console.error(`❌ Issue ${issueIdentifier} not found`);
+      process.exit(1);
     }
+    
+    console.log(`✅ Found issue: ${existingIssue.title}`);
     
     // Get Atlas project
     console.log('🔍 Finding Atlas project...');
-    const atlasProject = await getAtlasProject(teamId);
+    const atlasProject = await getAtlasProject();
     
     if (!atlasProject) {
-      console.warn('⚠️  Atlas project not found. Creating issue without project link.');
-      console.warn('   Make sure a project named "Atlas" exists in your Linear workspace.');
+      console.warn('⚠️  Atlas project not found. Updating issue without project link.');
     } else {
       console.log(`✅ Found project: ${atlasProject.name}`);
     }
     
-    console.log('\n🚀 Creating issue in Linear...');
-    const result = await createLinearIssue(title, description, teamId, atlasProject?.id);
+    console.log('\n🚀 Updating issue in Linear...');
+    const result = await updateLinearIssue(
+      existingIssue.id,
+      title,
+      description,
+      atlasProject?.id
+    );
     
     if (result.success) {
-      console.log('\n✅ Issue created successfully!');
+      console.log('\n✅ Issue updated successfully!');
       console.log(`   ID: ${result.issue.identifier}`);
       console.log(`   Title: ${result.issue.title}`);
       console.log(`   URL: ${result.issue.url}`);
     } else {
-      console.error('❌ Failed to create issue');
+      console.error('❌ Failed to update issue');
       process.exit(1);
     }
     
