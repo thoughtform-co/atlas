@@ -8,6 +8,7 @@ interface EntityCardProps {
   style?: React.CSSProperties;
   onHover?: (denizen: Denizen | null) => void;
   onClick?: (denizen: Denizen) => void;
+  onEdit?: (denizen: Denizen) => void;
   isSelected?: boolean;
 }
 
@@ -22,7 +23,7 @@ interface EntityCardProps {
  * - Subtle lift animation
  * - Nomenclate allegiance tinting
  */
-export function EntityCard({ denizen, style, onHover, onClick, isSelected }: EntityCardProps) {
+export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelected }: EntityCardProps) {
 
   // Format coordinate for display (removes leading zero)
   const formatCoord = (n: number): string => {
@@ -99,6 +100,44 @@ export function EntityCard({ denizen, style, onHover, onClick, isSelected }: Ent
             ${isSelected ? 'opacity-100 border-[var(--dawn-30)]' : 'opacity-0 group-hover:opacity-100'}
           `}
         />
+
+        {/* Edit button - appears on hover */}
+        {onEdit && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(denizen);
+            }}
+            className="
+              absolute top-2 right-2 z-20
+              w-6 h-6 flex items-center justify-center
+              opacity-0 group-hover:opacity-100
+              border border-[var(--dawn-15)] hover:border-[var(--dawn-50)]
+              bg-[var(--surface-0)] hover:bg-[var(--surface-1)]
+              text-[var(--dawn-30)] hover:text-[var(--dawn)]
+              transition-all duration-200
+            "
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+            }}
+            title="Edit denizen"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+        )}
 
         {/* Image container */}
         <div

@@ -51,6 +51,14 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     setSelectedDenizen(denizen);
   }, []);
 
+  // Handle edit button click
+  const handleEditClick = useCallback((denizen: Denizen) => {
+    // TODO: Open edit modal
+    console.log('Edit denizen:', denizen.id, denizen.name);
+    // For now, this just logs - a full edit modal would go here
+    alert(`Edit mode for: ${denizen.name}\n\nThis will open an editor modal in a future update.`);
+  }, []);
+
   // Handle navigation to a connected denizen from modal
   const handleNavigate = useCallback((denizenId: string) => {
     const denizen = denizens.find((d) => d.id === denizenId);
@@ -134,6 +142,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
                 transform: `translate(-50%, -50%) scale(${scale})`,
               }}
               onClick={handleCardClick}
+              onEdit={handleEditClick}
               isSelected={selectedDenizen?.id === denizen.id}
             />
           );

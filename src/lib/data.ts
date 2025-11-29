@@ -10,6 +10,7 @@ interface DenizenRow {
   type: string;
   image: string | null;
   thumbnail: string | null;
+  video_url: string | null;
   glyphs: string;
   position_x: number;
   position_y: number;
@@ -48,6 +49,7 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[]): Denizen 
     type: row.type as Denizen['type'],
     image: row.image ?? undefined,
     thumbnail: row.thumbnail ?? undefined,
+    videoUrl: row.video_url ?? undefined,
     glyphs: row.glyphs,
     position: { x: row.position_x, y: row.position_y },
     coordinates: {
@@ -203,4 +205,149 @@ export async function fetchConnectedDenizens(id: string): Promise<Denizen[]> {
   return denizen.connections
     .map(connId => allDenizens.find(d => d.id === connId))
     .filter((d): d is Denizen => d !== undefined);
+}
+
+/**
+ * Create a new denizen
+ */
+export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Promise<Denizen | null> {
+  if (!isSupabaseConfigured() || !supabase) {
+    console.error('Supabase not configured - cannot create denizen');
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('denizens')
+      .insert({
+        id: denizen.id,
+        name: denizen.name,
+        subtitle: denizen.subtitle ?? null,
+        type: denizen.type,
+        image: denizen.image ?? null,
+        thumbnail: denizen.thumbnail ?? null,
+        video_url: denizen.videoUrl ?? null,
+        glyphs: denizen.glyphs,
+        position_x: denizen.position.x,
+        position_y: denizen.position.y,
+        coord_geometry: denizen.coordinates.geometry,
+        coord_alterity: denizen.coordinates.alterity,
+        coord_dynamics: denizen.coordinates.dynamics,
+        allegiance: denizen.allegiance,
+        threat_level: denizen.threatLevel,
+        domain: denizen.domain,
+        description: denizen.description,
+        lore: denizen.lore ?? null,
+        features: denizen.features ?? null,
+        first_observed: denizen.firstObserved ?? null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating denizen:', error);
+      return null;
+    }
+
+    return transformDenizenRow(data as DenizenRow, []);
+  } catch (error) {
+    console.error('Error in createDenizen:', error);
+    return null;
+  }
+}
+
+/**
+ * Update an existing denizen
+ */
+export async function updateDenizen(
+  id: string,
+  updates: Partial<Omit<Denizen, 'id' | 'connections'>>
+): Promise<Denizen | null> {
+  if (!isSupabaseConfigured() || !supabase) {
+    console.error('Supabase not configured - cannot update denizen');
+    return null;
+  }
+
+  try {
+    // Build update object with only defined fields
+    const updateData: Record<string, unknown> = {};
+    
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.subtitle !== undefined) updateData.subtitle = updates.subtitle ?? null;
+    if (updates.type !== undefined) updateData.type = updates.type;
+    if (updates.image !== undefined) updateData.image = updates.image ?? null;
+    if (updates.thumbnail !== undefined) updateData.thumbnail = updates.thumbnail ?? null;
+    if (updates.videoUrl !== undefined) updateData.video_url = updates.videoUrl ?? null;
+    if (updates.glyphs !== undefined) updateData.glyphs = updates.glyphs;
+    if (updates.position !== undefined) {
+      updateData.position_x = updates.position.x;
+      updateData.position_y = updates.position.y;
+    }
+    if (updates.coordinates !== undefined) {
+      updateData.coord_geometry = updates.coordinates.geometry;
+      updateData.coord_alterity = updates.coordinates.alterity;
+      updateData.coord_dynamics = updates.coordinates.dynamics;
+    }
+    if (updates.allegiance !== undefined) updateData.allegiance = updates.allegiance;
+    if (updates.threatLevel !== undefined) updateData.threat_level = updates.threatLevel;
+    if (updates.domain !== undefined) updateData.domain = updates.domain;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.lore !== undefined) updateData.lore = updates.lore ?? null;
+    if (updates.features !== undefined) updateData.features = updates.features ?? null;
+    if (updates.firstObserved !== undefined) updateData.first_observed = updates.firstObserved ?? null;
+
+    const { data, error } = await supabase
+      .from('denizens')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating denizen:', error);
+      return null;
+    }
+
+    // Fetch connections for this denizen
+    const { data: connectionRows } = await supabase
+      .from('connections')
+      .select('from_denizen_id, to_denizen_id')
+      .or(`from_denizen_id.eq.${id},to_denizen_id.eq.${id}`);
+
+    const connectionIds = (connectionRows as ConnectionRefRow[] || []).map(conn =>
+      conn.from_denizen_id === id ? conn.to_denizen_id : conn.from_denizen_id
+    );
+
+    return transformDenizenRow(data as DenizenRow, connectionIds);
+  } catch (error) {
+    console.error('Error in updateDenizen:', error);
+    return null;
+  }
+}
+
+/**
+ * Delete a denizen
+ */
+export async function deleteDenizen(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) {
+    console.error('Supabase not configured - cannot delete denizen');
+    return false;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('denizens')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting denizen:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in deleteDenizen:', error);
+    return false;
+  }
 }

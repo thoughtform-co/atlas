@@ -286,7 +286,7 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
           className="modal__content flex flex-col gap-[24px] max-h-[60vh] md:max-h-[520px] overflow-y-auto"
           style={{
             paddingLeft: '28px',
-            paddingRight: '28px',
+            paddingRight: '48px',
             paddingTop: '24px',
             paddingBottom: '24px',
             scrollbarWidth: 'thin',
@@ -508,7 +508,7 @@ export function DenizenModal({ denizen, onClose, onNavigate, allDenizens = [] }:
 
           .modal__content {
             padding-left: 36px;
-            padding-right: 36px;
+            padding-right: 56px;
             padding-top: 56px;
           }
         }

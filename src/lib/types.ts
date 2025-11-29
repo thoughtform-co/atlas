@@ -26,6 +26,7 @@ export interface Denizen {
   // Visuals
   image?: string;
   thumbnail?: string;
+  videoUrl?: string;
   glyphs: string;
 
   // Position in constellation view
@@ -47,6 +48,27 @@ export interface Denizen {
 
   // Relationships
   connections: string[];
+
+  // Media (populated from denizen_media table)
+  media?: DenizenMedia[];
+}
+
+export type MediaType = 'image' | 'video' | 'thumbnail';
+
+export interface DenizenMedia {
+  id: string;
+  denizenId: string;
+  mediaType: MediaType;
+  storagePath: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  displayOrder: number;
+  isPrimary: boolean;
+  caption?: string;
+  altText?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Connection {

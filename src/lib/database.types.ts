@@ -11,6 +11,8 @@ export type AllegianceEnum = 'Liminal Covenant' | 'Nomenclate' | 'Unaligned' | '
 export type ThreatLevelEnum = 'Benign' | 'Cautious' | 'Volatile' | 'Existential';
 export type ConnectionTypeEnum = 'semantic' | 'historical' | 'adversarial';
 
+export type MediaType = 'image' | 'video' | 'thumbnail';
+
 export interface Database {
   public: {
     Tables: {
@@ -22,6 +24,7 @@ export interface Database {
           type: DenizenTypeEnum
           image: string | null
           thumbnail: string | null
+          video_url: string | null
           glyphs: string
           position_x: number
           position_y: number
@@ -45,6 +48,7 @@ export interface Database {
           type: DenizenTypeEnum
           image?: string | null
           thumbnail?: string | null
+          video_url?: string | null
           glyphs: string
           position_x: number
           position_y: number
@@ -68,6 +72,7 @@ export interface Database {
           type?: DenizenTypeEnum
           image?: string | null
           thumbnail?: string | null
+          video_url?: string | null
           glyphs?: string
           position_x?: number
           position_y?: number
@@ -81,6 +86,53 @@ export interface Database {
           lore?: string | null
           features?: string[] | null
           first_observed?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      denizen_media: {
+        Row: {
+          id: string
+          denizen_id: string
+          media_type: MediaType
+          storage_path: string
+          file_name: string
+          file_size: number | null
+          mime_type: string | null
+          display_order: number
+          is_primary: boolean
+          caption: string | null
+          alt_text: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          denizen_id: string
+          media_type: MediaType
+          storage_path: string
+          file_name: string
+          file_size?: number | null
+          mime_type?: string | null
+          display_order?: number
+          is_primary?: boolean
+          caption?: string | null
+          alt_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          denizen_id?: string
+          media_type?: MediaType
+          storage_path?: string
+          file_name?: string
+          file_size?: number | null
+          mime_type?: string | null
+          display_order?: number
+          is_primary?: boolean
+          caption?: string | null
+          alt_text?: string | null
           created_at?: string
           updated_at?: string
         }
