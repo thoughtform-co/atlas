@@ -5,7 +5,7 @@ import { Denizen, Connection, Position } from '@/lib/types';
 import { BackgroundCanvas } from './BackgroundCanvas';
 import { ConnectorCanvas } from './ConnectorCanvas';
 import { EntityCard } from './EntityCard';
-import { DenizenModal } from './DenizenModal';
+import { DenizenModalV2 } from './DenizenModalV2';
 import { clamp } from '@/lib/utils';
 
 interface ConstellationViewProps {
@@ -149,8 +149,8 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
         })}
       </div>
 
-      {/* Denizen modal */}
-      <DenizenModal
+      {/* Denizen modal - Research Station Layout */}
+      <DenizenModalV2
         denizen={selectedDenizen}
         onClose={() => setSelectedDenizen(null)}
         onNavigate={handleNavigate}
