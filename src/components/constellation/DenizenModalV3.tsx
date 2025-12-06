@@ -138,6 +138,34 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
           border: '1px solid rgba(236, 227, 214, 0.08)',
         }}
       >
+        {/* Full-bleed Media Background */}
+        {mediaUrl && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+            {isVideo ? (
+              <video
+                src={denizen.videoUrl || mediaUrl}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            ) : (
+              <Image
+                src={mediaUrl}
+                alt={denizen.name}
+                fill
+                style={{ objectFit: 'cover' }}
+              />
+            )}
+            {/* Gradient overlay for readability */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(to bottom, rgba(5, 4, 3, 0.4) 0%, rgba(5, 4, 3, 0.2) 50%, rgba(5, 4, 3, 0.6) 100%)',
+            }} />
+          </div>
+        )}
         {/* Scan Line */}
         <div
           style={{
@@ -168,17 +196,19 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
             position: 'absolute',
             top: '8px',
             right: '8px',
-            width: '20px',
-            height: '20px',
+            width: '24px',
+            height: '24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 150,
-            background: 'rgba(5, 4, 3, 0.8)',
-            border: '1px solid rgba(236, 227, 214, 0.15)',
-            color: 'rgba(236, 227, 214, 0.5)',
+            background: 'rgba(5, 4, 3, 0.7)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(236, 227, 214, 0.2)',
+            color: 'rgba(236, 227, 214, 0.6)',
             fontFamily: 'var(--font-mono)',
-            fontSize: '12px',
+            fontSize: '14px',
             cursor: 'pointer',
           }}
         >
@@ -189,14 +219,18 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
         <div
           style={{
             gridColumn: '1 / -1',
-            background: '#0A0908',
+            position: 'relative',
+            zIndex: 10,
+            background: 'rgba(10, 9, 8, 0.75)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             padding: '0 12px',
             fontSize: '9px',
             letterSpacing: '0.1em',
             gap: '16px',
-            borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
+            borderBottom: '1px solid rgba(236, 227, 214, 0.12)',
           }}
         >
           <span style={{ color: '#CAA554', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
@@ -219,7 +253,17 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
         </div>
 
         {/* Left Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(236, 227, 214, 0.04)' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1px',
+          position: 'relative',
+          zIndex: 10,
+          background: 'rgba(5, 4, 3, 0.65)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRight: '1px solid rgba(236, 227, 214, 0.08)',
+        }}>
           <Readout label="Phase State" value={`TEMP: ${tempValue}`} valueColor="#CAA554">
             <PhaseCanvas value={denizen.coordinates.geometry} />
           </Readout>
@@ -231,49 +275,62 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
           </Readout>
         </div>
 
-        {/* Center */}
-        <div style={{ background: '#050403', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          <CenterFieldCanvas />
+        {/* Center - transparent to show background media */}
+        <div style={{ background: 'transparent', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {/* Only show particle canvas if no media */}
+          {!mediaUrl && <CenterFieldCanvas />}
 
-          {/* Alignment Compass Overlay */}
-          <div style={{ position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
+          {/* Alignment Compass Overlay with glass effect */}
+          <div style={{
+            position: 'absolute',
+            top: '8%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 20,
+            padding: '8px 12px',
+            background: 'rgba(5, 4, 3, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(236, 227, 214, 0.1)',
+          }}>
             <AlignmentCompass />
             <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '8px', color: '#CAA554', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
               ◎ {denizen.allegiance.toUpperCase()}
             </div>
           </div>
 
-          {/* Entity Image */}
-          {mediaUrl ? (
-            isVideo ? (
-              <video
-                src={denizen.videoUrl || mediaUrl}
-                style={{ position: 'relative', zIndex: 10, maxWidth: '70%', maxHeight: '85%', objectFit: 'contain' }}
-                autoPlay
-                loop
-                muted
-              />
-            ) : (
-              <Image
-                src={mediaUrl}
-                alt={denizen.name}
-                width={280}
-                height={350}
-                style={{ position: 'relative', zIndex: 10, maxWidth: '70%', maxHeight: '85%', objectFit: 'contain' }}
-              />
-            )
-          ) : (
+          {/* No image placeholder */}
+          {!mediaUrl && (
             <div style={{ position: 'relative', zIndex: 10, fontSize: '12px', color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
               [NO IMAGE]
             </div>
           )}
 
-          {/* Upload button */}
+          {/* Upload button with glass effect */}
           {isAuthenticated && (
-            <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <div style={{
+              position: 'absolute',
+              bottom: '12px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 30,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+            }}>
               <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleUpload} style={{ display: 'none' }} />
               {uploadSuccess && (
-                <div style={{ padding: '2px 8px', fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#5B8A7A', background: 'rgba(5, 4, 3, 0.9)', border: '1px solid rgba(91, 138, 122, 0.3)' }}>
+                <div style={{
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8px',
+                  color: '#5B8A7A',
+                  background: 'rgba(5, 4, 3, 0.75)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(91, 138, 122, 0.3)',
+                }}>
                   ✓ UPLOAD COMPLETE
                 </div>
               )}
@@ -284,20 +341,30 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
                 }}
                 disabled={isUploading}
                 style={{
-                  padding: '4px 10px',
+                  padding: '6px 12px',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '9px',
                   letterSpacing: '0.05em',
-                  color: isUploading ? 'rgba(236, 227, 214, 0.3)' : 'rgba(236, 227, 214, 0.6)',
-                  background: 'rgba(5, 4, 3, 0.9)',
-                  border: '1px solid rgba(236, 227, 214, 0.15)',
+                  color: isUploading ? 'rgba(236, 227, 214, 0.3)' : 'rgba(236, 227, 214, 0.7)',
+                  background: 'rgba(5, 4, 3, 0.75)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(236, 227, 214, 0.2)',
                   cursor: isUploading ? 'default' : 'pointer',
                 }}
               >
                 {isUploading ? 'UPLOADING...' : uploadSuccess ? 'UPLOAD ANOTHER' : '+ UPLOAD MEDIA'}
               </button>
               {uploadError && (
-                <div style={{ padding: '2px 6px', fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#C17F59', background: 'rgba(5, 4, 3, 0.9)' }}>
+                <div style={{
+                  padding: '4px 8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8px',
+                  color: '#C17F59',
+                  background: 'rgba(5, 4, 3, 0.75)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                }}>
                   {uploadError}
                 </div>
               )}
@@ -306,7 +373,17 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
         </div>
 
         {/* Right Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(236, 227, 214, 0.04)' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1px',
+          position: 'relative',
+          zIndex: 10,
+          background: 'rgba(5, 4, 3, 0.65)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderLeft: '1px solid rgba(236, 227, 214, 0.08)',
+        }}>
           <Readout label="Latent Position" value={`X:${denizen.coordinates.geometry.toFixed(3)} Y:${denizen.coordinates.alterity.toFixed(3)}`} valueSize="8px" value2={`Z:${denizen.coordinates.dynamics.toFixed(3)}`}>
             <CoordsCanvas value={denizen.coordinates} />
           </Readout>
@@ -322,8 +399,12 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
         <div
           style={{
             gridColumn: '1 / -1',
-            background: '#0A0908',
-            borderTop: '1px solid rgba(236, 227, 214, 0.08)',
+            position: 'relative',
+            zIndex: 10,
+            background: 'rgba(10, 9, 8, 0.8)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(236, 227, 214, 0.12)',
             padding: '16px 28px',
             display: 'grid',
             gridTemplateColumns: '180px 1fr',
@@ -372,9 +453,17 @@ function Readout({ label, value, value2, valueColor = '#CAA554', valueSize = '10
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ background: '#050403', padding: '8px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(236, 227, 214, 0.3)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <span style={{ color: 'rgba(202, 165, 84, 0.4)' }}>▸</span>
+    <div style={{
+      background: 'rgba(5, 4, 3, 0.5)',
+      padding: '8px',
+      display: 'flex',
+      flexDirection: 'column',
+      flex: 1,
+      minHeight: 0,
+      borderBottom: '1px solid rgba(236, 227, 214, 0.06)',
+    }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(236, 227, 214, 0.4)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <span style={{ color: 'rgba(202, 165, 84, 0.5)' }}>▸</span>
         {label}
       </div>
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
