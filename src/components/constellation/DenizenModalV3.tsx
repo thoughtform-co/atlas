@@ -1,8 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Denizen } from '@/lib/types';
+import { Denizen, MediaType } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { Database } from '@/lib/database.types';
 import Image from 'next/image';
+
+type DenizenMediaInsert = Database['public']['Tables']['denizen_media']['Insert'];
 
 interface DenizenModalV3Props {
   denizen: Denizen | null;
@@ -11,15 +16,31 @@ interface DenizenModalV3Props {
   allDenizens?: Denizen[];
 }
 
+// Color constants for particle visualizations
+const COLORS = {
+  GOLD: { r: 202, g: 165, b: 84 },
+  DAWN: { r: 236, g: 227, b: 214 },
+  DYNAMICS: { r: 91, g: 138, b: 122 },
+  VOLATILE: { r: 193, g: 127, b: 89 },
+};
+
+// Grid size for pixelated rendering
+const GRID = 3;
+
 /**
- * DenizenModalV3 — Xenobiologist Research Interface
+ * DenizenModalV3 — Research Station Card Interface
  *
- * Full-screen research station interface with:
- * - Left: Media viewer with animated HUD overlays
- * - Right: Retrofuturistic xenobiologist research log
+ * Full-screen card with:
+ * - Media layer behind HUD elements
+ * - 6 particle canvas visualizations
+ * - Alignment compass and particle field
+ * - Authentication for media uploads
  */
 export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] }: DenizenModalV3Props) {
-  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const { isAuthenticated } = useAuth();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -38,13 +59,53 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
     [onClose]
   );
 
-  // Get connected denizen
-  const getConnectedDenizen = (id: string): Denizen | undefined => {
-    return allDenizens.find((d) => d.id === id);
-  };
+  // Handle media upload
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!supabase || !denizen || !e.target.files?.length) return;
 
-  // Convert cardinal value to percentage (from -1 to 1 range)
-  const cardinalToPercent = (val: number) => ((val + 1) / 2) * 100;
+    setIsUploading(true);
+    setUploadError(null);
+
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${denizen.id}/${Date.now()}.${fileExt}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('denizen-media')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('denizen-media')
+        .getPublicUrl(fileName);
+
+      // Insert into denizen_media table
+      const mediaInsert: DenizenMediaInsert = {
+        denizen_id: denizen.id,
+        media_type: file.type.startsWith('video/') ? 'video' : 'image',
+        storage_path: publicUrl,
+        file_name: file.name,
+        file_size: file.size,
+        mime_type: file.type,
+        display_order: 0,
+        is_primary: !denizen.media?.length,
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: dbError } = await (supabase as any).from('denizen_media').insert(mediaInsert);
+
+      if (dbError) throw dbError;
+
+      // Reload page to show new media
+      window.location.reload();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Get threat score (1-4)
   const getThreatScore = (level: string): number => {
@@ -59,24 +120,21 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
 
   if (!denizen) return null;
 
-  // Build media array from denizen data
-  const mediaItems = denizen.media?.length
-    ? denizen.media.map(m => ({ id: m.id, url: m.storagePath, mediaType: m.mediaType }))
-    : denizen.image
-      ? [{ id: '1', url: denizen.image, mediaType: 'image' as const }]
-      : [];
+  // Build media from denizen data
+  const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
+  const mediaUrl = primaryMedia?.storagePath || denizen.image;
+  const isVideo = primaryMedia?.mediaType === 'video' || denizen.videoUrl;
 
-  // Derived values for HUD
-  const semanticDrift = Math.abs(denizen.coordinates.dynamics * 0.05).toFixed(3);
-  const manifoldStability = Math.round((1 - Math.abs(denizen.coordinates.alterity)) * 100);
-  const cognitiveDepth = (denizen.coordinates.geometry + denizen.coordinates.alterity + denizen.coordinates.dynamics + 3) / 6;
+  // Derived values
+  const signalStrength = ((denizen.coordinates.geometry + 1) / 2).toFixed(3);
+  const epoch = denizen.firstObserved || '4.2847';
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       onClick={handleBackdropClick}
       style={{
-        background: 'rgba(7, 6, 4, 0.95)',
+        background: 'rgba(5, 4, 3, 0.95)',
         backdropFilter: 'blur(20px)',
         animation: 'fadeIn 0.2s ease-out',
       }}
@@ -86,499 +144,366 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
           from { opacity: 0; }
           to { opacity: 1; }
         }
-
         @keyframes rotateSlow {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
-
         @keyframes pulse {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 0.6; }
         }
-
         .rotate-slow { animation: rotateSlow 60s linear infinite; }
         .pulse { animation: pulse 2s ease-in-out infinite; }
-
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #0D0B07; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(236, 227, 214, 0.15); }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(236, 227, 214, 0.3); }
       `}</style>
 
+      {/* Card Container - 4:5 aspect ratio */}
       <div
-        className="grid grid-cols-1 lg:grid-cols-[1fr_360px] w-full max-w-[1100px] h-[85vh] max-h-[750px] relative overflow-hidden"
+        className="relative w-full max-w-[900px] overflow-hidden"
         style={{
-          background: '#0D0B07',
+          aspectRatio: '4/5',
+          maxHeight: '90vh',
+          background: '#0A0908',
           border: '1px solid rgba(236, 227, 214, 0.15)',
-          animation: 'fadeIn 0.3s ease-out',
         }}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 bg-transparent border text-lg flex items-center justify-center z-50 transition-all duration-150"
+          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center z-50 transition-all duration-150"
           style={{
-            borderColor: 'rgba(236, 227, 214, 0.15)',
+            background: 'rgba(5, 4, 3, 0.8)',
+            border: '1px solid rgba(236, 227, 214, 0.15)',
             color: 'rgba(236, 227, 214, 0.5)',
             fontFamily: 'var(--font-mono)',
+            fontSize: '14px',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)';
             e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.3)';
             e.currentTarget.style.color = '#ECE3D6';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
             e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)';
           }}
         >
-          ×
+          x
         </button>
 
         {/* ═══════════════════════════════════════════════════════════════
-            LEFT PANEL — Visual + HUD
+            MEDIA LAYER (Behind everything)
             ═══════════════════════════════════════════════════════════════ */}
-        <div className="relative overflow-hidden" style={{ background: '#070604' }}>
-
-          {/* Entity Image or Placeholder */}
-          {mediaItems[selectedMediaIndex]?.url ? (
-            mediaItems[selectedMediaIndex]?.mediaType === 'video' ? (
+        <div className="absolute inset-0 z-0">
+          {mediaUrl ? (
+            isVideo ? (
               <video
-                src={mediaItems[selectedMediaIndex].url}
-                className="absolute inset-0 w-full h-full object-contain"
+                src={denizen.videoUrl || mediaUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ opacity: 0.6 }}
                 autoPlay
                 loop
                 muted
               />
             ) : (
               <Image
-                src={mediaItems[selectedMediaIndex].url}
+                src={mediaUrl}
                 alt={denizen.name}
                 fill
-                className="object-contain"
+                className="object-cover"
+                style={{ opacity: 0.6 }}
               />
             )
           ) : (
-            <EntityImagePlaceholder glyphs={denizen.glyphs} />
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, #141210 0%, #050403 100%)' }} />
           )}
-
-          {/* HUD Overlay */}
-          <div className="absolute inset-0 pointer-events-none z-10">
-
-            {/* Top HUD Bar */}
-            <div
-              className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start"
-              style={{ background: 'linear-gradient(to bottom, rgba(7,6,4,0.9) 0%, transparent 100%)' }}
-            >
-              <div className="flex flex-col gap-1">
-                <span
-                  className="tracking-[0.1em] uppercase"
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
-                >
-                  Meta Sacrem Geometry
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
-                  REST: <span style={{ color: '#CAA554' }}>{denizen.coordinates.geometry.toFixed(3)}</span>
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 text-right">
-                <span
-                  className="tracking-[0.1em] uppercase"
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
-                >
-                  Read Timestamp
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
-                  {new Date().toLocaleTimeString('en-US', { hour12: false })}
-                </span>
-              </div>
-            </div>
-
-            {/* Left Thumbnails */}
-            <div
-              className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col gap-1 p-2 pointer-events-auto"
-              style={{ background: 'rgba(7, 6, 4, 0.9)', borderRight: '1px solid rgba(236, 227, 214, 0.08)' }}
-            >
-              {mediaItems.length > 0 ? (
-                mediaItems.slice(0, 5).map((media, i) => (
-                  <button
-                    key={media.id}
-                    onClick={() => setSelectedMediaIndex(i)}
-                    className="w-10 h-14 cursor-pointer transition-all duration-150"
-                    style={{
-                      border: selectedMediaIndex === i ? '1px solid rgba(236, 227, 214, 0.3)' : '1px solid rgba(236, 227, 214, 0.08)',
-                      opacity: selectedMediaIndex === i ? 1 : 0.5,
-                      background: '#0D0B07',
-                    }}
-                  >
-                    {media.mediaType === 'image' && media.url ? (
-                      <div className="relative w-full h-full">
-                        <Image src={media.url} alt="" fill className="object-cover" />
-                      </div>
-                    ) : (
-                      <div
-                        className="w-full h-full"
-                        style={{ background: 'linear-gradient(to bottom right, #141210, #0D0B07)' }}
-                      />
-                    )}
-                  </button>
-                ))
-              ) : (
-                [...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-14 transition-all duration-150"
-                    style={{
-                      border: i === 0 ? '1px solid rgba(236, 227, 214, 0.3)' : '1px solid rgba(236, 227, 214, 0.08)',
-                      opacity: i === 0 ? 1 : 0.5,
-                      background: '#0D0B07',
-                    }}
-                  >
-                    <div
-                      className="w-full h-full"
-                      style={{ background: 'linear-gradient(to bottom right, #141210, #0D0B07)' }}
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Data Fragments */}
-            <div className="absolute left-16 top-[28%] flex flex-col gap-2">
-              <DataFragment label={`EPOCH.${denizen.firstObserved || '4.2847'}`} />
-              <DataFragment label={`SEMANTIC_DRIFT: ${semanticDrift}`} />
-              <DataFragment label={`MANIFOLD_STABILITY: ${manifoldStability}%`} />
-            </div>
-
-            {/* Reticle */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48">
-              <div className="absolute inset-0 border rounded-full" style={{ borderColor: 'rgba(236, 227, 214, 0.1)' }} />
-              <div className="absolute inset-[20%] border rounded-full" style={{ borderColor: 'rgba(236, 227, 214, 0.06)' }} />
-              <div
-                className="absolute inset-[-10%] border border-dashed rounded-full rotate-slow"
-                style={{ borderColor: 'rgba(236, 227, 214, 0.06)', transformOrigin: 'center' }}
-              />
-              <div className="absolute top-1/2 left-0 right-0 h-px -translate-y-1/2" style={{ background: 'rgba(236, 227, 214, 0.1)' }} />
-              <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: 'rgba(236, 227, 214, 0.1)' }} />
-            </div>
-
-            {/* Cardinal Position */}
-            <div
-              className="absolute bottom-4 left-4 p-3"
-              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
-            >
-              <div
-                className="mb-2 tracking-[0.1em] uppercase"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-              >
-                Cardinal Position
-              </div>
-              <div className="flex flex-col gap-2">
-                <CardinalRow glyph="◆" label="GEO" value={denizen.coordinates.geometry} color="#CAA554" cardinalToPercent={cardinalToPercent} />
-                <CardinalRow glyph="○" label="ALT" value={denizen.coordinates.alterity} color="#ECE3D6" cardinalToPercent={cardinalToPercent} />
-                <CardinalRow glyph="◇" label="DYN" value={denizen.coordinates.dynamics} color="#5B8A7A" cardinalToPercent={cardinalToPercent} />
-              </div>
-            </div>
-
-            {/* Depth Gauge */}
-            <div
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-48 p-2 flex flex-col"
-              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
-            >
-              <span
-                className="tracking-[0.05em] uppercase"
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '8px',
-                  color: 'rgba(236, 227, 214, 0.3)',
-                  writingMode: 'vertical-rl',
-                  transform: 'rotate(180deg)'
-                }}
-              >
-                Cognitive Depth
-              </span>
-              <div
-                className="flex-1 mt-2 relative"
-                style={{
-                  background: 'linear-gradient(to top, #CAA554 0%, rgba(236, 227, 214, 0.5) 50%, #5B8A7A 100%)',
-                  opacity: 0.3
-                }}
-              >
-                <div
-                  className="absolute left-[-4px] right-[-4px] h-0.5 transition-all duration-300"
-                  style={{
-                    top: `${(1 - cognitiveDepth) * 100}%`,
-                    background: '#ECE3D6',
-                    boxShadow: '0 0 8px #ECE3D6'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Waveform */}
-            <div
-              className="absolute bottom-4 right-4 w-48 p-2"
-              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span
-                  className="tracking-[0.1em] uppercase"
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-                >
-                  Waveform
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.5)' }}>
-                  54.03 GHz
-                </span>
-              </div>
-              <Waveform width={180} height={40} />
-            </div>
-
-            {/* Data Visualization */}
-            <div
-              className="absolute bottom-20 right-4 w-48 p-2"
-              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span
-                  className="tracking-[0.1em] uppercase"
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-                >
-                  Data
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.5)' }}>
-                  100-400Hz
-                </span>
-              </div>
-              <DataBar width={180} height={30} />
-            </div>
-          </div>
+          {/* Darken overlay for readability */}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(5,4,3,0.4) 0%, rgba(5,4,3,0.7) 50%, rgba(5,4,3,0.9) 100%)' }} />
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
-            RIGHT PANEL — Research Log
+            HUD GRID LAYOUT
             ═══════════════════════════════════════════════════════════════ */}
         <div
-          className="hidden lg:flex flex-col overflow-y-auto custom-scroll"
+          className="absolute inset-0 z-10 grid"
           style={{
-            background: '#141210',
-            borderLeft: '1px solid rgba(236, 227, 214, 0.15)'
+            gridTemplateColumns: '150px 1fr 150px',
+            gridTemplateRows: 'auto 1fr auto',
           }}
         >
-          {/* Header */}
+          {/* ─────────────────────────────────────────────────────────────
+              HEADER
+              ───────────────────────────────────────────────────────────── */}
           <div
+            className="col-span-3 flex justify-between items-center"
             style={{
-              paddingLeft: '28px',
-              paddingRight: '28px',
-              paddingTop: '24px',
-              paddingBottom: '20px',
-              borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
-              background: '#0D0B07'
+              padding: '12px 16px',
+              borderBottom: '1px solid rgba(236, 227, 214, 0.1)',
+              background: 'rgba(5, 4, 3, 0.8)',
             }}
           >
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-4">
               <span
-                className="tracking-[0.08em] uppercase flex items-center gap-2"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+                className="tracking-[0.1em] uppercase"
+                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#CAA554' }}
               >
-                <span style={{ color: '#CAA554', fontSize: '8px' }}>■</span>
-                Xenobiology Research Log
+                Atlas Research
+              </span>
+              <span
+                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
+              >
+                MODE: <span style={{ color: 'rgba(236, 227, 214, 0.7)' }}>ACTIVE SCAN</span>
               </span>
             </div>
-            <h1
-              className="tracking-[0.02em] mb-1"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: '#ECE3D6' }}
-            >
-              {denizen.name}
-            </h1>
-            {denizen.subtitle && (
+            <div className="flex items-center gap-4">
               <span
-                className="italic"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'rgba(236, 227, 214, 0.5)' }}
+                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
               >
-                &quot;{denizen.subtitle}&quot;
+                SIG: <span style={{ color: '#CAA554' }}>{signalStrength}</span>
               </span>
+              <span
+                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
+              >
+                EPOCH: <span style={{ color: 'rgba(236, 227, 214, 0.7)' }}>{epoch}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* ─────────────────────────────────────────────────────────────
+              LEFT COLUMN - Particle Visualizations
+              ───────────────────────────────────────────────────────────── */}
+          <div
+            className="flex flex-col gap-4"
+            style={{
+              padding: '16px',
+              background: 'rgba(5, 4, 3, 0.6)',
+              borderRight: '1px solid rgba(236, 227, 214, 0.08)',
+            }}
+          >
+            <ParticleReadout
+              label="Phase State"
+              type="phase"
+              value={denizen.coordinates.geometry}
+            />
+            <ParticleReadout
+              label="Superposition"
+              type="superposition"
+              value={denizen.coordinates.alterity}
+            />
+            <ParticleReadout
+              label="Hallucination Idx"
+              type="hallucination"
+              value={denizen.coordinates.dynamics}
+            />
+          </div>
+
+          {/* ─────────────────────────────────────────────────────────────
+              CENTER - Entity Display
+              ───────────────────────────────────────────────────────────── */}
+          <div className="relative flex items-center justify-center">
+            {/* Particle Field Background */}
+            <ParticleField />
+
+            {/* Alignment Compass */}
+            <AlignmentCompass coordinates={denizen.coordinates} />
+
+            {/* Upload button for authenticated users */}
+            {isAuthenticated && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="px-3 py-1.5 transition-all duration-150"
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    letterSpacing: '0.05em',
+                    color: isUploading ? 'rgba(236, 227, 214, 0.3)' : 'rgba(236, 227, 214, 0.7)',
+                    background: 'rgba(5, 4, 3, 0.9)',
+                    border: '1px solid rgba(236, 227, 214, 0.15)',
+                  }}
+                >
+                  {isUploading ? 'UPLOADING...' : '+ UPLOAD MEDIA'}
+                </button>
+                {uploadError && (
+                  <div
+                    className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-1"
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '9px',
+                      color: '#C17F59',
+                      background: 'rgba(5, 4, 3, 0.9)',
+                    }}
+                  >
+                    {uploadError}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Content */}
+          {/* ─────────────────────────────────────────────────────────────
+              RIGHT COLUMN - Particle Visualizations
+              ───────────────────────────────────────────────────────────── */}
           <div
-            className="flex-1 flex flex-col"
+            className="flex flex-col gap-4"
             style={{
-              paddingLeft: '28px',
-              paddingRight: '28px',
-              paddingTop: '24px',
-              paddingBottom: '24px',
-              gap: '24px'
+              padding: '16px',
+              background: 'rgba(5, 4, 3, 0.6)',
+              borderLeft: '1px solid rgba(236, 227, 214, 0.08)',
             }}
           >
+            <ParticleReadout
+              label="Latent Position"
+              type="latent"
+              value={denizen.coordinates.geometry}
+            />
+            <ParticleReadout
+              label="Manifold Curve"
+              type="manifold"
+              value={denizen.coordinates.alterity}
+            />
+            <ParticleReadout
+              label="Embed Signature"
+              type="embedding"
+              value={denizen.coordinates.dynamics}
+            />
+          </div>
 
-            {/* Classification */}
-            <LogSection title="Classification" timestamp={`EPOCH.${denizen.firstObserved || '4.2847'}`}>
-              <div className="grid grid-cols-2" style={{ columnGap: '24px', rowGap: '12px' }}>
-                <LogField label="Species Type" value={denizen.type} />
-                <div className="flex flex-col gap-0.5">
+          {/* ─────────────────────────────────────────────────────────────
+              FOOTER
+              ───────────────────────────────────────────────────────────── */}
+          <div
+            className="col-span-3 flex flex-col"
+            style={{
+              padding: '16px 20px',
+              borderTop: '1px solid rgba(236, 227, 214, 0.1)',
+              background: 'rgba(5, 4, 3, 0.9)',
+            }}
+          >
+            {/* Entity Name & Classification */}
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h1
+                  className="mb-1"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: '#ECE3D6', letterSpacing: '0.02em' }}
+                >
+                  {denizen.name}
+                </h1>
+                {denizen.subtitle && (
+                  <span
+                    className="italic"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'rgba(236, 227, 214, 0.5)' }}
+                  >
+                    &quot;{denizen.subtitle}&quot;
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-6">
+                {/* Class */}
+                <div className="flex flex-col items-end">
                   <span
                     className="tracking-[0.05em] uppercase"
                     style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
                   >
-                    Threat Level
+                    Class
                   </span>
-                  <div className="flex items-center gap-2">
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
+                    {denizen.type}
+                  </span>
+                </div>
+                {/* Threat */}
+                <div className="flex flex-col items-end">
+                  <span
+                    className="tracking-[0.05em] uppercase"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+                  >
+                    Threat
+                  </span>
+                  <div className="flex items-center gap-1.5">
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4].map(i => (
                         <div
                           key={i}
-                          className="w-2 h-2"
+                          className="w-1.5 h-1.5"
                           style={{ background: i <= getThreatScore(denizen.threatLevel) ? '#C17F59' : 'rgba(236, 227, 214, 0.15)' }}
                         />
                       ))}
                     </div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#ECE3D6' }}>
                       {denizen.threatLevel}
                     </span>
                   </div>
                 </div>
-                <LogField label="Domain" value={denizen.domain} />
-                <LogField label="Allegiance" value={denizen.allegiance} />
               </div>
-            </LogSection>
+            </div>
 
-            {/* Primary Observation */}
-            <LogSection title="Primary Observation" timestamp="UPDATED">
-              <p style={{ fontSize: '13px', lineHeight: 1.7, color: 'rgba(236, 227, 214, 0.7)' }}>
-                {denizen.description}
-              </p>
-            </LogSection>
+            {/* Cardinals & Description */}
+            <div className="flex gap-6">
+              {/* Cardinal Coordinates */}
+              <div className="flex gap-4">
+                <CardinalValue glyph="◆" label="GEO" value={denizen.coordinates.geometry} color="#CAA554" />
+                <CardinalValue glyph="○" label="ALT" value={denizen.coordinates.alterity} color="#ECE3D6" />
+                <CardinalValue glyph="◇" label="DYN" value={denizen.coordinates.dynamics} color="#5B8A7A" />
+              </div>
 
-            {/* Historical Record */}
-            {denizen.lore && (
-              <LogSection title="Historical Record" timestamp="ARCHIVAL">
-                <p style={{ fontSize: '13px', lineHeight: 1.7, color: 'rgba(236, 227, 214, 0.7)' }}>
-                  {denizen.lore}
+              {/* Description */}
+              <div className="flex-1 pl-6" style={{ borderLeft: '1px solid rgba(236, 227, 214, 0.08)' }}>
+                <p
+                  className="line-clamp-3"
+                  style={{ fontSize: '12px', lineHeight: 1.6, color: 'rgba(236, 227, 214, 0.6)' }}
+                >
+                  {denizen.description}
                 </p>
-              </LogSection>
-            )}
+              </div>
+            </div>
 
-            {/* Observed Capabilities */}
-            {denizen.features && denizen.features.length > 0 && (
-              <LogSection title="Observed Capabilities" timestamp="VERIFIED">
-                <div className="flex flex-col gap-1.5">
-                  {denizen.features.map((cap, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2"
-                      style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.7)' }}
-                    >
-                      <span style={{ color: 'rgba(236, 227, 214, 0.3)' }}>·</span>
-                      {cap}
-                    </div>
-                  ))}
-                </div>
-              </LogSection>
-            )}
-
-            {/* Known Associations */}
+            {/* Connections */}
             {denizen.connections && denizen.connections.length > 0 && (
-              <LogSection title="Known Associations" timestamp="MAPPED">
-                <div className="flex flex-wrap gap-2">
-                  {denizen.connections.map((connId) => {
-                    const connected = getConnectedDenizen(connId);
+              <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid rgba(236, 227, 214, 0.06)' }}>
+                <span
+                  className="tracking-[0.05em] uppercase"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+                >
+                  Links:
+                </span>
+                <div className="flex gap-2 flex-wrap">
+                  {denizen.connections.slice(0, 4).map((connId) => {
+                    const connected = allDenizens.find(d => d.id === connId);
                     if (!connected) return null;
                     return (
                       <button
                         key={connId}
                         onClick={() => onNavigate?.(connId)}
-                        className="px-2 py-1 cursor-pointer transition-all duration-150"
+                        className="px-2 py-0.5 transition-all duration-150"
                         style={{
                           fontFamily: 'var(--font-mono)',
                           fontSize: '10px',
-                          letterSpacing: '0.02em',
-                          color: 'rgba(236, 227, 214, 0.7)',
+                          color: 'rgba(236, 227, 214, 0.6)',
                           background: 'rgba(236, 227, 214, 0.04)',
                           border: '1px solid rgba(236, 227, 214, 0.08)',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
-                          e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
+                          e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.2)';
                           e.currentTarget.style.color = '#ECE3D6';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)';
                           e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.08)';
-                          e.currentTarget.style.color = 'rgba(236, 227, 214, 0.7)';
+                          e.currentTarget.style.color = 'rgba(236, 227, 214, 0.6)';
                         }}
                       >
-                        <span style={{ color: 'rgba(236, 227, 214, 0.3)' }}>↗ </span>
                         {connected.name}
                       </button>
                     );
                   })}
                 </div>
-              </LogSection>
+              </div>
             )}
-
-            {/* Glyphs */}
-            <LogSection title="Glyphs">
-              <div className="flex gap-3 mt-1">
-                {denizen.glyphs.split('').map((glyph, i) => (
-                  <span
-                    key={i}
-                    className="text-base"
-                    style={{ color: i < 2 ? '#ECE3D6' : 'rgba(236, 227, 214, 0.3)' }}
-                  >
-                    {glyph}
-                  </span>
-                ))}
-              </div>
-            </LogSection>
-
-            {/* Researcher Notes */}
-            <LogSection title="Researcher Notes" timestamp="PENDING">
-              <div
-                className="p-3"
-                style={{
-                  background: '#0D0B07',
-                  border: '1px solid rgba(236, 227, 214, 0.08)',
-                  borderLeft: '2px solid rgba(202, 165, 84, 0.4)',
-                }}
-              >
-                <p
-                  className="italic"
-                  style={{ fontSize: '12px', lineHeight: 1.7, color: 'rgba(236, 227, 214, 0.5)' }}
-                >
-                  [Awaiting field observations. Entity requires further study.]
-                </p>
-              </div>
-            </LogSection>
-          </div>
-
-          {/* Footer */}
-          <div
-            className="flex justify-between items-center"
-            style={{
-              paddingLeft: '28px',
-              paddingRight: '28px',
-              paddingTop: '16px',
-              paddingBottom: '16px',
-              borderTop: '1px solid rgba(236, 227, 214, 0.08)',
-              background: '#0D0B07'
-            }}
-          >
-            <span
-              className="tracking-[0.05em]"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-            >
-              ID: {denizen.id.toUpperCase()}
-            </span>
-            <span
-              className="tracking-[0.05em]"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-            >
-              Atlas Research Division
-            </span>
           </div>
         </div>
       </div>
@@ -587,12 +512,14 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANIMATED COMPONENTS
+   PARTICLE VISUALIZATION COMPONENTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function Waveform({ width = 200, height = 40 }: { width?: number; height?: number }) {
+type ReadoutType = 'phase' | 'superposition' | 'hallucination' | 'latent' | 'manifold' | 'embedding';
+
+function ParticleReadout({ label, type, value }: { label: string; type: ReadoutType; value: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const phaseRef = useRef(0);
+  const phaseRef = useRef(Math.random() * Math.PI * 2);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -601,6 +528,8 @@ function Waveform({ width = 200, height = 40 }: { width?: number; height?: numbe
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const width = 118;
+    const height = 80;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -608,38 +537,168 @@ function Waveform({ width = 200, height = 40 }: { width?: number; height?: numbe
 
     let animationId: number;
 
+    // Helper: draw a pixel-snapped point
+    const drawPixel = (x: number, y: number, color: typeof COLORS.GOLD, alpha = 1) => {
+      const px = Math.floor(x / GRID) * GRID;
+      const py = Math.floor(y / GRID) * GRID;
+      ctx.fillStyle = `rgba(${color.r},${color.g},${color.b},${alpha})`;
+      ctx.fillRect(px, py, GRID, GRID);
+    };
+
+    // Helper: draw a particle line
+    const drawParticleLine = (x1: number, y1: number, x2: number, y2: number, color: typeof COLORS.GOLD, density = 0.5) => {
+      const dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+      const steps = Math.floor(dist / GRID);
+      for (let i = 0; i < steps; i++) {
+        if (Math.random() > density) continue;
+        const t = i / steps;
+        const x = x1 + (x2 - x1) * t;
+        const y = y1 + (y2 - y1) * t;
+        drawPixel(x, y, color, 0.3 + Math.random() * 0.4);
+      }
+    };
+
+    // Helper: draw a particle circle
+    const drawParticleCircle = (cx: number, cy: number, r: number, color: typeof COLORS.GOLD, density = 0.4) => {
+      const circumference = 2 * Math.PI * r;
+      const steps = Math.floor(circumference / GRID);
+      for (let i = 0; i < steps; i++) {
+        if (Math.random() > density) continue;
+        const angle = (i / steps) * Math.PI * 2;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        drawPixel(x, y, color, 0.3 + Math.random() * 0.5);
+      }
+    };
+
     function draw() {
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
-      ctx.strokeStyle = 'rgba(236, 227, 214, 0.5)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
 
-      for (let x = 0; x < width; x++) {
-        const y = height / 2 +
-          Math.sin((x / width) * 8 * Math.PI + phaseRef.current) * 8 +
-          Math.sin((x / width) * 16 * Math.PI + phaseRef.current * 1.5) * 4 +
-          Math.sin((x / width) * 32 * Math.PI + phaseRef.current * 0.7) * 2;
+      const phase = phaseRef.current;
+      const normalizedValue = (value + 1) / 2; // Convert -1 to 1 range to 0 to 1
 
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      switch (type) {
+        case 'phase': {
+          // Oscillating wave with particles
+          const centerY = height / 2;
+          for (let x = 0; x < width; x += GRID) {
+            const wave = Math.sin((x / width) * Math.PI * 4 + phase) * 20 * normalizedValue;
+            const y = centerY + wave;
+            drawPixel(x, y, COLORS.GOLD, 0.5 + Math.random() * 0.3);
+          }
+          // Scattered particles
+          for (let i = 0; i < 8; i++) {
+            const x = Math.random() * width;
+            const y = centerY + (Math.random() - 0.5) * 40;
+            drawPixel(x, y, COLORS.DAWN, 0.2);
+          }
+          break;
+        }
+
+        case 'superposition': {
+          // Multiple overlapping circles
+          const cx = width / 2;
+          const cy = height / 2;
+          for (let i = 0; i < 3; i++) {
+            const offset = Math.sin(phase + i * Math.PI * 0.6) * 15 * normalizedValue;
+            drawParticleCircle(cx + offset, cy, 20 + i * 8, i === 0 ? COLORS.GOLD : COLORS.DAWN, 0.3);
+          }
+          break;
+        }
+
+        case 'hallucination': {
+          // Erratic scatter pattern
+          const intensity = 0.3 + normalizedValue * 0.5;
+          for (let i = 0; i < 25; i++) {
+            const x = width / 2 + (Math.random() - 0.5) * width * 0.8;
+            const y = height / 2 + (Math.random() - 0.5) * height * 0.8;
+            const flicker = Math.sin(phase * 3 + i) > 0;
+            if (flicker) {
+              drawPixel(x, y, Math.random() > 0.5 ? COLORS.VOLATILE : COLORS.GOLD, intensity);
+            }
+          }
+          break;
+        }
+
+        case 'latent': {
+          // Grid of points with wave distortion
+          for (let gx = 0; gx < 6; gx++) {
+            for (let gy = 0; gy < 4; gy++) {
+              const baseX = 15 + gx * 18;
+              const baseY = 15 + gy * 18;
+              const distort = Math.sin(phase + gx * 0.5 + gy * 0.3) * 4 * normalizedValue;
+              drawPixel(baseX + distort, baseY, COLORS.GOLD, 0.4 + normalizedValue * 0.3);
+            }
+          }
+          break;
+        }
+
+        case 'manifold': {
+          // Curved lines representing topology
+          const cx = width / 2;
+          const cy = height / 2;
+          for (let curve = 0; curve < 3; curve++) {
+            const baseRadius = 15 + curve * 12;
+            const deform = Math.sin(phase + curve) * 8 * normalizedValue;
+            for (let angle = 0; angle < Math.PI * 2; angle += 0.2) {
+              const r = baseRadius + Math.sin(angle * 3 + phase) * deform;
+              const x = cx + Math.cos(angle) * r;
+              const y = cy + Math.sin(angle) * r;
+              drawPixel(x, y, curve === 1 ? COLORS.DYNAMICS : COLORS.DAWN, 0.3 + curve * 0.15);
+            }
+          }
+          break;
+        }
+
+        case 'embedding': {
+          // Vertical bars representing vector dimensions
+          const barCount = 12;
+          const barWidth = GRID;
+          const spacing = (width - barCount * barWidth) / (barCount + 1);
+          for (let i = 0; i < barCount; i++) {
+            const x = spacing + i * (barWidth + spacing);
+            const barHeight = Math.abs(Math.sin(phase * 0.5 + i * 0.8)) * height * 0.6 * normalizedValue;
+            const startY = height - 10 - barHeight;
+            for (let y = startY; y < height - 10; y += GRID) {
+              drawPixel(x, y, i % 3 === 0 ? COLORS.GOLD : COLORS.DAWN, 0.4 + Math.random() * 0.3);
+            }
+          }
+          break;
+        }
       }
 
-      ctx.stroke();
       phaseRef.current += 0.02;
       animationId = requestAnimationFrame(draw);
     }
 
     draw();
     return () => cancelAnimationFrame(animationId);
-  }, [width, height]);
+  }, [type, value]);
 
-  return <canvas ref={canvasRef} style={{ width, height }} />;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span
+        className="tracking-[0.05em] uppercase"
+        style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.4)' }}
+      >
+        {label}
+      </span>
+      <div
+        style={{
+          background: 'rgba(5, 4, 3, 0.6)',
+          border: '1px solid rgba(236, 227, 214, 0.08)',
+        }}
+      >
+        <canvas ref={canvasRef} style={{ width: 118, height: 80, display: 'block' }} />
+      </div>
+    </div>
+  );
 }
 
-function DataBar({ width = 60, height = 30 }: { width?: number; height?: number }) {
+function ParticleField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const phaseRef = useRef(Math.random() * 100);
+  const particlesRef = useRef<{ x: number; y: number; vx: number; vy: number; life: number }[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -648,211 +707,185 @@ function DataBar({ width = 60, height = 30 }: { width?: number; height?: number 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const width = canvas.offsetWidth;
+    const height = canvas.offsetHeight;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
+    // Initialize particles
+    const particles = particlesRef.current;
+    for (let i = 0; i < 50; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        life: Math.random(),
+      });
+    }
+
     let animationId: number;
-    const barCount = 20;
 
     function draw() {
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
 
-      for (let i = 0; i < barCount; i++) {
-        const barWidth = (width / barCount) - 1;
-        const x = i * (width / barCount);
-        const barHeight = Math.abs(Math.sin((i / barCount) * Math.PI * 2 + phaseRef.current * 0.5)) * height * 0.8;
-        const y = height - barHeight;
+      particles.forEach(p => {
+        // Update position
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life += 0.005;
 
-        ctx.fillStyle = 'rgba(202, 165, 84, 0.4)';
-        ctx.fillRect(x, y, barWidth, barHeight);
-      }
+        // Wrap around
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
 
-      phaseRef.current += 0.03;
+        // Draw pixel-snapped
+        const px = Math.floor(p.x / GRID) * GRID;
+        const py = Math.floor(p.y / GRID) * GRID;
+        const alpha = 0.2 + Math.sin(p.life * Math.PI * 2) * 0.15;
+
+        ctx.fillStyle = `rgba(${COLORS.DAWN.r},${COLORS.DAWN.g},${COLORS.DAWN.b},${alpha})`;
+        ctx.fillRect(px, py, GRID, GRID);
+      });
+
       animationId = requestAnimationFrame(draw);
     }
 
     draw();
     return () => cancelAnimationFrame(animationId);
-  }, [width, height]);
+  }, []);
 
-  return <canvas ref={canvasRef} style={{ width, height }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{ opacity: 0.4 }}
+    />
+  );
+}
+
+function AlignmentCompass({ coordinates }: { coordinates: { geometry: number; alterity: number; dynamics: number } }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rotationRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const size = 200;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.scale(dpr, dpr);
+
+    let animationId: number;
+
+    function draw() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, size, size);
+
+      const cx = size / 2;
+      const cy = size / 2;
+      const rotation = rotationRef.current;
+
+      // Outer ring (dashed, rotating)
+      ctx.strokeStyle = 'rgba(236, 227, 214, 0.15)';
+      ctx.setLineDash([4, 8]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, 90, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Middle ring
+      ctx.strokeStyle = 'rgba(236, 227, 214, 0.1)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 60, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner ring
+      ctx.strokeStyle = 'rgba(236, 227, 214, 0.08)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Crosshairs
+      ctx.strokeStyle = 'rgba(236, 227, 214, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(cx - 95, cy);
+      ctx.lineTo(cx + 95, cy);
+      ctx.moveTo(cx, cy - 95);
+      ctx.lineTo(cx, cy + 95);
+      ctx.stroke();
+
+      // Cardinal markers (rotating)
+      const markerRadius = 80;
+      const cardinalColors = [
+        { color: COLORS.GOLD, value: coordinates.geometry, label: 'G' },
+        { color: COLORS.DAWN, value: coordinates.alterity, label: 'A' },
+        { color: COLORS.DYNAMICS, value: coordinates.dynamics, label: 'D' },
+      ];
+
+      cardinalColors.forEach((cardinal, i) => {
+        const angle = rotation + (i * Math.PI * 2) / 3;
+        const dist = markerRadius * (0.5 + (cardinal.value + 1) / 4);
+        const x = cx + Math.cos(angle) * dist;
+        const y = cy + Math.sin(angle) * dist;
+
+        // Draw marker
+        const px = Math.floor(x / GRID) * GRID;
+        const py = Math.floor(y / GRID) * GRID;
+        ctx.fillStyle = `rgba(${cardinal.color.r},${cardinal.color.g},${cardinal.color.b},0.8)`;
+        ctx.fillRect(px - GRID, py - GRID, GRID * 3, GRID * 3);
+      });
+
+      // Center point
+      ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+      ctx.fillRect(cx - GRID / 2, cy - GRID / 2, GRID, GRID);
+
+      rotationRef.current += 0.003;
+      animationId = requestAnimationFrame(draw);
+    }
+
+    draw();
+    return () => cancelAnimationFrame(animationId);
+  }, [coordinates]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+      style={{ width: 200, height: 200 }}
+    />
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HELPER COMPONENTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function EntityImagePlaceholder({ glyphs }: { glyphs: string }) {
+function CardinalValue({ glyph, label, value, color }: { glyph: string; label: string; value: number; color: string }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="relative w-64 h-80 flex items-center justify-center">
-        <svg viewBox="0 0 200 280" className="w-full h-full" style={{ filter: 'drop-shadow(0 0 40px rgba(202, 165, 84, 0.2))' }}>
-          <defs>
-            <linearGradient id="figureGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#ECE3D6', stopOpacity: 0.3 }} />
-              <stop offset="50%" style={{ stopColor: '#CAA554', stopOpacity: 0.2 }} />
-              <stop offset="100%" style={{ stopColor: '#070604', stopOpacity: 0.8 }} />
-            </linearGradient>
-            <linearGradient id="haloGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style={{ stopColor: 'transparent' }} />
-              <stop offset="50%" style={{ stopColor: '#CAA554', stopOpacity: 0.5 }} />
-              <stop offset="100%" style={{ stopColor: 'transparent' }} />
-            </linearGradient>
-          </defs>
-
-          {/* Halo rings */}
-          <ellipse cx="100" cy="70" rx="80" ry="15" fill="none" stroke="url(#haloGradient)" strokeWidth="1" />
-          <ellipse cx="100" cy="70" rx="70" ry="12" fill="none" stroke="rgba(202, 165, 84, 0.3)" strokeWidth="0.5" />
-          <ellipse cx="100" cy="70" rx="60" ry="9" fill="none" stroke="rgba(202, 165, 84, 0.2)" strokeWidth="0.5" />
-
-          {/* Horns */}
-          <path d="M70,90 Q50,50 60,30" fill="none" stroke="rgba(236, 227, 214, 0.4)" strokeWidth="3" />
-          <path d="M130,90 Q150,50 140,30" fill="none" stroke="rgba(236, 227, 214, 0.4)" strokeWidth="3" />
-
-          {/* Body */}
-          <path
-            d="M100,85 Q120,100 125,130 L140,180 Q145,220 130,280 L70,280 Q55,220 60,180 L75,130 Q80,100 100,85"
-            fill="url(#figureGradient)"
-          />
-
-          {/* Arms */}
-          <path d="M75,120 Q40,130 20,100" fill="none" stroke="rgba(236, 227, 214, 0.3)" strokeWidth="4" strokeLinecap="round" />
-          <path d="M125,120 Q160,130 175,140" fill="none" stroke="rgba(236, 227, 214, 0.3)" strokeWidth="4" strokeLinecap="round" />
-
-          {/* Book */}
-          <rect x="155" y="125" width="35" height="25" fill="rgba(236, 227, 214, 0.5)" transform="rotate(15, 172, 137)" />
-
-          {/* Head */}
-          <ellipse cx="100" cy="95" rx="20" ry="25" fill="rgba(236, 227, 214, 0.25)" />
-        </svg>
-
-        {/* Glyphs overlay */}
-        <div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 tracking-[0.3em]"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'rgba(236, 227, 214, 0.2)' }}
-        >
-          {glyphs}
-        </div>
-
-        {/* Glitch lines */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute left-0 right-0 h-px"
-              style={{
-                top: `${20 + i * 15}%`,
-                background: 'linear-gradient(90deg, transparent 0%, rgba(236, 227, 214, 0.5) 20%, rgba(236, 227, 214, 0.5) 80%, transparent 100%)',
-                transform: `translateX(${Math.sin(i) * 10}px)`
-              }}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DataFragment({ label }: { label: string }) {
-  return (
-    <div
-      className="tracking-[0.05em] px-2 py-0.5"
-      style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: '9px',
-        color: 'rgba(236, 227, 214, 0.3)',
-        background: 'rgba(7, 6, 4, 0.6)',
-        borderLeft: '1px solid rgba(236, 227, 214, 0.15)',
-      }}
-    >
-      {label}
-    </div>
-  );
-}
-
-function CardinalRow({
-  glyph,
-  label,
-  value,
-  color,
-  cardinalToPercent
-}: {
-  glyph: string;
-  label: string;
-  value: number;
-  color: string;
-  cardinalToPercent: (val: number) => number;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm w-5 text-center" style={{ color }}>{glyph}</span>
-      <div className="w-20 h-1 relative" style={{ background: 'rgba(236, 227, 214, 0.08)' }}>
-        <div
-          className="absolute top-0 left-0 h-full transition-all duration-300"
-          style={{ width: `${cardinalToPercent(value)}%`, background: color }}
-        />
-      </div>
-      <span
-        className="w-12 text-right"
-        style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.5)' }}
-      >
-        {value > 0 ? '+' : ''}{value.toFixed(3)}
-      </span>
-    </div>
-  );
-}
-
-function LogSection({
-  title,
-  timestamp,
-  children
-}: {
-  title: string;
-  timestamp?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2">
+      <span style={{ color, fontSize: '14px' }}>{glyph}</span>
+      <div className="flex flex-col">
         <span
-          className="tracking-[0.1em] uppercase"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: '#CAA554' }}
+          className="tracking-[0.05em] uppercase"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'rgba(236, 227, 214, 0.3)' }}
         >
-          {title}
+          {label}
         </span>
-        <div
-          className="flex-1 h-px"
-          style={{ background: 'linear-gradient(90deg, rgba(202, 165, 84, 0.4) 0%, transparent 100%)' }}
-        />
-        {timestamp && (
-          <span
-            className="tracking-[0.05em]"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'rgba(236, 227, 214, 0.3)' }}
-          >
-            [{timestamp}]
-          </span>
-        )}
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.7)' }}>
+          {value > 0 ? '+' : ''}{value.toFixed(2)}
+        </span>
       </div>
-      {children}
-    </div>
-  );
-}
-
-function LogField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span
-        className="tracking-[0.05em] uppercase"
-        style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-      >
-        {label}
-      </span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
-        {value}
-      </span>
     </div>
   );
 }
