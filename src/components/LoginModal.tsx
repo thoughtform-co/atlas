@@ -36,16 +36,19 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
       style={{
+        padding: '16px',
         background: 'rgba(5, 4, 3, 0.95)',
         backdropFilter: 'blur(20px)',
       }}
     >
       <div
-        className="relative w-full max-w-[320px] p-6"
+        className="relative w-full"
         style={{
+          maxWidth: '320px',
+          padding: '28px 24px 24px 24px',
           background: '#0A0908',
           border: '1px solid rgba(236, 227, 214, 0.15)',
         }}
@@ -53,8 +56,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center transition-colors"
+          className="absolute flex items-center justify-center transition-colors"
           style={{
+            top: '12px',
+            right: '12px',
+            width: '24px',
+            height: '24px',
             color: 'rgba(236, 227, 214, 0.4)',
             fontFamily: 'var(--font-mono)',
           }}
@@ -65,27 +72,42 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         </button>
 
         {/* Header */}
-        <div className="mb-6">
+        <div style={{ marginBottom: '28px' }}>
           <span
-            className="tracking-[0.1em] uppercase"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#CAA554' }}
+            style={{
+              display: 'block',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: '#CAA554',
+            }}
           >
             Atlas Research
           </span>
           <h2
-            className="mt-1"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', color: '#ECE3D6' }}
+            style={{
+              marginTop: '6px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '18px',
+              color: '#ECE3D6',
+            }}
           >
             Authentication
           </h2>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label
-              className="tracking-[0.05em] uppercase"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.4)' }}
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '9px',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                color: 'rgba(236, 227, 214, 0.4)',
+              }}
             >
               Email
             </label>
@@ -94,8 +116,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 outline-none transition-colors"
+              className="outline-none transition-colors"
               style={{
+                width: '100%',
+                padding: '10px 12px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '13px',
                 color: '#ECE3D6',
@@ -107,10 +131,15 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label
-              className="tracking-[0.05em] uppercase"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.4)' }}
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '9px',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                color: 'rgba(236, 227, 214, 0.4)',
+              }}
             >
               Password
             </label>
@@ -119,8 +148,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 outline-none transition-colors"
+              className="outline-none transition-colors"
               style={{
+                width: '100%',
+                padding: '10px 12px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '13px',
                 color: '#ECE3D6',
@@ -134,8 +165,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
           {error && (
             <div
-              className="px-3 py-2"
               style={{
+                padding: '10px 12px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '11px',
                 color: '#C17F59',
@@ -150,8 +181,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 mt-2 transition-all duration-150"
+            className="w-full transition-all duration-150"
             style={{
+              marginTop: '8px',
+              padding: '12px 0',
               fontFamily: 'var(--font-mono)',
               fontSize: '11px',
               letterSpacing: '0.1em',
