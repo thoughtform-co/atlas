@@ -27,6 +27,8 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
   const { isAuthenticated } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,7 +92,13 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbError } = await (supabase as any).from('denizen_media').insert(mediaInsert);
       if (dbError) throw dbError;
-      window.location.reload();
+
+      // Update local state to show the uploaded media immediately
+      setUploadedMedia({
+        url: publicUrl,
+        type: file.type.startsWith('video/') ? 'video' : 'image'
+      });
+      setUploadSuccess(true);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -104,9 +112,11 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
   const epoch = denizen.firstObserved || '4.2847';
   const tempValue = ((denizen.coordinates.dynamics + 1) / 2).toFixed(2);
   const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
+
+  // Use uploaded media if available, otherwise use denizen's existing media
   const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
-  const mediaUrl = primaryMedia?.storagePath || denizen.image;
-  const isVideo = primaryMedia?.mediaType === 'video' || denizen.videoUrl;
+  const mediaUrl = uploadedMedia?.url || primaryMedia?.storagePath || denizen.image;
+  const isVideo = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video' || denizen.videoUrl;
 
   return (
     <div
@@ -260,10 +270,18 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
 
           {/* Upload button */}
           {isAuthenticated && (
-            <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 30 }}>
+            <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
               <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleUpload} style={{ display: 'none' }} />
+              {uploadSuccess && (
+                <div style={{ padding: '2px 8px', fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#5B8A7A', background: 'rgba(5, 4, 3, 0.9)', border: '1px solid rgba(91, 138, 122, 0.3)' }}>
+                  ✓ UPLOAD COMPLETE
+                </div>
+              )}
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  setUploadSuccess(false);
+                  fileInputRef.current?.click();
+                }}
                 disabled={isUploading}
                 style={{
                   padding: '4px 10px',
@@ -276,10 +294,10 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
                   cursor: isUploading ? 'default' : 'pointer',
                 }}
               >
-                {isUploading ? 'UPLOADING...' : '+ UPLOAD MEDIA'}
+                {isUploading ? 'UPLOADING...' : uploadSuccess ? 'UPLOAD ANOTHER' : '+ UPLOAD MEDIA'}
               </button>
               {uploadError && (
-                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: '4px', whiteSpace: 'nowrap', padding: '2px 6px', fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#C17F59', background: 'rgba(5, 4, 3, 0.9)' }}>
+                <div style={{ padding: '2px 6px', fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#C17F59', background: 'rgba(5, 4, 3, 0.9)' }}>
                   {uploadError}
                 </div>
               )}
