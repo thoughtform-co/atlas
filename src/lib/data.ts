@@ -124,10 +124,118 @@ function transformConnectionRow(row: ConnectionRow): Connection {
 }
 
 /**
+ * Database health check result
+ */
+export interface DatabaseHealth {
+  isConfigured: boolean;
+  tables: {
+    denizens: { exists: boolean; accessible: boolean; error?: string };
+    connections: { exists: boolean; accessible: boolean; error?: string };
+    denizen_media: { exists: boolean; accessible: boolean; error?: string };
+  };
+  overall: 'healthy' | 'degraded' | 'unavailable';
+  errors: string[];
+}
+
+/**
+ * Check database health and verify tables exist and are accessible
+ */
+export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
+  const health: DatabaseHealth = {
+    isConfigured: isSupabaseConfigured() && supabase !== null,
+    tables: {
+      denizens: { exists: false, accessible: false },
+      connections: { exists: false, accessible: false },
+      denizen_media: { exists: false, accessible: false },
+    },
+    overall: 'unavailable',
+    errors: [],
+  };
+
+  if (!health.isConfigured) {
+    health.errors.push('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    return health;
+  }
+
+  if (!supabase) {
+    health.errors.push('Supabase client is null');
+    return health;
+  }
+
+  // Check denizens table
+  try {
+    const { error } = await supabase.from('denizens').select('id').limit(1);
+    if (error) {
+      health.tables.denizens.error = `${error.code}: ${error.message}`;
+      health.errors.push(`denizens table: ${error.message} (${error.code})`);
+      if (error.hint) {
+        health.tables.denizens.error += ` - Hint: ${error.hint}`;
+        health.errors.push(`denizens hint: ${error.hint}`);
+      }
+    } else {
+      health.tables.denizens.exists = true;
+      health.tables.denizens.accessible = true;
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    health.tables.denizens.error = errorMsg;
+    health.errors.push(`denizens table exception: ${errorMsg}`);
+  }
+
+  // Check connections table
+  try {
+    const { error } = await supabase.from('connections').select('id').limit(1);
+    if (error) {
+      health.tables.connections.error = `${error.code}: ${error.message}`;
+      health.errors.push(`connections table: ${error.message} (${error.code})`);
+    } else {
+      health.tables.connections.exists = true;
+      health.tables.connections.accessible = true;
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    health.tables.connections.error = errorMsg;
+    health.errors.push(`connections table exception: ${errorMsg}`);
+  }
+
+  // Check denizen_media table
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('denizen_media').select('id').limit(1);
+    if (error) {
+      health.tables.denizen_media.error = `${error.code}: ${error.message}`;
+      health.errors.push(`denizen_media table: ${error.message} (${error.code})`);
+    } else {
+      health.tables.denizen_media.exists = true;
+      health.tables.denizen_media.accessible = true;
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    health.tables.denizen_media.error = errorMsg;
+    health.errors.push(`denizen_media table exception: ${errorMsg}`);
+  }
+
+  // Determine overall health
+  const allTablesHealthy = Object.values(health.tables).every(t => t.exists && t.accessible);
+  const someTablesHealthy = Object.values(health.tables).some(t => t.exists && t.accessible);
+  
+  if (allTablesHealthy) {
+    health.overall = 'healthy';
+  } else if (someTablesHealthy) {
+    health.overall = 'degraded';
+  } else {
+    health.overall = 'unavailable';
+  }
+
+  return health;
+}
+
+/**
  * Fetch all denizens from Supabase or return static data
  */
 export async function fetchDenizens(): Promise<Denizen[]> {
   if (!isSupabaseConfigured() || !supabase) {
+    console.warn('[fetchDenizens] Supabase not configured - using static data');
     return staticDenizens;
   }
 
@@ -138,8 +246,16 @@ export async function fetchDenizens(): Promise<Denizen[]> {
       .select('*');
 
     if (denizenError) {
-      console.error('Error fetching denizens:', denizenError);
-      return staticDenizens;
+      console.error('[fetchDenizens] Error fetching denizens table:', {
+        error: denizenError,
+        code: denizenError.code,
+        message: denizenError.message,
+        details: denizenError.details,
+        hint: denizenError.hint,
+        query: 'SELECT * FROM denizens',
+        timestamp: new Date().toISOString(),
+      });
+      throw new Error(`Failed to fetch denizens: ${denizenError.message} (${denizenError.code})`);
     }
 
     // Fetch connections to build connection arrays
@@ -148,8 +264,16 @@ export async function fetchDenizens(): Promise<Denizen[]> {
       .select('from_denizen_id, to_denizen_id');
 
     if (connectionError) {
-      console.error('Error fetching connections:', connectionError);
-      return staticDenizens;
+      console.error('[fetchDenizens] Error fetching connections table:', {
+        error: connectionError,
+        code: connectionError.code,
+        message: connectionError.message,
+        details: connectionError.details,
+        hint: connectionError.hint,
+        query: 'SELECT from_denizen_id, to_denizen_id FROM connections',
+        timestamp: new Date().toISOString(),
+      });
+      // Connections are not critical - continue without them
     }
 
     // Fetch all denizen media
@@ -160,7 +284,15 @@ export async function fetchDenizens(): Promise<Denizen[]> {
       .order('display_order', { ascending: true });
 
     if (mediaError) {
-      console.error('Error fetching denizen media:', mediaError);
+      console.error('[fetchDenizens] Error fetching denizen_media table:', {
+        error: mediaError,
+        code: mediaError.code,
+        message: mediaError.message,
+        details: mediaError.details,
+        hint: mediaError.hint,
+        query: 'SELECT * FROM denizen_media ORDER BY display_order',
+        timestamp: new Date().toISOString(),
+      });
       // Continue without media - don't fail the whole request
     }
 
@@ -188,12 +320,22 @@ export async function fetchDenizens(): Promise<Denizen[]> {
     });
 
     // Transform and return denizens with media
-    return (denizenRows as DenizenRow[] || []).map(row =>
+    const result = (denizenRows as DenizenRow[] || []).map(row =>
       transformDenizenRow(row, connectionMap.get(row.id) || [], mediaMap.get(row.id) || [])
     );
+    
+    console.log(`[fetchDenizens] Successfully fetched ${result.length} denizens with ${mediaMap.size} denizens having media`);
+    return result;
   } catch (error) {
-    console.error('Error in fetchDenizens:', error);
-    return staticDenizens;
+    console.error('[fetchDenizens] Fatal error in fetchDenizens:', {
+      error,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    // Don't silently fall back - throw the error so caller can handle it
+    throw error;
   }
 }
 
@@ -202,6 +344,7 @@ export async function fetchDenizens(): Promise<Denizen[]> {
  */
 export async function fetchConnections(): Promise<Connection[]> {
   if (!isSupabaseConfigured() || !supabase) {
+    console.warn('[fetchConnections] Supabase not configured - using static data');
     return staticConnections;
   }
 
@@ -211,14 +354,32 @@ export async function fetchConnections(): Promise<Connection[]> {
       .select('from_denizen_id, to_denizen_id, strength, type');
 
     if (error) {
-      console.error('Error fetching connections:', error);
-      return staticConnections;
+      console.error('[fetchConnections] Error fetching connections table:', {
+        error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        query: 'SELECT from_denizen_id, to_denizen_id, strength, type FROM connections',
+        timestamp: new Date().toISOString(),
+      });
+      // Connections are not critical - return empty array instead of static data
+      return [];
     }
 
-    return (data as ConnectionRow[] || []).map(transformConnectionRow);
+    const result = (data as ConnectionRow[] || []).map(transformConnectionRow);
+    console.log(`[fetchConnections] Successfully fetched ${result.length} connections`);
+    return result;
   } catch (error) {
-    console.error('Error in fetchConnections:', error);
-    return staticConnections;
+    console.error('[fetchConnections] Fatal error:', {
+      error,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    // Return empty array instead of static data
+    return [];
   }
 }
 
@@ -227,6 +388,7 @@ export async function fetchConnections(): Promise<Connection[]> {
  */
 export async function fetchDenizenById(id: string): Promise<Denizen | null> {
   if (!isSupabaseConfigured() || !supabase) {
+    console.warn(`[fetchDenizenById] Supabase not configured for denizen ${id} - using static data`);
     return staticDenizens.find(d => d.id === id) || null;
   }
 
@@ -237,15 +399,34 @@ export async function fetchDenizenById(id: string): Promise<Denizen | null> {
       .eq('id', id)
       .single();
 
-    if (denizenError || !denizenRow) {
+    if (denizenError) {
+      console.error(`[fetchDenizenById] Error fetching denizen ${id}:`, {
+        error: denizenError,
+        code: denizenError.code,
+        message: denizenError.message,
+        details: denizenError.details,
+        hint: denizenError.hint,
+        query: `SELECT * FROM denizens WHERE id = '${id}'`,
+        timestamp: new Date().toISOString(),
+      });
+      // Fall back to static data for this specific denizen
+      return staticDenizens.find(d => d.id === id) || null;
+    }
+
+    if (!denizenRow) {
+      console.warn(`[fetchDenizenById] Denizen ${id} not found in database`);
       return staticDenizens.find(d => d.id === id) || null;
     }
 
     // Fetch connections for this denizen
-    const { data: connectionRows } = await supabase
+    const { data: connectionRows, error: connectionError } = await supabase
       .from('connections')
       .select('from_denizen_id, to_denizen_id')
       .or(`from_denizen_id.eq.${id},to_denizen_id.eq.${id}`);
+
+    if (connectionError) {
+      console.warn(`[fetchDenizenById] Error fetching connections for ${id}:`, connectionError.message);
+    }
 
     const connectionIds = (connectionRows as ConnectionRefRow[] || []).map(conn =>
       conn.from_denizen_id === id ? conn.to_denizen_id : conn.from_denizen_id
@@ -260,7 +441,15 @@ export async function fetchDenizenById(id: string): Promise<Denizen | null> {
       .order('display_order', { ascending: true });
 
     if (mediaError) {
-      console.error('Error fetching denizen media:', mediaError);
+      console.error(`[fetchDenizenById] Error fetching media for denizen ${id}:`, {
+        error: mediaError,
+        code: mediaError.code,
+        message: mediaError.message,
+        details: mediaError.details,
+        hint: mediaError.hint,
+        query: `SELECT * FROM denizen_media WHERE denizen_id = '${id}' ORDER BY display_order`,
+        timestamp: new Date().toISOString(),
+      });
       // Continue without media - don't fail the whole request
     }
 
@@ -268,7 +457,14 @@ export async function fetchDenizenById(id: string): Promise<Denizen | null> {
 
     return transformDenizenRow(denizenRow as DenizenRow, connectionIds, media);
   } catch (error) {
-    console.error('Error in fetchDenizenById:', error);
+    console.error(`[fetchDenizenById] Fatal error for denizen ${id}:`, {
+      error,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    // Fall back to static data
     return staticDenizens.find(d => d.id === id) || null;
   }
 }
