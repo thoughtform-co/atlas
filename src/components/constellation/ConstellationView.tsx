@@ -6,6 +6,8 @@ import { BackgroundCanvas } from './BackgroundCanvas';
 import { ConnectorCanvas } from './ConnectorCanvas';
 import { EntityCard } from './EntityCard';
 import { DenizenModalV3 } from './DenizenModalV3';
+import { LoginModal } from '../LoginModal';
+import { useAuth } from '@/context/AuthContext';
 import { clamp } from '@/lib/utils';
 
 interface ConstellationViewProps {
@@ -14,11 +16,13 @@ interface ConstellationViewProps {
 }
 
 export function ConstellationView({ denizens, connections }: ConstellationViewProps) {
+  const { isAuthenticated, user, signOut } = useAuth();
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -174,6 +178,68 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
         <div className="w-[3px] h-4 bg-[var(--dawn-30)]" />
         <div className="w-[3px] h-6 bg-[var(--dawn-30)]" />
       </div>
+
+      {/* Auth button */}
+      <div className="fixed top-6 right-6 z-50">
+        {isAuthenticated ? (
+          <div className="flex items-center gap-3">
+            <span
+              className="tracking-[0.05em]"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.5)' }}
+            >
+              {user?.email?.split('@')[0]}
+            </span>
+            <button
+              onClick={() => signOut()}
+              className="px-3 py-1.5 transition-all duration-150"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                letterSpacing: '0.05em',
+                color: 'rgba(236, 227, 214, 0.6)',
+                background: 'rgba(5, 4, 3, 0.8)',
+                border: '1px solid rgba(236, 227, 214, 0.15)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.3)';
+                e.currentTarget.style.color = '#ECE3D6';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
+                e.currentTarget.style.color = 'rgba(236, 227, 214, 0.6)';
+              }}
+            >
+              SIGN OUT
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="px-3 py-1.5 transition-all duration-150"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.05em',
+              color: 'rgba(236, 227, 214, 0.6)',
+              background: 'rgba(5, 4, 3, 0.8)',
+              border: '1px solid rgba(236, 227, 214, 0.15)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(202, 165, 84, 0.4)';
+              e.currentTarget.style.color = '#CAA554';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
+              e.currentTarget.style.color = 'rgba(236, 227, 214, 0.6)';
+            }}
+          >
+            SIGN IN
+          </button>
+        )}
+      </div>
+
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 }
