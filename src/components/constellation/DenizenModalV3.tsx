@@ -368,7 +368,16 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
           }}
         >
           {/* Header */}
-          <div className="p-5 border-b" style={{ borderColor: 'rgba(236, 227, 214, 0.08)', background: '#0D0B07' }}>
+          <div
+            style={{
+              paddingLeft: '28px',
+              paddingRight: '28px',
+              paddingTop: '24px',
+              paddingBottom: '20px',
+              borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
+              background: '#0D0B07'
+            }}
+          >
             <div className="flex justify-between items-center mb-3">
               <span
                 className="tracking-[0.08em] uppercase flex items-center gap-2"
@@ -395,11 +404,20 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
           </div>
 
           {/* Content */}
-          <div className="flex-1 p-5 flex flex-col gap-5">
+          <div
+            className="flex-1 flex flex-col"
+            style={{
+              paddingLeft: '28px',
+              paddingRight: '28px',
+              paddingTop: '24px',
+              paddingBottom: '24px',
+              gap: '24px'
+            }}
+          >
 
             {/* Classification */}
             <LogSection title="Classification" timestamp={`EPOCH.${denizen.firstObserved || '4.2847'}`}>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div className="grid grid-cols-2" style={{ columnGap: '24px', rowGap: '12px' }}>
                 <LogField label="Species Type" value={denizen.type} />
                 <div className="flex flex-col gap-0.5">
                   <span
@@ -539,8 +557,15 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
 
           {/* Footer */}
           <div
-            className="p-4 flex justify-between items-center"
-            style={{ borderTop: '1px solid rgba(236, 227, 214, 0.08)', background: '#0D0B07' }}
+            className="flex justify-between items-center"
+            style={{
+              paddingLeft: '28px',
+              paddingRight: '28px',
+              paddingTop: '16px',
+              paddingBottom: '16px',
+              borderTop: '1px solid rgba(236, 227, 214, 0.08)',
+              background: '#0D0B07'
+            }}
           >
             <span
               className="tracking-[0.05em]"
