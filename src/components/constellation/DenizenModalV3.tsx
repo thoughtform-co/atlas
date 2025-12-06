@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Denizen } from '@/lib/types';
 import Image from 'next/image';
 
@@ -14,17 +14,12 @@ interface DenizenModalV3Props {
 /**
  * DenizenModalV3 — Xenobiologist Research Interface
  *
- * Layout inspired by alien research station aesthetics:
- * - Left: Media viewer with holographic HUD overlays
- * - Right: Retrofuturistic xenobiologist log
- * - Bottom: Data visualization panels
- *
- * HUD elements are semi-transparent glass overlays
- * that can be linked to database values.
+ * Full-screen research station interface with:
+ * - Left: Media viewer with animated HUD overlays
+ * - Right: Retrofuturistic xenobiologist research log
  */
 export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] }: DenizenModalV3Props) {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -34,75 +29,6 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  // Draw HUD rings overlay
-  useEffect(() => {
-    if (!denizen || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-
-    // Clear
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw concentric rings
-    const ringCount = 4;
-    const maxRadius = Math.min(centerX, centerY) * 0.9;
-
-    for (let i = 1; i <= ringCount; i++) {
-      const radius = (maxRadius / ringCount) * i;
-      const alpha = 0.15 - (i * 0.02);
-
-      ctx.strokeStyle = `rgba(202, 165, 84, ${alpha})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Add tick marks on outer rings
-      if (i >= 3) {
-        const tickCount = 36;
-        for (let t = 0; t < tickCount; t++) {
-          const angle = (t / tickCount) * Math.PI * 2;
-          const innerR = radius - 4;
-          const outerR = radius;
-
-          ctx.strokeStyle = `rgba(202, 165, 84, ${alpha * 0.5})`;
-          ctx.beginPath();
-          ctx.moveTo(centerX + Math.cos(angle) * innerR, centerY + Math.sin(angle) * innerR);
-          ctx.lineTo(centerX + Math.cos(angle) * outerR, centerY + Math.sin(angle) * outerR);
-          ctx.stroke();
-        }
-      }
-    }
-
-    // Draw crosshair
-    ctx.strokeStyle = 'rgba(202, 165, 84, 0.2)';
-    ctx.lineWidth = 1;
-
-    // Vertical line
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY - maxRadius * 0.3);
-    ctx.lineTo(centerX, centerY + maxRadius * 0.3);
-    ctx.stroke();
-
-    // Horizontal line
-    ctx.beginPath();
-    ctx.moveTo(centerX - maxRadius * 0.3, centerY);
-    ctx.lineTo(centerX + maxRadius * 0.3, centerY);
-    ctx.stroke();
-
-    // Center dot
-    ctx.fillStyle = 'rgba(202, 165, 84, 0.4)';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-  }, [denizen]);
 
   // Close on backdrop click
   const handleBackdropClick = useCallback(
@@ -117,316 +43,428 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
     return allDenizens.find((d) => d.id === id);
   };
 
+  // Convert cardinal value to percentage (from -1 to 1 range)
+  const cardinalToPercent = (val: number) => ((val + 1) / 2) * 100;
+
+  // Get threat score (1-4)
+  const getThreatScore = (level: string): number => {
+    const scores: Record<string, number> = {
+      'Benign': 1,
+      'Cautious': 2,
+      'Volatile': 3,
+      'Existential': 4
+    };
+    return scores[level] || 1;
+  };
+
   if (!denizen) return null;
 
   // Build media array from denizen data
-  // Uses actual media from database, or falls back to primary image
-  const mediaItems: Array<{ id: string; url: string; mediaType: 'image' | 'video' | 'thumbnail' }> = denizen.media?.length
+  const mediaItems = denizen.media?.length
     ? denizen.media.map(m => ({ id: m.id, url: m.storagePath, mediaType: m.mediaType }))
     : denizen.image
       ? [{ id: '1', url: denizen.image, mediaType: 'image' as const }]
       : [];
+
+  // Derived values for HUD
+  const semanticDrift = Math.abs(denizen.coordinates.dynamics * 0.05).toFixed(3);
+  const manifoldStability = Math.round((1 - Math.abs(denizen.coordinates.alterity)) * 100);
+  const cognitiveDepth = (denizen.coordinates.geometry + denizen.coordinates.alterity + denizen.coordinates.dynamics + 3) / 6;
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       onClick={handleBackdropClick}
       style={{
-        background: 'rgba(5, 4, 3, 0.95)',
+        background: 'rgba(7, 6, 4, 0.95)',
         backdropFilter: 'blur(20px)',
         animation: 'fadeIn 0.2s ease-out',
       }}
     >
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes rotateSlow {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+
+        .rotate-slow { animation: rotateSlow 60s linear infinite; }
+        .pulse { animation: pulse 2s ease-in-out infinite; }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0D0B07; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(236, 227, 214, 0.15); }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(236, 227, 214, 0.3); }
+      `}</style>
+
       <div
-        className="modal-v3 relative w-full max-w-[1400px] h-[90vh] max-h-[900px] grid grid-cols-1 lg:grid-cols-[1fr_400px] overflow-hidden"
+        className="grid grid-cols-1 lg:grid-cols-[1fr_360px] w-full max-w-[1100px] h-[85vh] max-h-[750px] relative overflow-hidden"
         style={{
-          background: 'var(--void)',
-          border: '1px solid var(--dawn-08)',
-          animation: 'slideIn 0.3s cubic-bezier(0.19, 1, 0.22, 1)',
+          background: '#0D0B07',
+          border: '1px solid rgba(236, 227, 214, 0.15)',
+          animation: 'fadeIn 0.3s ease-out',
         }}
       >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 bg-transparent border text-lg flex items-center justify-center z-50 transition-all duration-150"
+          style={{
+            borderColor: 'rgba(236, 227, 214, 0.15)',
+            color: 'rgba(236, 227, 214, 0.5)',
+            fontFamily: 'var(--font-mono)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)';
+            e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.3)';
+            e.currentTarget.style.color = '#ECE3D6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
+            e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)';
+          }}
+        >
+          ×
+        </button>
+
         {/* ═══════════════════════════════════════════════════════════════
-            LEFT SIDE — Media Viewer with HUD Overlays
+            LEFT PANEL — Visual + HUD
             ═══════════════════════════════════════════════════════════════ */}
-        <div className="relative flex">
-          {/* Thumbnail Strip */}
-          <div
-            className="w-[80px] flex flex-col gap-2 p-2 border-r overflow-y-auto"
-            style={{
-              background: 'rgba(5, 4, 3, 0.8)',
-              borderColor: 'var(--dawn-08)',
-              scrollbarWidth: 'none',
-            }}
-          >
-            {mediaItems.map((media, index) => (
-              <button
-                key={media.id || index}
-                onClick={() => setSelectedMediaIndex(index)}
-                className="relative aspect-square overflow-hidden transition-all duration-200"
+        <div className="relative overflow-hidden" style={{ background: '#070604' }}>
+
+          {/* Entity Image or Placeholder */}
+          {mediaItems[selectedMediaIndex]?.url ? (
+            mediaItems[selectedMediaIndex]?.mediaType === 'video' ? (
+              <video
+                src={mediaItems[selectedMediaIndex].url}
+                className="absolute inset-0 w-full h-full object-contain"
+                autoPlay
+                loop
+                muted
+              />
+            ) : (
+              <Image
+                src={mediaItems[selectedMediaIndex].url}
+                alt={denizen.name}
+                fill
+                className="object-contain"
+              />
+            )
+          ) : (
+            <EntityImagePlaceholder glyphs={denizen.glyphs} />
+          )}
+
+          {/* HUD Overlay */}
+          <div className="absolute inset-0 pointer-events-none z-10">
+
+            {/* Top HUD Bar */}
+            <div
+              className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start"
+              style={{ background: 'linear-gradient(to bottom, rgba(7,6,4,0.9) 0%, transparent 100%)' }}
+            >
+              <div className="flex flex-col gap-1">
+                <span
+                  className="tracking-[0.1em] uppercase"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
+                >
+                  Meta Sacrem Geometry
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
+                  REST: <span style={{ color: '#CAA554' }}>{denizen.coordinates.geometry.toFixed(3)}</span>
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 text-right">
+                <span
+                  className="tracking-[0.1em] uppercase"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
+                >
+                  Read Timestamp
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
+                  {new Date().toLocaleTimeString('en-US', { hour12: false })}
+                </span>
+              </div>
+            </div>
+
+            {/* Left Thumbnails */}
+            <div
+              className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col gap-1 p-2 pointer-events-auto"
+              style={{ background: 'rgba(7, 6, 4, 0.9)', borderRight: '1px solid rgba(236, 227, 214, 0.08)' }}
+            >
+              {mediaItems.length > 0 ? (
+                mediaItems.slice(0, 5).map((media, i) => (
+                  <button
+                    key={media.id}
+                    onClick={() => setSelectedMediaIndex(i)}
+                    className="w-10 h-14 cursor-pointer transition-all duration-150"
+                    style={{
+                      border: selectedMediaIndex === i ? '1px solid rgba(236, 227, 214, 0.3)' : '1px solid rgba(236, 227, 214, 0.08)',
+                      opacity: selectedMediaIndex === i ? 1 : 0.5,
+                      background: '#0D0B07',
+                    }}
+                  >
+                    {media.mediaType === 'image' && media.url ? (
+                      <div className="relative w-full h-full">
+                        <Image src={media.url} alt="" fill className="object-cover" />
+                      </div>
+                    ) : (
+                      <div
+                        className="w-full h-full"
+                        style={{ background: 'linear-gradient(to bottom right, #141210, #0D0B07)' }}
+                      />
+                    )}
+                  </button>
+                ))
+              ) : (
+                [...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-10 h-14 transition-all duration-150"
+                    style={{
+                      border: i === 0 ? '1px solid rgba(236, 227, 214, 0.3)' : '1px solid rgba(236, 227, 214, 0.08)',
+                      opacity: i === 0 ? 1 : 0.5,
+                      background: '#0D0B07',
+                    }}
+                  >
+                    <div
+                      className="w-full h-full"
+                      style={{ background: 'linear-gradient(to bottom right, #141210, #0D0B07)' }}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Data Fragments */}
+            <div className="absolute left-16 top-[28%] flex flex-col gap-2">
+              <DataFragment label={`EPOCH.${denizen.firstObserved || '4.2847'}`} />
+              <DataFragment label={`SEMANTIC_DRIFT: ${semanticDrift}`} />
+              <DataFragment label={`MANIFOLD_STABILITY: ${manifoldStability}%`} />
+            </div>
+
+            {/* Reticle */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48">
+              <div className="absolute inset-0 border rounded-full" style={{ borderColor: 'rgba(236, 227, 214, 0.1)' }} />
+              <div className="absolute inset-[20%] border rounded-full" style={{ borderColor: 'rgba(236, 227, 214, 0.06)' }} />
+              <div
+                className="absolute inset-[-10%] border border-dashed rounded-full rotate-slow"
+                style={{ borderColor: 'rgba(236, 227, 214, 0.06)', transformOrigin: 'center' }}
+              />
+              <div className="absolute top-1/2 left-0 right-0 h-px -translate-y-1/2" style={{ background: 'rgba(236, 227, 214, 0.1)' }} />
+              <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: 'rgba(236, 227, 214, 0.1)' }} />
+            </div>
+
+            {/* Cardinal Position */}
+            <div
+              className="absolute bottom-4 left-4 p-3"
+              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
+            >
+              <div
+                className="mb-2 tracking-[0.1em] uppercase"
+                style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+              >
+                Cardinal Position
+              </div>
+              <div className="flex flex-col gap-2">
+                <CardinalRow glyph="◆" label="GEO" value={denizen.coordinates.geometry} color="#CAA554" cardinalToPercent={cardinalToPercent} />
+                <CardinalRow glyph="○" label="ALT" value={denizen.coordinates.alterity} color="#ECE3D6" cardinalToPercent={cardinalToPercent} />
+                <CardinalRow glyph="◇" label="DYN" value={denizen.coordinates.dynamics} color="#5B8A7A" cardinalToPercent={cardinalToPercent} />
+              </div>
+            </div>
+
+            {/* Depth Gauge */}
+            <div
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-48 p-2 flex flex-col"
+              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
+            >
+              <span
+                className="tracking-[0.05em] uppercase"
                 style={{
-                  border: selectedMediaIndex === index
-                    ? '1px solid var(--gold)'
-                    : '1px solid var(--dawn-08)',
-                  opacity: selectedMediaIndex === index ? 1 : 0.5,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8px',
+                  color: 'rgba(236, 227, 214, 0.3)',
+                  writingMode: 'vertical-rl',
+                  transform: 'rotate(180deg)'
                 }}
               >
-                {media.mediaType === 'image' && media.url ? (
-                  <Image src={media.url} alt="" fill className="object-cover" />
-                ) : media.mediaType === 'video' ? (
-                  <div
-                    className="w-full h-full flex items-center justify-center"
-                    style={{ background: 'var(--surface-1)', color: 'var(--dawn-30)' }}
-                  >
-                    ▶
-                  </div>
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center"
-                    style={{ background: 'var(--surface-1)', color: 'var(--dawn-15)' }}
-                  >
-                    {index + 1}
-                  </div>
-                )}
-              </button>
-            ))}
-
-            {/* Placeholder slots */}
-            {Array.from({ length: Math.max(0, 6 - mediaItems.length) }).map((_, i) => (
+                Cognitive Depth
+              </span>
               <div
-                key={`placeholder-${i}`}
-                className="aspect-square"
+                className="flex-1 mt-2 relative"
                 style={{
-                  border: '1px dashed var(--dawn-08)',
-                  background: 'var(--dawn-04)',
+                  background: 'linear-gradient(to top, #CAA554 0%, rgba(236, 227, 214, 0.5) 50%, #5B8A7A 100%)',
+                  opacity: 0.3
                 }}
-              />
-            ))}
-          </div>
-
-          {/* Main Media Display */}
-          <div className="flex-1 flex flex-col">
-            {/* Header Bar */}
-            <div
-              className="hud-glass flex items-center justify-between px-4 py-2 border-b"
-              style={{ borderColor: 'var(--dawn-08)' }}
-            >
-              <div className="flex items-center gap-4">
-                <span className="hud-label">META SACREM GEOMETRY</span>
-                <span className="hud-value">REST: {denizen.coordinates.geometry.toFixed(3)}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="hud-value">READ: {new Date().toLocaleTimeString('en-US', { hour12: false })}</span>
-                <button
-                  onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center border text-[var(--dawn-30)] hover:text-[var(--dawn)] hover:border-[var(--dawn-30)] transition-all"
-                  style={{ borderColor: 'var(--dawn-08)', fontFamily: 'var(--font-mono)' }}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Media Viewport */}
-            <div className="flex-1 relative overflow-hidden" style={{ background: 'var(--void)' }}>
-              {/* Main Image/Video */}
-              {mediaItems[selectedMediaIndex]?.url ? (
-                mediaItems[selectedMediaIndex]?.mediaType === 'video' ? (
-                  <video
-                    src={mediaItems[selectedMediaIndex].url}
-                    className="absolute inset-0 w-full h-full object-contain"
-                    autoPlay
-                    loop
-                    muted
-                  />
-                ) : (
-                  <Image
-                    src={mediaItems[selectedMediaIndex].url}
-                    alt={denizen.name}
-                    fill
-                    className="object-contain"
-                  />
-                )
-              ) : (
+              >
                 <div
-                  className="absolute inset-0 flex items-center justify-center"
+                  className="absolute left-[-4px] right-[-4px] h-0.5 transition-all duration-300"
                   style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '12rem',
-                    color: 'var(--dawn-04)',
+                    top: `${(1 - cognitiveDepth) * 100}%`,
+                    background: '#ECE3D6',
+                    boxShadow: '0 0 8px #ECE3D6'
                   }}
-                >
-                  {denizen.glyphs[0]}
-                </div>
-              )}
-
-              {/* HUD Overlay Canvas */}
-              <canvas
-                ref={canvasRef}
-                width={600}
-                height={600}
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                style={{ opacity: 0.6 }}
-              />
-
-              {/* Corner HUD Elements */}
-              <HudCorner position="top-left">
-                <div className="hud-label">SPECIMEN</div>
-                <div className="hud-value text-lg">{denizen.name.toUpperCase()}</div>
-                <div className="hud-sublabel">{denizen.type}</div>
-              </HudCorner>
-
-              <HudCorner position="top-right">
-                <div className="hud-label">THREAT ASSESSMENT</div>
-                <ThreatIndicator level={denizen.threatLevel} />
-              </HudCorner>
-
-              <HudCorner position="bottom-left">
-                <div className="hud-label">CARDINAL POSITION</div>
-                <div className="flex gap-4 mt-1">
-                  <CoordDisplay symbol="◆" label="GEO" value={denizen.coordinates.geometry} color="var(--gold)" />
-                  <CoordDisplay symbol="○" label="ALT" value={denizen.coordinates.alterity} color="var(--dawn-50)" />
-                  <CoordDisplay symbol="◇" label="DYN" value={denizen.coordinates.dynamics} color="var(--cardinal-dynamics)" />
-                </div>
-              </HudCorner>
-
-              <HudCorner position="bottom-right">
-                <div className="hud-label">GLYPHS</div>
-                <div className="hud-value text-2xl tracking-[0.3em]">{denizen.glyphs}</div>
-              </HudCorner>
-
-              {/* Scanline Effect */}
-              <div
-                className="absolute inset-0 pointer-events-none opacity-10"
-                style={{
-                  background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)',
-                }}
-              />
+                />
+              </div>
             </div>
 
-            {/* Bottom Data Panels */}
+            {/* Waveform */}
             <div
-              className="grid grid-cols-3 border-t"
-              style={{ borderColor: 'var(--dawn-08)', height: '140px' }}
+              className="absolute bottom-4 right-4 w-48 p-2"
+              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
             >
-              {/* Waveform Panel */}
-              <div className="hud-glass border-r p-3" style={{ borderColor: 'var(--dawn-08)' }}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="hud-label">WAVEFORM</span>
-                  <span className="hud-sublabel">54.03 GHz</span>
-                </div>
-                <WaveformDisplay seed={denizen.coordinates.geometry} />
+              <div className="flex justify-between items-center mb-1">
+                <span
+                  className="tracking-[0.1em] uppercase"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+                >
+                  Waveform
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.5)' }}>
+                  54.03 GHz
+                </span>
               </div>
+              <Waveform width={180} height={40} />
+            </div>
 
-              {/* Data Panel */}
-              <div className="hud-glass border-r p-3" style={{ borderColor: 'var(--dawn-08)' }}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="hud-label">DATA</span>
-                  <span className="hud-sublabel">100-400Hz</span>
-                </div>
-                <DataChart seed={denizen.coordinates.alterity} />
+            {/* Data Visualization */}
+            <div
+              className="absolute bottom-20 right-4 w-48 p-2"
+              style={{ background: 'rgba(7, 6, 4, 0.8)', border: '1px solid rgba(236, 227, 214, 0.08)' }}
+            >
+              <div className="flex justify-between items-center mb-1">
+                <span
+                  className="tracking-[0.1em] uppercase"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+                >
+                  Data
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.5)' }}>
+                  100-400Hz
+                </span>
               </div>
-
-              {/* Cognitive Depth Panel */}
-              <div className="hud-glass p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="hud-label">COGNITIVE DEPTH</span>
-                  <span className="hud-sublabel">54.F6.YM02</span>
-                </div>
-                <CognitiveDepthDisplay coordinates={denizen.coordinates} />
-              </div>
+              <DataBar width={180} height={30} />
             </div>
           </div>
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
-            RIGHT SIDE — Xenobiologist Log
+            RIGHT PANEL — Research Log
             ═══════════════════════════════════════════════════════════════ */}
         <div
-          className="hidden lg:flex flex-col border-l overflow-hidden"
+          className="hidden lg:flex flex-col overflow-y-auto custom-scroll"
           style={{
-            borderColor: 'var(--dawn-08)',
-            background: 'linear-gradient(180deg, var(--surface-0) 0%, var(--void) 100%)',
+            background: '#141210',
+            borderLeft: '1px solid rgba(236, 227, 214, 0.15)'
           }}
         >
-          {/* Log Header */}
-          <div
-            className="px-6 py-4 border-b"
-            style={{ borderColor: 'var(--dawn-08)' }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-[var(--threat-benign)] animate-pulse" />
-              <span className="hud-label">XENOBIOLOGY RESEARCH LOG</span>
+          {/* Header */}
+          <div className="p-5 border-b" style={{ borderColor: 'rgba(236, 227, 214, 0.08)', background: '#0D0B07' }}>
+            <div className="flex justify-between items-center mb-3">
+              <span
+                className="tracking-[0.08em] uppercase flex items-center gap-2"
+                style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+              >
+                <span style={{ color: '#CAA554', fontSize: '8px' }}>■</span>
+                Xenobiology Research Log
+              </span>
             </div>
-            <div
-              className="text-xl tracking-wide"
-              style={{ fontFamily: 'var(--font-mono)', color: 'var(--dawn)' }}
+            <h1
+              className="tracking-[0.02em] mb-1"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: '#ECE3D6' }}
             >
               {denizen.name}
-            </div>
+            </h1>
             {denizen.subtitle && (
-              <div
-                className="mt-1 italic"
-                style={{ fontFamily: 'var(--font-sans)', color: 'var(--dawn-50)', fontSize: '14px' }}
+              <span
+                className="italic"
+                style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'rgba(236, 227, 214, 0.5)' }}
               >
                 &quot;{denizen.subtitle}&quot;
-              </div>
+              </span>
             )}
           </div>
 
-          {/* Log Content */}
-          <div
-            className="flex-1 overflow-y-auto px-6 py-4"
-            style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'var(--dawn-15) var(--dawn-04)',
-            }}
-          >
-            {/* Classification Block */}
-            <LogSection title="CLASSIFICATION" timestamp="EPOCH.4.2847">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          {/* Content */}
+          <div className="flex-1 p-5 flex flex-col gap-5">
+
+            {/* Classification */}
+            <LogSection title="Classification" timestamp={`EPOCH.${denizen.firstObserved || '4.2847'}`}>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 <LogField label="Species Type" value={denizen.type} />
-                <LogField label="Threat Level" value={denizen.threatLevel} />
+                <div className="flex flex-col gap-0.5">
+                  <span
+                    className="tracking-[0.05em] uppercase"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+                  >
+                    Threat Level
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4].map(i => (
+                        <div
+                          key={i}
+                          className="w-2 h-2"
+                          style={{ background: i <= getThreatScore(denizen.threatLevel) ? '#C17F59' : 'rgba(236, 227, 214, 0.15)' }}
+                        />
+                      ))}
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
+                      {denizen.threatLevel}
+                    </span>
+                  </div>
+                </div>
                 <LogField label="Domain" value={denizen.domain} />
                 <LogField label="Allegiance" value={denizen.allegiance} />
               </div>
             </LogSection>
 
-            {/* Description Block */}
-            <LogSection title="PRIMARY OBSERVATION" timestamp="UPDATED">
-              <p className="log-text">{denizen.description}</p>
+            {/* Primary Observation */}
+            <LogSection title="Primary Observation" timestamp="UPDATED">
+              <p style={{ fontSize: '13px', lineHeight: 1.7, color: 'rgba(236, 227, 214, 0.7)' }}>
+                {denizen.description}
+              </p>
             </LogSection>
 
-            {/* Lore Block */}
+            {/* Historical Record */}
             {denizen.lore && (
-              <LogSection title="HISTORICAL RECORD" timestamp="ARCHIVAL">
-                <div
-                  className="relative pl-4"
-                  style={{ borderLeft: '2px solid var(--gold-dim)' }}
-                >
-                  <p className="log-text italic" style={{ color: 'var(--dawn-50)' }}>
-                    {denizen.lore}
-                  </p>
+              <LogSection title="Historical Record" timestamp="ARCHIVAL">
+                <p style={{ fontSize: '13px', lineHeight: 1.7, color: 'rgba(236, 227, 214, 0.7)' }}>
+                  {denizen.lore}
+                </p>
+              </LogSection>
+            )}
+
+            {/* Observed Capabilities */}
+            {denizen.features && denizen.features.length > 0 && (
+              <LogSection title="Observed Capabilities" timestamp="VERIFIED">
+                <div className="flex flex-col gap-1.5">
+                  {denizen.features.map((cap, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2"
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.7)' }}
+                    >
+                      <span style={{ color: 'rgba(236, 227, 214, 0.3)' }}>·</span>
+                      {cap}
+                    </div>
+                  ))}
                 </div>
               </LogSection>
             )}
 
-            {/* Capabilities Block */}
-            {denizen.features && denizen.features.length > 0 && (
-              <LogSection title="OBSERVED CAPABILITIES" timestamp="VERIFIED">
-                <ul className="space-y-1">
-                  {denizen.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span style={{ color: 'var(--gold)', fontSize: '10px' }}>▸</span>
-                      <span className="log-text">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </LogSection>
-            )}
-
-            {/* Connections Block */}
+            {/* Known Associations */}
             {denizen.connections && denizen.connections.length > 0 && (
-              <LogSection title="KNOWN ASSOCIATIONS" timestamp="MAPPED">
+              <LogSection title="Known Associations" timestamp="MAPPED">
                 <div className="flex flex-wrap gap-2">
                   {denizen.connections.map((connId) => {
                     const connected = getConnectedDenizen(connId);
@@ -435,17 +473,28 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
                       <button
                         key={connId}
                         onClick={() => onNavigate?.(connId)}
-                        className="px-3 py-1.5 border transition-all hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                        className="px-2 py-1 cursor-pointer transition-all duration-150"
                         style={{
                           fontFamily: 'var(--font-mono)',
                           fontSize: '10px',
-                          letterSpacing: '0.05em',
-                          color: 'var(--dawn-50)',
-                          borderColor: 'var(--dawn-15)',
-                          background: 'var(--dawn-04)',
+                          letterSpacing: '0.02em',
+                          color: 'rgba(236, 227, 214, 0.7)',
+                          background: 'rgba(236, 227, 214, 0.04)',
+                          border: '1px solid rgba(236, 227, 214, 0.08)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                          e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
+                          e.currentTarget.style.color = '#ECE3D6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)';
+                          e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.08)';
+                          e.currentTarget.style.color = 'rgba(236, 227, 214, 0.7)';
                         }}
                       >
-                        ↗ {connected.name.toUpperCase()}
+                        <span style={{ color: 'rgba(236, 227, 214, 0.3)' }}>↗ </span>
+                        {connected.name}
                       </button>
                     );
                   })}
@@ -453,242 +502,280 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
               </LogSection>
             )}
 
+            {/* Glyphs */}
+            <LogSection title="Glyphs">
+              <div className="flex gap-3 mt-1">
+                {denizen.glyphs.split('').map((glyph, i) => (
+                  <span
+                    key={i}
+                    className="text-base"
+                    style={{ color: i < 2 ? '#ECE3D6' : 'rgba(236, 227, 214, 0.3)' }}
+                  >
+                    {glyph}
+                  </span>
+                ))}
+              </div>
+            </LogSection>
+
             {/* Researcher Notes */}
-            <LogSection title="RESEARCHER NOTES" timestamp="PENDING">
+            <LogSection title="Researcher Notes" timestamp="PENDING">
               <div
-                className="p-3 border border-dashed"
-                style={{ borderColor: 'var(--dawn-08)', background: 'var(--dawn-04)' }}
+                className="p-3"
+                style={{
+                  background: '#0D0B07',
+                  border: '1px solid rgba(236, 227, 214, 0.08)',
+                  borderLeft: '2px solid rgba(202, 165, 84, 0.4)',
+                }}
               >
-                <p className="log-text italic" style={{ color: 'var(--dawn-30)' }}>
+                <p
+                  className="italic"
+                  style={{ fontSize: '12px', lineHeight: 1.7, color: 'rgba(236, 227, 214, 0.5)' }}
+                >
                   [Awaiting field observations. Entity requires further study.]
                 </p>
               </div>
             </LogSection>
           </div>
 
-          {/* Log Footer */}
+          {/* Footer */}
           <div
-            className="px-6 py-3 border-t flex items-center justify-between"
-            style={{ borderColor: 'var(--dawn-08)', background: 'var(--surface-0)' }}
+            className="p-4 flex justify-between items-center"
+            style={{ borderTop: '1px solid rgba(236, 227, 214, 0.08)', background: '#0D0B07' }}
           >
-            <div className="hud-sublabel">ID: {denizen.id.toUpperCase()}</div>
-            <div className="hud-sublabel">ATLAS RESEARCH DIVISION</div>
+            <span
+              className="tracking-[0.05em]"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+            >
+              ID: {denizen.id.toUpperCase()}
+            </span>
+            <span
+              className="tracking-[0.05em]"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
+            >
+              Atlas Research Division
+            </span>
           </div>
         </div>
       </div>
-
-      {/* Styles */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-          from { opacity: 0; transform: scale(0.98); }
-          to { opacity: 1; transform: scale(1); }
-        }
-
-        .hud-glass {
-          background: rgba(5, 4, 3, 0.6);
-          backdrop-filter: blur(8px);
-        }
-
-        .hud-label {
-          font-family: var(--font-mono);
-          font-size: 9px;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: var(--dawn-30);
-        }
-
-        .hud-value {
-          font-family: var(--font-mono);
-          font-size: 12px;
-          letter-spacing: 0.05em;
-          color: var(--dawn);
-        }
-
-        .hud-sublabel {
-          font-family: var(--font-mono);
-          font-size: 8px;
-          letter-spacing: 0.1em;
-          color: var(--dawn-30);
-        }
-
-        .log-text {
-          font-family: var(--font-sans);
-          font-size: 13px;
-          line-height: 1.7;
-          color: var(--dawn-70);
-        }
-
-        .modal-v3::-webkit-scrollbar {
-          width: 4px;
-        }
-
-        .modal-v3::-webkit-scrollbar-track {
-          background: var(--dawn-04);
-        }
-
-        .modal-v3::-webkit-scrollbar-thumb {
-          background: var(--dawn-15);
-        }
-      `}</style>
     </div>
   );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATED COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function Waveform({ width = 200, height = 40 }: { width?: number; height?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const phaseRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    let animationId: number;
+
+    function draw() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, width, height);
+      ctx.strokeStyle = 'rgba(236, 227, 214, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+
+      for (let x = 0; x < width; x++) {
+        const y = height / 2 +
+          Math.sin((x / width) * 8 * Math.PI + phaseRef.current) * 8 +
+          Math.sin((x / width) * 16 * Math.PI + phaseRef.current * 1.5) * 4 +
+          Math.sin((x / width) * 32 * Math.PI + phaseRef.current * 0.7) * 2;
+
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.stroke();
+      phaseRef.current += 0.02;
+      animationId = requestAnimationFrame(draw);
+    }
+
+    draw();
+    return () => cancelAnimationFrame(animationId);
+  }, [width, height]);
+
+  return <canvas ref={canvasRef} style={{ width, height }} />;
+}
+
+function DataBar({ width = 60, height = 30 }: { width?: number; height?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const phaseRef = useRef(Math.random() * 100);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    let animationId: number;
+    const barCount = 20;
+
+    function draw() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < barCount; i++) {
+        const barWidth = (width / barCount) - 1;
+        const x = i * (width / barCount);
+        const barHeight = Math.abs(Math.sin((i / barCount) * Math.PI * 2 + phaseRef.current * 0.5)) * height * 0.8;
+        const y = height - barHeight;
+
+        ctx.fillStyle = 'rgba(202, 165, 84, 0.4)';
+        ctx.fillRect(x, y, barWidth, barHeight);
+      }
+
+      phaseRef.current += 0.03;
+      animationId = requestAnimationFrame(draw);
+    }
+
+    draw();
+    return () => cancelAnimationFrame(animationId);
+  }, [width, height]);
+
+  return <canvas ref={canvasRef} style={{ width, height }} />;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HELPER COMPONENTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function HudCorner({
-  position,
-  children
-}: {
-  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-  children: React.ReactNode;
-}) {
-  const positionClasses = {
-    'top-left': 'top-4 left-4',
-    'top-right': 'top-4 right-4 text-right',
-    'bottom-left': 'bottom-4 left-4',
-    'bottom-right': 'bottom-4 right-4 text-right',
-  };
+function EntityImagePlaceholder({ glyphs }: { glyphs: string }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="relative w-64 h-80 flex items-center justify-center">
+        <svg viewBox="0 0 200 280" className="w-full h-full" style={{ filter: 'drop-shadow(0 0 40px rgba(202, 165, 84, 0.2))' }}>
+          <defs>
+            <linearGradient id="figureGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style={{ stopColor: '#ECE3D6', stopOpacity: 0.3 }} />
+              <stop offset="50%" style={{ stopColor: '#CAA554', stopOpacity: 0.2 }} />
+              <stop offset="100%" style={{ stopColor: '#070604', stopOpacity: 0.8 }} />
+            </linearGradient>
+            <linearGradient id="haloGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style={{ stopColor: 'transparent' }} />
+              <stop offset="50%" style={{ stopColor: '#CAA554', stopOpacity: 0.5 }} />
+              <stop offset="100%" style={{ stopColor: 'transparent' }} />
+            </linearGradient>
+          </defs>
 
+          {/* Halo rings */}
+          <ellipse cx="100" cy="70" rx="80" ry="15" fill="none" stroke="url(#haloGradient)" strokeWidth="1" />
+          <ellipse cx="100" cy="70" rx="70" ry="12" fill="none" stroke="rgba(202, 165, 84, 0.3)" strokeWidth="0.5" />
+          <ellipse cx="100" cy="70" rx="60" ry="9" fill="none" stroke="rgba(202, 165, 84, 0.2)" strokeWidth="0.5" />
+
+          {/* Horns */}
+          <path d="M70,90 Q50,50 60,30" fill="none" stroke="rgba(236, 227, 214, 0.4)" strokeWidth="3" />
+          <path d="M130,90 Q150,50 140,30" fill="none" stroke="rgba(236, 227, 214, 0.4)" strokeWidth="3" />
+
+          {/* Body */}
+          <path
+            d="M100,85 Q120,100 125,130 L140,180 Q145,220 130,280 L70,280 Q55,220 60,180 L75,130 Q80,100 100,85"
+            fill="url(#figureGradient)"
+          />
+
+          {/* Arms */}
+          <path d="M75,120 Q40,130 20,100" fill="none" stroke="rgba(236, 227, 214, 0.3)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M125,120 Q160,130 175,140" fill="none" stroke="rgba(236, 227, 214, 0.3)" strokeWidth="4" strokeLinecap="round" />
+
+          {/* Book */}
+          <rect x="155" y="125" width="35" height="25" fill="rgba(236, 227, 214, 0.5)" transform="rotate(15, 172, 137)" />
+
+          {/* Head */}
+          <ellipse cx="100" cy="95" rx="20" ry="25" fill="rgba(236, 227, 214, 0.25)" />
+        </svg>
+
+        {/* Glyphs overlay */}
+        <div
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 tracking-[0.3em]"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'rgba(236, 227, 214, 0.2)' }}
+        >
+          {glyphs}
+        </div>
+
+        {/* Glitch lines */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute left-0 right-0 h-px"
+              style={{
+                top: `${20 + i * 15}%`,
+                background: 'linear-gradient(90deg, transparent 0%, rgba(236, 227, 214, 0.5) 20%, rgba(236, 227, 214, 0.5) 80%, transparent 100%)',
+                transform: `translateX(${Math.sin(i) * 10}px)`
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DataFragment({ label }: { label: string }) {
   return (
     <div
-      className={`absolute ${positionClasses[position]} hud-glass px-3 py-2 pointer-events-none`}
-      style={{ border: '1px solid var(--dawn-08)' }}
+      className="tracking-[0.05em] px-2 py-0.5"
+      style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '9px',
+        color: 'rgba(236, 227, 214, 0.3)',
+        background: 'rgba(7, 6, 4, 0.6)',
+        borderLeft: '1px solid rgba(236, 227, 214, 0.15)',
+      }}
     >
-      {children}
+      {label}
     </div>
   );
 }
 
-function ThreatIndicator({ level }: { level: string }) {
-  const levels = ['Benign', 'Cautious', 'Volatile', 'Existential'];
-  const currentIndex = levels.indexOf(level);
-  const colors = ['var(--threat-benign)', 'var(--threat-cautious)', 'var(--threat-volatile)', 'var(--threat-existential)'];
-
+function CardinalRow({
+  glyph,
+  label,
+  value,
+  color,
+  cardinalToPercent
+}: {
+  glyph: string;
+  label: string;
+  value: number;
+  color: string;
+  cardinalToPercent: (val: number) => number;
+}) {
   return (
-    <div className="flex flex-col gap-1 mt-1">
-      <div className="flex gap-1">
-        {levels.map((l, i) => (
-          <div
-            key={l}
-            className="w-8 h-2"
-            style={{
-              background: i <= currentIndex ? colors[i] : 'var(--dawn-08)',
-              opacity: i <= currentIndex ? 1 : 0.3,
-            }}
-          />
-        ))}
+    <div className="flex items-center gap-3">
+      <span className="text-sm w-5 text-center" style={{ color }}>{glyph}</span>
+      <div className="w-20 h-1 relative" style={{ background: 'rgba(236, 227, 214, 0.08)' }}>
+        <div
+          className="absolute top-0 left-0 h-full transition-all duration-300"
+          style={{ width: `${cardinalToPercent(value)}%`, background: color }}
+        />
       </div>
-      <div className="hud-value" style={{ color: colors[currentIndex] }}>
-        {level.toUpperCase()}
-      </div>
-    </div>
-  );
-}
-
-function CoordDisplay({ symbol, label, value, color }: { symbol: string; label: string; value: number; color: string }) {
-  return (
-    <div className="flex flex-col items-center">
-      <span style={{ color, fontSize: '14px' }}>{symbol}</span>
-      <span className="hud-sublabel">{label}</span>
-      <span className="hud-value" style={{ fontSize: '10px' }}>
+      <span
+        className="w-12 text-right"
+        style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.5)' }}
+      >
         {value > 0 ? '+' : ''}{value.toFixed(3)}
       </span>
-    </div>
-  );
-}
-
-function WaveformDisplay({ seed }: { seed: number }) {
-  const points: string[] = [];
-  const width = 200;
-  const height = 60;
-
-  for (let x = 0; x < width; x++) {
-    const t = x / width;
-    const noise = Math.sin(t * 50 + seed * 10) * Math.sin(t * 23) * Math.cos(t * 7);
-    const y = height / 2 + noise * 20;
-    points.push(`${x},${y}`);
-  }
-
-  return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-      <polyline
-        points={points.join(' ')}
-        fill="none"
-        stroke="var(--gold)"
-        strokeWidth="1"
-        opacity="0.7"
-      />
-      {/* Zero line */}
-      <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="var(--dawn-08)" strokeWidth="1" />
-    </svg>
-  );
-}
-
-function DataChart({ seed }: { seed: number }) {
-  const bars: number[] = [];
-  const barCount = 40;
-
-  for (let i = 0; i < barCount; i++) {
-    const t = i / barCount;
-    const value = Math.abs(Math.sin(t * 10 + seed * 5) * Math.cos(t * 7)) * 0.8 + 0.2;
-    bars.push(value);
-  }
-
-  return (
-    <svg width="100%" height="60" viewBox="0 0 200 60" preserveAspectRatio="none">
-      {bars.map((height, i) => (
-        <rect
-          key={i}
-          x={i * 5}
-          y={60 - height * 50}
-          width="3"
-          height={height * 50}
-          fill="var(--dawn-30)"
-        />
-      ))}
-    </svg>
-  );
-}
-
-function CognitiveDepthDisplay({ coordinates }: { coordinates: { geometry: number; alterity: number; dynamics: number } }) {
-  // Create a gradient based on coordinates
-  const depth = (coordinates.geometry + coordinates.alterity + coordinates.dynamics + 3) / 6; // Normalize to 0-1
-
-  return (
-    <div className="relative h-[60px]">
-      {/* Gradient spectrum */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(90deg, #1a0a0a 0%, #3d1515 20%, #5a3a2a 40%, #8a7a5a 60%, #c4b48a 80%, #f5f0e0 100%)',
-          opacity: 0.8,
-        }}
-      />
-
-      {/* Position indicator */}
-      <div
-        className="absolute top-0 bottom-0 w-0.5 bg-[var(--dawn)]"
-        style={{ left: `${depth * 100}%` }}
-      >
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-[var(--dawn)]" />
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-[var(--dawn)]" />
-      </div>
-
-      {/* Label */}
-      <div
-        className="absolute bottom-0 left-0 right-0 text-center hud-sublabel"
-        style={{ background: 'linear-gradient(0deg, rgba(5,4,3,0.8) 0%, transparent 100%)', paddingTop: '20px' }}
-      >
-        POSITION • ENTITY
-      </div>
     </div>
   );
 }
@@ -699,26 +786,30 @@ function LogSection({
   children
 }: {
   title: string;
-  timestamp: string;
+  timestamp?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-1 h-1 bg-[var(--gold)]" />
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <span
+          className="tracking-[0.1em] uppercase"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: '#CAA554' }}
+        >
+          {title}
+        </span>
+        <div
+          className="flex-1 h-px"
+          style={{ background: 'linear-gradient(90deg, rgba(202, 165, 84, 0.4) 0%, transparent 100%)' }}
+        />
+        {timestamp && (
           <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              letterSpacing: '0.12em',
-              color: 'var(--gold)',
-            }}
+            className="tracking-[0.05em]"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'rgba(236, 227, 214, 0.3)' }}
           >
-            {title}
+            [{timestamp}]
           </span>
-        </div>
-        <span className="hud-sublabel">[{timestamp}]</span>
+        )}
       </div>
       {children}
     </div>
@@ -727,17 +818,16 @@ function LogSection({
 
 function LogField({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="hud-sublabel mb-0.5">{label}</div>
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '11px',
-          color: 'var(--dawn-70)',
-        }}
+    <div className="flex flex-col gap-0.5">
+      <span
+        className="tracking-[0.05em] uppercase"
+        style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
       >
+        {label}
+      </span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
         {value}
-      </div>
+      </span>
     </div>
   );
 }
