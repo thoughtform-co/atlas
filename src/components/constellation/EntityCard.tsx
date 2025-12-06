@@ -1,6 +1,7 @@
 'use client';
 
 import { Denizen } from '@/lib/types';
+import { getMediaPublicUrl } from '@/lib/media';
 import Image from 'next/image';
 
 interface EntityCardProps {
@@ -45,7 +46,15 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
 
   // Get primary media from uploaded media array
   const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
-  const mediaUrl = primaryMedia?.storagePath || denizen.image;
+  // Convert storage path to public URL, handling both relative paths and full URLs
+  const getMediaUrl = (path: string | undefined): string | undefined => {
+    if (!path) return undefined;
+    // If it's already a full URL, return it
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    // Otherwise convert from storage path
+    return getMediaPublicUrl(path) || undefined;
+  };
+  const mediaUrl = getMediaUrl(primaryMedia?.storagePath) || denizen.image;
   const isVideo = primaryMedia?.mediaType === 'video' || !!denizen.videoUrl;
 
   return (

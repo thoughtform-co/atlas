@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Denizen } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { getMediaPublicUrl } from '@/lib/media';
 import { Database } from '@/lib/database.types';
 import Image from 'next/image';
 
@@ -82,7 +83,7 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
       const mediaInsert: DenizenMediaInsert = {
         denizen_id: denizen.id,
         media_type: file.type.startsWith('video/') ? 'video' : 'image',
-        storage_path: publicUrl,
+        storage_path: fileName,  // Store relative path, not full URL
         file_name: file.name,
         file_size: file.size,
         mime_type: file.type,
@@ -113,9 +114,18 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
   const tempValue = ((denizen.coordinates.dynamics + 1) / 2).toFixed(2);
   const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
 
+  // Helper to convert storage path to public URL
+  const resolveMediaUrl = (path: string | undefined): string | undefined => {
+    if (!path) return undefined;
+    // If it's already a full URL, return it
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    // Otherwise convert from storage path
+    return getMediaPublicUrl(path) || undefined;
+  };
+
   // Use uploaded media if available, otherwise use denizen's existing media
   const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
-  const mediaUrl = uploadedMedia?.url || primaryMedia?.storagePath || denizen.image;
+  const mediaUrl = uploadedMedia?.url || resolveMediaUrl(primaryMedia?.storagePath) || denizen.image;
   const isVideo = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video' || denizen.videoUrl;
 
   return (
