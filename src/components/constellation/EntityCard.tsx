@@ -43,6 +43,11 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   const isExistential = denizen.threatLevel === 'Existential';
   const connectionCount = denizen.connections?.length || 0;
 
+  // Get primary media from uploaded media array
+  const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
+  const mediaUrl = primaryMedia?.storagePath || denizen.image;
+  const isVideo = primaryMedia?.mediaType === 'video' || !!denizen.videoUrl;
+
   return (
     <article
       className={`
@@ -147,10 +152,20 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
             background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%)',
           }}
         >
-          {/* Image or placeholder */}
-          {denizen.image ? (
+          {/* Media (video or image) or placeholder */}
+          {isVideo && (denizen.videoUrl || primaryMedia?.storagePath) ? (
+            <video
+              src={denizen.videoUrl || primaryMedia?.storagePath}
+              className="absolute inset-0 w-full h-full object-cover opacity-[0.92] group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-500"
+              style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : mediaUrl ? (
             <Image
-              src={denizen.image}
+              src={mediaUrl}
               alt={denizen.name}
               fill
               className="object-cover opacity-[0.92] group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-500"

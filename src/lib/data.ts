@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { Denizen, Connection } from './types';
+import { Denizen, Connection, DenizenMedia } from './types';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
 import type { Database } from './database.types';
 
@@ -31,6 +31,22 @@ interface DenizenRow {
   first_observed: string | null;
 }
 
+interface DenizenMediaRow {
+  id: string;
+  denizen_id: string;
+  media_type: string;
+  storage_path: string;
+  file_name: string;
+  file_size: number | null;
+  mime_type: string | null;
+  display_order: number;
+  is_primary: boolean;
+  caption: string | null;
+  alt_text: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ConnectionRow {
   from_denizen_id: string;
   to_denizen_id: string;
@@ -44,9 +60,30 @@ interface ConnectionRefRow {
 }
 
 /**
+ * Transform Supabase media row to DenizenMedia type
+ */
+function transformMediaRow(row: DenizenMediaRow): DenizenMedia {
+  return {
+    id: row.id,
+    denizenId: row.denizen_id,
+    mediaType: row.media_type as DenizenMedia['mediaType'],
+    storagePath: row.storage_path,
+    fileName: row.file_name,
+    fileSize: row.file_size ?? undefined,
+    mimeType: row.mime_type ?? undefined,
+    displayOrder: row.display_order,
+    isPrimary: row.is_primary,
+    caption: row.caption ?? undefined,
+    altText: row.alt_text ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
  * Transform Supabase row to Denizen type
  */
-function transformDenizenRow(row: DenizenRow, connectionIds: string[]): Denizen {
+function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: DenizenMedia[] = []): Denizen {
   return {
     id: row.id,
     name: row.name,
@@ -70,6 +107,7 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[]): Denizen 
     features: row.features ?? undefined,
     firstObserved: row.first_observed ?? undefined,
     connections: connectionIds,
+    media: media.length > 0 ? media : undefined,
   };
 }
 
@@ -114,6 +152,18 @@ export async function fetchDenizens(): Promise<Denizen[]> {
       return staticDenizens;
     }
 
+    // Fetch all denizen media
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: mediaRows, error: mediaError } = await (supabase as any)
+      .from('denizen_media')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    if (mediaError) {
+      console.error('Error fetching denizen media:', mediaError);
+      // Continue without media - don't fail the whole request
+    }
+
     // Build connection map
     const connectionMap = new Map<string, string[]>();
     (connectionRows as ConnectionRefRow[] || []).forEach(conn => {
@@ -128,9 +178,18 @@ export async function fetchDenizens(): Promise<Denizen[]> {
       connectionMap.set(conn.to_denizen_id, toConnections);
     });
 
-    // Transform and return denizens
+    // Build media map
+    const mediaMap = new Map<string, DenizenMedia[]>();
+    (mediaRows as DenizenMediaRow[] || []).forEach(row => {
+      const media = transformMediaRow(row);
+      const existing = mediaMap.get(row.denizen_id) || [];
+      existing.push(media);
+      mediaMap.set(row.denizen_id, existing);
+    });
+
+    // Transform and return denizens with media
     return (denizenRows as DenizenRow[] || []).map(row =>
-      transformDenizenRow(row, connectionMap.get(row.id) || [])
+      transformDenizenRow(row, connectionMap.get(row.id) || [], mediaMap.get(row.id) || [])
     );
   } catch (error) {
     console.error('Error in fetchDenizens:', error);
