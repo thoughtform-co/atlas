@@ -23,8 +23,14 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [currentDenizens, setCurrentDenizens] = useState<Denizen[]>(denizens);
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Update currentDenizens when denizens prop changes (e.g., after page refresh)
+  useEffect(() => {
+    setCurrentDenizens(denizens);
+  }, [denizens]);
 
   // Wait for mount to ensure window dimensions are available
   useEffect(() => {
@@ -36,7 +42,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     (id: string): Position | null => {
       if (!mounted) return null;
 
-      const denizen = denizens.find((d) => d.id === id);
+      const denizen = currentDenizens.find((d) => d.id === id);
       if (!denizen) return null;
 
       const centerX = window.innerWidth / 2 + offset.x;
@@ -47,7 +53,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
         y: centerY + denizen.position.y * scale,
       };
     },
-    [denizens, offset, scale, mounted]
+    [currentDenizens, offset, scale, mounted]
   );
 
   // Handle card click
@@ -65,11 +71,23 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
 
   // Handle navigation to a connected denizen from modal
   const handleNavigate = useCallback((denizenId: string) => {
-    const denizen = denizens.find((d) => d.id === denizenId);
+    const denizen = currentDenizens.find((d) => d.id === denizenId);
     if (denizen) {
       setSelectedDenizen(denizen);
     }
-  }, [denizens]);
+  }, [currentDenizens]);
+
+  // Handle denizen update after media upload
+  const handleDenizenUpdate = useCallback((updatedDenizen: Denizen) => {
+    // Update the denizen in the current list
+    setCurrentDenizens((prev) =>
+      prev.map((d) => (d.id === updatedDenizen.id ? updatedDenizen : d))
+    );
+    // Update selected denizen if it's the one that was updated
+    if (selectedDenizen?.id === updatedDenizen.id) {
+      setSelectedDenizen(updatedDenizen);
+    }
+  }, [selectedDenizen]);
 
   // Handle mouse down for dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -132,7 +150,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
 
       {/* Cards container */}
       <div className="absolute inset-0 z-[3]">
-        {denizens.map((denizen) => {
+        {currentDenizens.map((denizen) => {
           const pos = getScreenPosition(denizen.id);
           if (!pos) return null;
 
@@ -158,7 +176,8 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
         denizen={selectedDenizen}
         onClose={() => setSelectedDenizen(null)}
         onNavigate={handleNavigate}
-        allDenizens={denizens}
+        allDenizens={currentDenizens}
+        onDenizenUpdate={handleDenizenUpdate}
       />
 
       {/* Legend */}

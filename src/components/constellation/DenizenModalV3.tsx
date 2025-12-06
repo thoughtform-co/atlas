@@ -5,6 +5,7 @@ import { Denizen } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getMediaPublicUrl } from '@/lib/media';
+import { fetchDenizenById } from '@/lib/data';
 import { Database } from '@/lib/database.types';
 import Image from 'next/image';
 
@@ -15,6 +16,7 @@ interface DenizenModalV3Props {
   onClose: () => void;
   onNavigate?: (denizenId: string) => void;
   allDenizens?: Denizen[];
+  onDenizenUpdate?: (updatedDenizen: Denizen) => void;
 }
 
 // Design system colors
@@ -24,14 +26,20 @@ const VOLATILE = { r: 193, g: 127, b: 89 };
 const DAWN = { r: 236, g: 227, b: 214 };
 const GRID = 3;
 
-export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
+export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenModalV3Props) {
   const { isAuthenticated } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadedMedia, setUploadedMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [currentDenizen, setCurrentDenizen] = useState<Denizen | null>(denizen);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update currentDenizen when denizen prop changes
+  useEffect(() => {
+    setCurrentDenizen(denizen);
+  }, [denizen]);
 
   useEffect(() => {
     if (!denizen) return;
@@ -94,6 +102,16 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
       const { error: dbError } = await (supabase as any).from('denizen_media').insert(mediaInsert);
       if (dbError) throw dbError;
 
+      // Refetch the denizen with updated media from database
+      if (denizen) {
+        const updatedDenizen = await fetchDenizenById(denizen.id);
+        if (updatedDenizen) {
+          setCurrentDenizen(updatedDenizen);
+          // Notify parent component of the update
+          onDenizenUpdate?.(updatedDenizen);
+        }
+      }
+
       // Update local state to show the uploaded media immediately
       setUploadedMedia({
         url: publicUrl,
@@ -107,12 +125,14 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
     }
   };
 
-  if (!denizen) return null;
+  // Use currentDenizen (which may be updated after upload) or fallback to denizen prop
+  const displayDenizen = currentDenizen || denizen;
+  if (!displayDenizen) return null;
 
-  const signalStrength = ((denizen.coordinates.geometry + 1) / 2).toFixed(3);
-  const epoch = denizen.firstObserved || '4.2847';
-  const tempValue = ((denizen.coordinates.dynamics + 1) / 2).toFixed(2);
-  const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
+  const signalStrength = ((displayDenizen.coordinates.geometry + 1) / 2).toFixed(3);
+  const epoch = displayDenizen.firstObserved || '4.2847';
+  const tempValue = ((displayDenizen.coordinates.dynamics + 1) / 2).toFixed(2);
+  const hallucinationScore = Math.round((displayDenizen.coordinates.dynamics + 1) * 2.5);
 
   // Helper to convert storage path to public URL
   const resolveMediaUrl = (path: string | undefined): string | undefined => {
@@ -124,9 +144,9 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
   };
 
   // Use uploaded media if available, otherwise use denizen's existing media
-  const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
-  const mediaUrl = uploadedMedia?.url || resolveMediaUrl(primaryMedia?.storagePath) || denizen.image;
-  const isVideo = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video' || denizen.videoUrl;
+  const primaryMedia = displayDenizen.media?.find(m => m.isPrimary) || displayDenizen.media?.[0];
+  const mediaUrl = uploadedMedia?.url || resolveMediaUrl(primaryMedia?.storagePath) || displayDenizen.image;
+  const isVideo = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video' || displayDenizen.videoUrl;
 
   return (
     <div
@@ -153,7 +173,7 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             {isVideo ? (
               <video
-                src={denizen.videoUrl || mediaUrl}
+                src={displayDenizen.videoUrl || mediaUrl}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 autoPlay
                 loop
@@ -163,7 +183,7 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
             ) : (
               <Image
                 src={mediaUrl}
-                alt={denizen.name}
+                alt={displayDenizen.name}
                 fill
                 style={{ objectFit: 'cover' }}
               />
@@ -275,13 +295,13 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
           borderRight: '1px solid rgba(236, 227, 214, 0.08)',
         }}>
           <Readout label="Phase State" value={`TEMP: ${tempValue}`} valueColor="#CAA554">
-            <PhaseCanvas value={denizen.coordinates.geometry} />
+            <PhaseCanvas value={displayDenizen.coordinates.geometry} />
           </Readout>
           <Readout label="Superposition">
-            <SuperpositionCanvas value={denizen.coordinates.alterity} />
+            <SuperpositionCanvas value={displayDenizen.coordinates.alterity} />
           </Readout>
           <Readout label="Hallucination Index" value={`HIGH [${hallucinationScore}/5]`} valueColor="#C17F59">
-            <HallucinationCanvas value={denizen.coordinates.dynamics} />
+            <HallucinationCanvas value={displayDenizen.coordinates.dynamics} />
           </Readout>
         </div>
 
@@ -305,7 +325,7 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
           }}>
             <AlignmentCompass />
             <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '8px', color: '#CAA554', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-              ◎ {denizen.allegiance.toUpperCase()}
+              ◎ {displayDenizen.allegiance.toUpperCase()}
             </div>
           </div>
 
@@ -394,14 +414,14 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
           WebkitBackdropFilter: 'blur(12px)',
           borderLeft: '1px solid rgba(236, 227, 214, 0.08)',
         }}>
-          <Readout label="Latent Position" value={`X:${denizen.coordinates.geometry.toFixed(3)} Y:${denizen.coordinates.alterity.toFixed(3)}`} valueSize="8px" value2={`Z:${denizen.coordinates.dynamics.toFixed(3)}`}>
-            <CoordsCanvas value={denizen.coordinates} />
+          <Readout label="Latent Position" value={`X:${displayDenizen.coordinates.geometry.toFixed(3)} Y:${displayDenizen.coordinates.alterity.toFixed(3)}`} valueSize="8px" value2={`Z:${displayDenizen.coordinates.dynamics.toFixed(3)}`}>
+            <CoordsCanvas value={displayDenizen.coordinates} />
           </Readout>
-          <Readout label="Manifold Curvature" value={denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? 'SEVERE' : 'NOMINAL'} valueColor={denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : '#5B8A7A'}>
-            <ManifoldCanvas value={denizen.coordinates.alterity} />
+          <Readout label="Manifold Curvature" value={displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? 'SEVERE' : 'NOMINAL'} valueColor={displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? '#C17F59' : '#5B8A7A'}>
+            <ManifoldCanvas value={displayDenizen.coordinates.alterity} />
           </Readout>
           <Readout label="Embedding Signature">
-            <SpectralCanvas value={denizen.coordinates.dynamics} />
+            <SpectralCanvas value={displayDenizen.coordinates.dynamics} />
           </Readout>
         </div>
 
@@ -423,25 +443,25 @@ export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
         >
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: '#CAA554', letterSpacing: '0.1em', lineHeight: 1, textTransform: 'uppercase' }}>
-              {denizen.name.toUpperCase()}
+              {displayDenizen.name.toUpperCase()}
             </div>
             <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', fontSize: '9px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                CLASS <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{denizen.type.toUpperCase()}</span>
+                CLASS <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.type.toUpperCase()}</span>
               </div>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                THREAT <span style={{ color: denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)' }}>{denizen.threatLevel.toUpperCase()}</span>
+                THREAT <span style={{ color: displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.threatLevel.toUpperCase()}</span>
               </div>
               <div style={{ marginTop: '4px', color: 'rgba(236, 227, 214, 0.3)' }}>
-                <span style={{ color: '#CAA554' }}>◆</span> {denizen.coordinates.geometry.toFixed(3)}
-                <span style={{ color: '#ECE3D6', marginLeft: '8px' }}>○</span> {denizen.coordinates.alterity.toFixed(3)}
-                <span style={{ color: '#5B8A7A', marginLeft: '8px' }}>◇</span> {denizen.coordinates.dynamics.toFixed(3)}
+                <span style={{ color: '#CAA554' }}>◆</span> {displayDenizen.coordinates.geometry.toFixed(3)}
+                <span style={{ color: '#ECE3D6', marginLeft: '8px' }}>○</span> {displayDenizen.coordinates.alterity.toFixed(3)}
+                <span style={{ color: '#5B8A7A', marginLeft: '8px' }}>◇</span> {displayDenizen.coordinates.dynamics.toFixed(3)}
               </div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(236, 227, 214, 0.08)', paddingLeft: '24px' }}>
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'rgba(236, 227, 214, 0.5)', lineHeight: 1.7 }}>
-              {denizen.description}
+              {displayDenizen.description}
             </div>
           </div>
         </div>

@@ -251,7 +251,22 @@ export async function fetchDenizenById(id: string): Promise<Denizen | null> {
       conn.from_denizen_id === id ? conn.to_denizen_id : conn.from_denizen_id
     );
 
-    return transformDenizenRow(denizenRow as DenizenRow, connectionIds);
+    // Fetch media for this denizen
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: mediaRows, error: mediaError } = await (supabase as any)
+      .from('denizen_media')
+      .select('*')
+      .eq('denizen_id', id)
+      .order('display_order', { ascending: true });
+
+    if (mediaError) {
+      console.error('Error fetching denizen media:', mediaError);
+      // Continue without media - don't fail the whole request
+    }
+
+    const media = (mediaRows as DenizenMediaRow[] || []).map(transformMediaRow);
+
+    return transformDenizenRow(denizenRow as DenizenRow, connectionIds, media);
   } catch (error) {
     console.error('Error in fetchDenizenById:', error);
     return staticDenizens.find(d => d.id === id) || null;
