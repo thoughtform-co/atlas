@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Denizen, MediaType } from '@/lib/types';
+import { Denizen } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
@@ -27,20 +27,28 @@ const COLORS = {
 // Grid size for pixelated rendering
 const GRID = 3;
 
-/**
- * DenizenModalV3 — Research Station Card Interface
- *
- * Full-screen card with:
- * - Media layer behind HUD elements
- * - 6 particle canvas visualizations
- * - Alignment compass and particle field
- * - Authentication for media uploads
- */
-export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] }: DenizenModalV3Props) {
+export function DenizenModalV3({ denizen, onClose }: DenizenModalV3Props) {
   const { isAuthenticated } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Running timestamp
+  useEffect(() => {
+    if (!denizen) return;
+    const interval = setInterval(() => {
+      setElapsedTime(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [denizen]);
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${hrs}:${mins}:${secs}`;
+  };
 
   // Close on Escape
   useEffect(() => {
@@ -51,7 +59,6 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Close on backdrop click
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) onClose();
@@ -77,12 +84,10 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('denizen-media')
         .getPublicUrl(fileName);
 
-      // Insert into denizen_media table
       const mediaInsert: DenizenMediaInsert = {
         denizen_id: denizen.id,
         media_type: file.type.startsWith('video/') ? 'video' : 'image',
@@ -97,8 +102,6 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
       const { error: dbError } = await (supabase as any).from('denizen_media').insert(mediaInsert);
 
       if (dbError) throw dbError;
-
-      // Reload page to show new media
       window.location.reload();
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
@@ -107,70 +110,49 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
     }
   };
 
-  // Get threat score (1-4)
-  const getThreatScore = (level: string): number => {
-    const scores: Record<string, number> = {
-      'Benign': 1,
-      'Cautious': 2,
-      'Volatile': 3,
-      'Existential': 4
-    };
-    return scores[level] || 1;
-  };
-
   if (!denizen) return null;
-
-  // Build media from denizen data
-  const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
-  const mediaUrl = primaryMedia?.storagePath || denizen.image;
-  const isVideo = primaryMedia?.mediaType === 'video' || denizen.videoUrl;
 
   // Derived values
   const signalStrength = ((denizen.coordinates.geometry + 1) / 2).toFixed(3);
   const epoch = denizen.firstObserved || '4.2847';
+  const tempValue = ((denizen.coordinates.dynamics + 1) / 2).toFixed(2);
+  const hallucinationLevel = denizen.coordinates.dynamics > 0.5 ? 'HIGH' : denizen.coordinates.dynamics > 0 ? 'MODERATE' : 'LOW';
+  const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
+  const severityLevel = denizen.threatLevel === 'Existential' ? 'CRITICAL' : denizen.threatLevel === 'Volatile' ? 'SEVERE' : denizen.threatLevel === 'Cautious' ? 'MODERATE' : 'NOMINAL';
+
+  // Media
+  const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
+  const mediaUrl = primaryMedia?.storagePath || denizen.image;
+  const isVideo = primaryMedia?.mediaType === 'video' || denizen.videoUrl;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center"
       onClick={handleBackdropClick}
       style={{
+        padding: '16px',
         background: 'rgba(5, 4, 3, 0.95)',
         backdropFilter: 'blur(20px)',
-        animation: 'fadeIn 0.2s ease-out',
       }}
     >
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes rotateSlow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.6; }
-        }
-        .rotate-slow { animation: rotateSlow 60s linear infinite; }
-        .pulse { animation: pulse 2s ease-in-out infinite; }
-      `}</style>
-
-      {/* Card Container - 4:5 aspect ratio */}
+      {/* Card Container */}
       <div
-        className="relative w-full max-w-[900px] overflow-hidden"
+        className="relative w-full overflow-hidden"
         style={{
-          aspectRatio: '4/5',
-          maxHeight: '90vh',
+          maxWidth: '820px',
           background: '#0A0908',
-          border: '1px solid rgba(236, 227, 214, 0.15)',
+          border: '1px solid rgba(202, 165, 84, 0.3)',
         }}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center z-50 transition-all duration-150"
+          className="absolute flex items-center justify-center z-50 transition-all duration-150"
           style={{
+            top: '12px',
+            right: '12px',
+            width: '24px',
+            height: '24px',
             background: 'rgba(5, 4, 3, 0.8)',
             border: '1px solid rgba(236, 227, 214, 0.15)',
             color: 'rgba(236, 227, 214, 0.5)',
@@ -189,151 +171,195 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
           x
         </button>
 
-        {/* ═══════════════════════════════════════════════════════════════
-            MEDIA LAYER (Behind everything)
-            ═══════════════════════════════════════════════════════════════ */}
-        <div className="absolute inset-0 z-0">
-          {mediaUrl ? (
-            isVideo ? (
-              <video
-                src={denizen.videoUrl || mediaUrl}
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ opacity: 0.6 }}
-                autoPlay
-                loop
-                muted
-              />
-            ) : (
-              <Image
-                src={mediaUrl}
-                alt={denizen.name}
-                fill
-                className="object-cover"
-                style={{ opacity: 0.6 }}
-              />
-            )
-          ) : (
-            <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, #141210 0%, #050403 100%)' }} />
-          )}
-          {/* Darken overlay for readability */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(5,4,3,0.4) 0%, rgba(5,4,3,0.7) 50%, rgba(5,4,3,0.9) 100%)' }} />
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            HUD GRID LAYOUT
-            ═══════════════════════════════════════════════════════════════ */}
+        {/* Header */}
         <div
-          className="absolute inset-0 z-10 grid"
           style={{
-            gridTemplateColumns: '150px 1fr 150px',
-            gridTemplateRows: 'auto 1fr auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 20px',
+            borderBottom: '1px solid rgba(202, 165, 84, 0.2)',
+            background: 'rgba(5, 4, 3, 0.8)',
           }}
         >
-          {/* ─────────────────────────────────────────────────────────────
-              HEADER
-              ───────────────────────────────────────────────────────────── */}
-          <div
-            className="col-span-3 flex justify-between items-center"
-            style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid rgba(236, 227, 214, 0.1)',
-              background: 'rgba(5, 4, 3, 0.8)',
-            }}
-          >
-            <div className="flex items-center gap-4">
-              <span
-                className="tracking-[0.1em] uppercase"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#CAA554' }}
-              >
-                Atlas Research
-              </span>
-              <span
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
-              >
-                MODE: <span style={{ color: 'rgba(236, 227, 214, 0.7)' }}>ACTIVE SCAN</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
-              >
-                SIG: <span style={{ color: '#CAA554' }}>{signalStrength}</span>
-              </span>
-              <span
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(236, 227, 214, 0.4)' }}
-              >
-                EPOCH: <span style={{ color: 'rgba(236, 227, 214, 0.7)' }}>{epoch}</span>
-              </span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                letterSpacing: '0.1em',
+                color: '#CAA554',
+              }}
+            >
+              ATLAS RESEARCH
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.4)' }}>
+              MODE: <span style={{ color: 'rgba(236, 227, 214, 0.7)' }}>ACTIVE SCAN</span>
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.4)' }}>
+              SIG: <span style={{ color: '#CAA554' }}>{signalStrength}</span>
+            </span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.4)' }}>
+              EPOCH: <span style={{ color: 'rgba(236, 227, 214, 0.7)' }}>{epoch}</span>
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.5)' }}>
+              [{formatTime(elapsedTime)}]
+            </span>
+          </div>
+        </div>
 
-          {/* ─────────────────────────────────────────────────────────────
-              LEFT COLUMN - Particle Visualizations
-              ───────────────────────────────────────────────────────────── */}
-          <div
-            className="flex flex-col gap-4"
-            style={{
-              padding: '16px',
-              background: 'rgba(5, 4, 3, 0.6)',
-              borderRight: '1px solid rgba(236, 227, 214, 0.08)',
-            }}
-          >
-            <ParticleReadout
-              label="Phase State"
+        {/* Main Grid - 2 rows */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gridTemplateRows: '1fr 1fr',
+            borderBottom: '1px solid rgba(202, 165, 84, 0.2)',
+          }}
+        >
+          {/* Row 1, Col 1: Phase State */}
+          <div style={{ borderRight: '1px solid rgba(202, 165, 84, 0.15)', borderBottom: '1px solid rgba(202, 165, 84, 0.15)', padding: '16px' }}>
+            <VisualizationPanel
+              label="PHASE STATE"
               type="phase"
               value={denizen.coordinates.geometry}
-            />
-            <ParticleReadout
-              label="Superposition"
-              type="superposition"
-              value={denizen.coordinates.alterity}
-            />
-            <ParticleReadout
-              label="Hallucination Idx"
-              type="hallucination"
-              value={denizen.coordinates.dynamics}
+              sublabel={`TEMP: ${tempValue}`}
+              sublabelColor="#CAA554"
             />
           </div>
 
-          {/* ─────────────────────────────────────────────────────────────
-              CENTER - Entity Display
-              ───────────────────────────────────────────────────────────── */}
-          <div className="relative flex items-center justify-center">
-            {/* Particle Field Background */}
-            <ParticleField />
+          {/* Row 1, Col 2: Center Top (Entity) */}
+          <div
+            style={{
+              borderRight: '1px solid rgba(202, 165, 84, 0.15)',
+              borderBottom: '1px solid rgba(202, 165, 84, 0.15)',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+            }}
+          >
+            {/* Entity silhouette or image */}
+            {mediaUrl ? (
+              isVideo ? (
+                <video
+                  src={denizen.videoUrl || mediaUrl}
+                  style={{ maxWidth: '100%', maxHeight: '140px', objectFit: 'contain' }}
+                  autoPlay
+                  loop
+                  muted
+                />
+              ) : (
+                <Image
+                  src={mediaUrl}
+                  alt={denizen.name}
+                  width={120}
+                  height={140}
+                  style={{ objectFit: 'contain' }}
+                />
+              )
+            ) : (
+              <EntitySilhouette />
+            )}
+            {/* Allegiance label */}
+            <span
+              style={{
+                marginTop: '12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                letterSpacing: '0.05em',
+                color: '#CAA554',
+              }}
+            >
+              ◎ {denizen.allegiance.toUpperCase()}
+            </span>
+          </div>
 
-            {/* Alignment Compass */}
-            <AlignmentCompass coordinates={denizen.coordinates} />
+          {/* Row 1, Col 3: Latent Position */}
+          <div style={{ borderBottom: '1px solid rgba(202, 165, 84, 0.15)', padding: '16px' }}>
+            <VisualizationPanel
+              label="LATENT POSITION"
+              type="latent"
+              value={denizen.coordinates.geometry}
+              sublabel={`X:${denizen.coordinates.geometry.toFixed(3)} Y:${denizen.coordinates.alterity.toFixed(3)}`}
+              sublabel2={`Z:${denizen.coordinates.dynamics.toFixed(3)}`}
+            />
+          </div>
 
-            {/* Upload button for authenticated users */}
+          {/* Row 2, Col 1: Superposition + Hallucination */}
+          <div style={{ borderRight: '1px solid rgba(202, 165, 84, 0.15)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <VisualizationPanel
+              label="SUPERPOSITION"
+              type="superposition"
+              value={denizen.coordinates.alterity}
+              small
+            />
+            <VisualizationPanel
+              label="HALLUCINATION INDEX"
+              type="hallucination"
+              value={denizen.coordinates.dynamics}
+              sublabel={`${hallucinationLevel} [${hallucinationScore}/5]`}
+              sublabelColor={hallucinationLevel === 'HIGH' ? '#C17F59' : '#CAA554'}
+              small
+            />
+          </div>
+
+          {/* Row 2, Col 2: Center Bottom (Brackets + Upload) */}
+          <div
+            style={{
+              borderRight: '1px solid rgba(202, 165, 84, 0.15)',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+            }}
+          >
+            {/* Corner brackets */}
+            <CornerBrackets />
+
+            {/* Upload button */}
             {isAuthenticated && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+              <div style={{ position: 'absolute', bottom: '16px' }}>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*,video/*"
                   onChange={handleUpload}
                   className="hidden"
+                  style={{ display: 'none' }}
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="px-3 py-1.5 transition-all duration-150"
                   style={{
+                    padding: '6px 12px',
                     fontFamily: 'var(--font-mono)',
                     fontSize: '10px',
                     letterSpacing: '0.05em',
                     color: isUploading ? 'rgba(236, 227, 214, 0.3)' : 'rgba(236, 227, 214, 0.7)',
                     background: 'rgba(5, 4, 3, 0.9)',
                     border: '1px solid rgba(236, 227, 214, 0.15)',
+                    cursor: isUploading ? 'default' : 'pointer',
                   }}
                 >
                   {isUploading ? 'UPLOADING...' : '+ UPLOAD MEDIA'}
                 </button>
                 {uploadError && (
                   <div
-                    className="absolute top-full mt-1 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-1"
                     style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      marginTop: '4px',
+                      whiteSpace: 'nowrap',
+                      padding: '4px 8px',
                       fontFamily: 'var(--font-mono)',
                       fontSize: '9px',
                       color: '#C17F59',
@@ -347,163 +373,88 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
             )}
           </div>
 
-          {/* ─────────────────────────────────────────────────────────────
-              RIGHT COLUMN - Particle Visualizations
-              ───────────────────────────────────────────────────────────── */}
-          <div
-            className="flex flex-col gap-4"
-            style={{
-              padding: '16px',
-              background: 'rgba(5, 4, 3, 0.6)',
-              borderLeft: '1px solid rgba(236, 227, 214, 0.08)',
-            }}
-          >
-            <ParticleReadout
-              label="Latent Position"
-              type="latent"
-              value={denizen.coordinates.geometry}
-            />
-            <ParticleReadout
-              label="Manifold Curve"
+          {/* Row 2, Col 3: Manifold + Embedding */}
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <VisualizationPanel
+              label="MANIFOLD CURVATURE"
               type="manifold"
               value={denizen.coordinates.alterity}
+              sublabel={severityLevel}
+              sublabelColor={severityLevel === 'SEVERE' || severityLevel === 'CRITICAL' ? '#C17F59' : '#5B8A7A'}
+              small
             />
-            <ParticleReadout
-              label="Embed Signature"
+            <VisualizationPanel
+              label="EMBEDDING SIGNATURE"
               type="embedding"
               value={denizen.coordinates.dynamics}
+              small
             />
           </div>
+        </div>
 
-          {/* ─────────────────────────────────────────────────────────────
-              FOOTER
-              ───────────────────────────────────────────────────────────── */}
+        {/* Footer */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '280px 1fr',
+            padding: '20px',
+            gap: '24px',
+            background: 'rgba(5, 4, 3, 0.6)',
+          }}
+        >
+          {/* Left: Identity */}
+          <div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '28px',
+                color: '#CAA554',
+                letterSpacing: '0.02em',
+                marginBottom: '8px',
+              }}
+            >
+              {denizen.name.toUpperCase()}
+            </h1>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.5)' }}>
+                CLASS <span style={{ color: '#ECE3D6' }}>{denizen.type.toUpperCase()}</span>
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.5)' }}>
+                THREAT <span style={{ color: denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : '#ECE3D6' }}>{denizen.threatLevel.toUpperCase()}</span>
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#CAA554' }}>
+                ◆ {denizen.coordinates.geometry.toFixed(3)}
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#ECE3D6' }}>
+                ○ {denizen.coordinates.alterity.toFixed(3)}
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#5B8A7A' }}>
+                ◇ {denizen.coordinates.dynamics.toFixed(3)}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Description */}
           <div
-            className="col-span-3 flex flex-col"
             style={{
-              padding: '16px 20px',
-              borderTop: '1px solid rgba(236, 227, 214, 0.1)',
-              background: 'rgba(5, 4, 3, 0.9)',
+              paddingLeft: '24px',
+              borderLeft: '1px solid rgba(202, 165, 84, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            {/* Entity Name & Classification */}
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h1
-                  className="mb-1"
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: '#ECE3D6', letterSpacing: '0.02em' }}
-                >
-                  {denizen.name}
-                </h1>
-                {denizen.subtitle && (
-                  <span
-                    className="italic"
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'rgba(236, 227, 214, 0.5)' }}
-                  >
-                    &quot;{denizen.subtitle}&quot;
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-6">
-                {/* Class */}
-                <div className="flex flex-col items-end">
-                  <span
-                    className="tracking-[0.05em] uppercase"
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-                  >
-                    Class
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#ECE3D6' }}>
-                    {denizen.type}
-                  </span>
-                </div>
-                {/* Threat */}
-                <div className="flex flex-col items-end">
-                  <span
-                    className="tracking-[0.05em] uppercase"
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-                  >
-                    Threat
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex gap-0.5">
-                      {[1, 2, 3, 4].map(i => (
-                        <div
-                          key={i}
-                          className="w-1.5 h-1.5"
-                          style={{ background: i <= getThreatScore(denizen.threatLevel) ? '#C17F59' : 'rgba(236, 227, 214, 0.15)' }}
-                        />
-                      ))}
-                    </div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#ECE3D6' }}>
-                      {denizen.threatLevel}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Cardinals & Description */}
-            <div className="flex gap-6">
-              {/* Cardinal Coordinates */}
-              <div className="flex gap-4">
-                <CardinalValue glyph="◆" label="GEO" value={denizen.coordinates.geometry} color="#CAA554" />
-                <CardinalValue glyph="○" label="ALT" value={denizen.coordinates.alterity} color="#ECE3D6" />
-                <CardinalValue glyph="◇" label="DYN" value={denizen.coordinates.dynamics} color="#5B8A7A" />
-              </div>
-
-              {/* Description */}
-              <div className="flex-1 pl-6" style={{ borderLeft: '1px solid rgba(236, 227, 214, 0.08)' }}>
-                <p
-                  className="line-clamp-3"
-                  style={{ fontSize: '12px', lineHeight: 1.6, color: 'rgba(236, 227, 214, 0.6)' }}
-                >
-                  {denizen.description}
-                </p>
-              </div>
-            </div>
-
-            {/* Connections */}
-            {denizen.connections && denizen.connections.length > 0 && (
-              <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid rgba(236, 227, 214, 0.06)' }}>
-                <span
-                  className="tracking-[0.05em] uppercase"
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.3)' }}
-                >
-                  Links:
-                </span>
-                <div className="flex gap-2 flex-wrap">
-                  {denizen.connections.slice(0, 4).map((connId) => {
-                    const connected = allDenizens.find(d => d.id === connId);
-                    if (!connected) return null;
-                    return (
-                      <button
-                        key={connId}
-                        onClick={() => onNavigate?.(connId)}
-                        className="px-2 py-0.5 transition-all duration-150"
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '10px',
-                          color: 'rgba(236, 227, 214, 0.6)',
-                          background: 'rgba(236, 227, 214, 0.04)',
-                          border: '1px solid rgba(236, 227, 214, 0.08)',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.2)';
-                          e.currentTarget.style.color = '#ECE3D6';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.08)';
-                          e.currentTarget.style.color = 'rgba(236, 227, 214, 0.6)';
-                        }}
-                      >
-                        {connected.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <p
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '13px',
+                lineHeight: 1.7,
+                color: 'rgba(236, 227, 214, 0.7)',
+              }}
+            >
+              {denizen.description}
+            </p>
           </div>
         </div>
       </div>
@@ -512,12 +463,69 @@ export function DenizenModalV3({ denizen, onClose, onNavigate, allDenizens = [] 
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PARTICLE VISUALIZATION COMPONENTS
+   VISUALIZATION PANEL
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type ReadoutType = 'phase' | 'superposition' | 'hallucination' | 'latent' | 'manifold' | 'embedding';
+interface VisualizationPanelProps {
+  label: string;
+  type: 'phase' | 'superposition' | 'hallucination' | 'latent' | 'manifold' | 'embedding';
+  value: number;
+  sublabel?: string;
+  sublabel2?: string;
+  sublabelColor?: string;
+  small?: boolean;
+}
 
-function ParticleReadout({ label, type, value }: { label: string; type: ReadoutType; value: number }) {
+function VisualizationPanel({ label, type, value, sublabel, sublabel2, sublabelColor = 'rgba(236, 227, 214, 0.5)', small }: VisualizationPanelProps) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <span
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '9px',
+          letterSpacing: '0.05em',
+          color: 'rgba(236, 227, 214, 0.4)',
+          marginBottom: '8px',
+        }}
+      >
+        ▸ {label}
+      </span>
+      <div style={{ flex: 1, minHeight: small ? '60px' : '100px' }}>
+        <ParticleCanvas type={type} value={value} small={small} />
+      </div>
+      {sublabel && (
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            color: sublabelColor,
+            marginTop: '8px',
+          }}
+        >
+          {sublabel}
+        </span>
+      )}
+      {sublabel2 && (
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            color: sublabelColor,
+            marginTop: '2px',
+          }}
+        >
+          {sublabel2}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PARTICLE CANVAS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function ParticleCanvas({ type, value, small }: { type: string; value: number; small?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const phaseRef = useRef(Math.random() * Math.PI * 2);
 
@@ -528,8 +536,9 @@ function ParticleReadout({ label, type, value }: { label: string; type: ReadoutT
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = 118;
-    const height = 80;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -537,7 +546,6 @@ function ParticleReadout({ label, type, value }: { label: string; type: ReadoutT
 
     let animationId: number;
 
-    // Helper: draw a pixel-snapped point
     const drawPixel = (x: number, y: number, color: typeof COLORS.GOLD, alpha = 1) => {
       const px = Math.floor(x / GRID) * GRID;
       const py = Math.floor(y / GRID) * GRID;
@@ -545,347 +553,189 @@ function ParticleReadout({ label, type, value }: { label: string; type: ReadoutT
       ctx.fillRect(px, py, GRID, GRID);
     };
 
-    // Helper: draw a particle line
-    const drawParticleLine = (x1: number, y1: number, x2: number, y2: number, color: typeof COLORS.GOLD, density = 0.5) => {
-      const dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-      const steps = Math.floor(dist / GRID);
-      for (let i = 0; i < steps; i++) {
-        if (Math.random() > density) continue;
-        const t = i / steps;
-        const x = x1 + (x2 - x1) * t;
-        const y = y1 + (y2 - y1) * t;
-        drawPixel(x, y, color, 0.3 + Math.random() * 0.4);
-      }
-    };
-
-    // Helper: draw a particle circle
-    const drawParticleCircle = (cx: number, cy: number, r: number, color: typeof COLORS.GOLD, density = 0.4) => {
-      const circumference = 2 * Math.PI * r;
-      const steps = Math.floor(circumference / GRID);
-      for (let i = 0; i < steps; i++) {
-        if (Math.random() > density) continue;
-        const angle = (i / steps) * Math.PI * 2;
-        const x = cx + Math.cos(angle) * r;
-        const y = cy + Math.sin(angle) * r;
-        drawPixel(x, y, color, 0.3 + Math.random() * 0.5);
-      }
-    };
-
     function draw() {
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
 
       const phase = phaseRef.current;
-      const normalizedValue = (value + 1) / 2; // Convert -1 to 1 range to 0 to 1
+      const normalizedValue = (value + 1) / 2;
 
       switch (type) {
         case 'phase': {
-          // Oscillating wave with particles
-          const centerY = height / 2;
-          for (let x = 0; x < width; x += GRID) {
-            const wave = Math.sin((x / width) * Math.PI * 4 + phase) * 20 * normalizedValue;
-            const y = centerY + wave;
-            drawPixel(x, y, COLORS.GOLD, 0.5 + Math.random() * 0.3);
-          }
-          // Scattered particles
-          for (let i = 0; i < 8; i++) {
-            const x = Math.random() * width;
-            const y = centerY + (Math.random() - 0.5) * 40;
-            drawPixel(x, y, COLORS.DAWN, 0.2);
+          // Scattered dots moving in wave pattern
+          for (let i = 0; i < 40; i++) {
+            const baseX = (i % 10) * (width / 10) + 10;
+            const baseY = Math.floor(i / 10) * (height / 4) + 20;
+            const offsetX = Math.sin(phase + i * 0.3) * 15 * normalizedValue;
+            const offsetY = Math.cos(phase + i * 0.5) * 10 * normalizedValue;
+            drawPixel(baseX + offsetX, baseY + offsetY, COLORS.GOLD, 0.4 + Math.random() * 0.4);
           }
           break;
         }
 
         case 'superposition': {
-          // Multiple overlapping circles
-          const cx = width / 2;
-          const cy = height / 2;
-          for (let i = 0; i < 3; i++) {
-            const offset = Math.sin(phase + i * Math.PI * 0.6) * 15 * normalizedValue;
-            drawParticleCircle(cx + offset, cy, 20 + i * 8, i === 0 ? COLORS.GOLD : COLORS.DAWN, 0.3);
+          // Multiple wave lines
+          for (let wave = 0; wave < 3; wave++) {
+            const yOffset = (wave + 1) * (height / 4);
+            for (let x = 0; x < width; x += GRID * 2) {
+              const y = yOffset + Math.sin((x / width) * Math.PI * 4 + phase + wave) * 15 * normalizedValue;
+              drawPixel(x, y, wave === 1 ? COLORS.GOLD : COLORS.DAWN, 0.3 + wave * 0.15);
+            }
           }
           break;
         }
 
         case 'hallucination': {
-          // Erratic scatter pattern
-          const intensity = 0.3 + normalizedValue * 0.5;
-          for (let i = 0; i < 25; i++) {
-            const x = width / 2 + (Math.random() - 0.5) * width * 0.8;
-            const y = height / 2 + (Math.random() - 0.5) * height * 0.8;
-            const flicker = Math.sin(phase * 3 + i) > 0;
-            if (flicker) {
-              drawPixel(x, y, Math.random() > 0.5 ? COLORS.VOLATILE : COLORS.GOLD, intensity);
+          // Erratic horizontal lines
+          for (let i = 0; i < 5; i++) {
+            const y = 10 + i * (height / 5);
+            const lineWidth = Math.random() * width * 0.8 * normalizedValue;
+            const startX = Math.random() * (width - lineWidth);
+            for (let x = startX; x < startX + lineWidth; x += GRID) {
+              if (Math.random() > 0.3) {
+                drawPixel(x, y + Math.random() * 4, Math.random() > 0.5 ? COLORS.VOLATILE : COLORS.GOLD, 0.4 + Math.random() * 0.4);
+              }
             }
           }
           break;
         }
 
         case 'latent': {
-          // Grid of points with wave distortion
-          for (let gx = 0; gx < 6; gx++) {
-            for (let gy = 0; gy < 4; gy++) {
-              const baseX = 15 + gx * 18;
-              const baseY = 15 + gy * 18;
-              const distort = Math.sin(phase + gx * 0.5 + gy * 0.3) * 4 * normalizedValue;
-              drawPixel(baseX + distort, baseY, COLORS.GOLD, 0.4 + normalizedValue * 0.3);
+          // Dot grid
+          const cols = 8;
+          const rows = 6;
+          const spacingX = width / (cols + 1);
+          const spacingY = height / (rows + 1);
+          for (let gx = 0; gx < cols; gx++) {
+            for (let gy = 0; gy < rows; gy++) {
+              const x = spacingX * (gx + 1);
+              const y = spacingY * (gy + 1);
+              const brightness = Math.sin(phase + gx * 0.3 + gy * 0.5) * 0.3 + 0.5;
+              drawPixel(x, y, COLORS.DAWN, brightness * normalizedValue);
             }
           }
           break;
         }
 
         case 'manifold': {
-          // Curved lines representing topology
-          const cx = width / 2;
-          const cy = height / 2;
-          for (let curve = 0; curve < 3; curve++) {
-            const baseRadius = 15 + curve * 12;
-            const deform = Math.sin(phase + curve) * 8 * normalizedValue;
-            for (let angle = 0; angle < Math.PI * 2; angle += 0.2) {
-              const r = baseRadius + Math.sin(angle * 3 + phase) * deform;
-              const x = cx + Math.cos(angle) * r;
-              const y = cy + Math.sin(angle) * r;
-              drawPixel(x, y, curve === 1 ? COLORS.DYNAMICS : COLORS.DAWN, 0.3 + curve * 0.15);
+          // Dot grid with wave distortion
+          const cols = 10;
+          const rows = 4;
+          const spacingX = width / (cols + 1);
+          const spacingY = height / (rows + 1);
+          for (let gx = 0; gx < cols; gx++) {
+            for (let gy = 0; gy < rows; gy++) {
+              const baseX = spacingX * (gx + 1);
+              const baseY = spacingY * (gy + 1);
+              const wave = Math.sin(phase + gx * 0.4) * 5 * normalizedValue;
+              drawPixel(baseX, baseY + wave, COLORS.DAWN, 0.4 + Math.random() * 0.3);
             }
           }
           break;
         }
 
         case 'embedding': {
-          // Vertical bars representing vector dimensions
-          const barCount = 12;
+          // Vertical bars
+          const barCount = 16;
           const barWidth = GRID;
-          const spacing = (width - barCount * barWidth) / (barCount + 1);
+          const spacing = width / (barCount + 1);
           for (let i = 0; i < barCount; i++) {
-            const x = spacing + i * (barWidth + spacing);
-            const barHeight = Math.abs(Math.sin(phase * 0.5 + i * 0.8)) * height * 0.6 * normalizedValue;
-            const startY = height - 10 - barHeight;
-            for (let y = startY; y < height - 10; y += GRID) {
-              drawPixel(x, y, i % 3 === 0 ? COLORS.GOLD : COLORS.DAWN, 0.4 + Math.random() * 0.3);
+            const x = spacing * (i + 1);
+            const barHeight = Math.abs(Math.sin(phase * 0.5 + i * 0.6)) * height * 0.7 * normalizedValue + 5;
+            const startY = height - barHeight - 5;
+            for (let y = startY; y < height - 5; y += GRID) {
+              const color = i % 4 === 0 ? COLORS.GOLD : i % 4 === 2 ? COLORS.DYNAMICS : COLORS.DAWN;
+              drawPixel(x, y, color, 0.5 + Math.random() * 0.3);
             }
           }
           break;
         }
       }
 
-      phaseRef.current += 0.02;
+      phaseRef.current += 0.015;
       animationId = requestAnimationFrame(draw);
     }
 
     draw();
     return () => cancelAnimationFrame(animationId);
-  }, [type, value]);
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span
-        className="tracking-[0.05em] uppercase"
-        style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'rgba(236, 227, 214, 0.4)' }}
-      >
-        {label}
-      </span>
-      <div
-        style={{
-          background: 'rgba(5, 4, 3, 0.6)',
-          border: '1px solid rgba(236, 227, 214, 0.08)',
-        }}
-      >
-        <canvas ref={canvasRef} style={{ width: 118, height: 80, display: 'block' }} />
-      </div>
-    </div>
-  );
-}
-
-function ParticleField() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<{ x: number; y: number; vx: number; vy: number; life: number }[]>([]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.offsetWidth;
-    const height = canvas.offsetHeight;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-
-    // Initialize particles
-    const particles = particlesRef.current;
-    for (let i = 0; i < 50; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        life: Math.random(),
-      });
-    }
-
-    let animationId: number;
-
-    function draw() {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, width, height);
-
-      particles.forEach(p => {
-        // Update position
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life += 0.005;
-
-        // Wrap around
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
-
-        // Draw pixel-snapped
-        const px = Math.floor(p.x / GRID) * GRID;
-        const py = Math.floor(p.y / GRID) * GRID;
-        const alpha = 0.2 + Math.sin(p.life * Math.PI * 2) * 0.15;
-
-        ctx.fillStyle = `rgba(${COLORS.DAWN.r},${COLORS.DAWN.g},${COLORS.DAWN.b},${alpha})`;
-        ctx.fillRect(px, py, GRID, GRID);
-      });
-
-      animationId = requestAnimationFrame(draw);
-    }
-
-    draw();
-    return () => cancelAnimationFrame(animationId);
-  }, []);
+  }, [type, value, small]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.4 }}
-    />
-  );
-}
-
-function AlignmentCompass({ coordinates }: { coordinates: { geometry: number; alterity: number; dynamics: number } }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rotationRef = useRef(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const size = 200;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
-
-    let animationId: number;
-
-    function draw() {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, size, size);
-
-      const cx = size / 2;
-      const cy = size / 2;
-      const rotation = rotationRef.current;
-
-      // Outer ring (dashed, rotating)
-      ctx.strokeStyle = 'rgba(236, 227, 214, 0.15)';
-      ctx.setLineDash([4, 8]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, 90, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Middle ring
-      ctx.strokeStyle = 'rgba(236, 227, 214, 0.1)';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 60, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Inner ring
-      ctx.strokeStyle = 'rgba(236, 227, 214, 0.08)';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 30, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Crosshairs
-      ctx.strokeStyle = 'rgba(236, 227, 214, 0.1)';
-      ctx.beginPath();
-      ctx.moveTo(cx - 95, cy);
-      ctx.lineTo(cx + 95, cy);
-      ctx.moveTo(cx, cy - 95);
-      ctx.lineTo(cx, cy + 95);
-      ctx.stroke();
-
-      // Cardinal markers (rotating)
-      const markerRadius = 80;
-      const cardinalColors = [
-        { color: COLORS.GOLD, value: coordinates.geometry, label: 'G' },
-        { color: COLORS.DAWN, value: coordinates.alterity, label: 'A' },
-        { color: COLORS.DYNAMICS, value: coordinates.dynamics, label: 'D' },
-      ];
-
-      cardinalColors.forEach((cardinal, i) => {
-        const angle = rotation + (i * Math.PI * 2) / 3;
-        const dist = markerRadius * (0.5 + (cardinal.value + 1) / 4);
-        const x = cx + Math.cos(angle) * dist;
-        const y = cy + Math.sin(angle) * dist;
-
-        // Draw marker
-        const px = Math.floor(x / GRID) * GRID;
-        const py = Math.floor(y / GRID) * GRID;
-        ctx.fillStyle = `rgba(${cardinal.color.r},${cardinal.color.g},${cardinal.color.b},0.8)`;
-        ctx.fillRect(px - GRID, py - GRID, GRID * 3, GRID * 3);
-      });
-
-      // Center point
-      ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-      ctx.fillRect(cx - GRID / 2, cy - GRID / 2, GRID, GRID);
-
-      rotationRef.current += 0.003;
-      animationId = requestAnimationFrame(draw);
-    }
-
-    draw();
-    return () => cancelAnimationFrame(animationId);
-  }, [coordinates]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-      style={{ width: 200, height: 200 }}
+      style={{ width: '100%', height: '100%', display: 'block' }}
     />
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HELPER COMPONENTS
+   CORNER BRACKETS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function CardinalValue({ glyph, label, value, color }: { glyph: string; label: string; value: number; color: string }) {
+function CornerBrackets() {
+  const bracketStyle = {
+    position: 'absolute' as const,
+    width: '24px',
+    height: '24px',
+    borderColor: 'rgba(236, 227, 214, 0.3)',
+    borderStyle: 'solid' as const,
+    borderWidth: '0',
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      <span style={{ color, fontSize: '14px' }}>{glyph}</span>
-      <div className="flex flex-col">
-        <span
-          className="tracking-[0.05em] uppercase"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'rgba(236, 227, 214, 0.3)' }}
-        >
-          {label}
-        </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.7)' }}>
-          {value > 0 ? '+' : ''}{value.toFixed(2)}
-        </span>
-      </div>
+    <>
+      <div style={{ ...bracketStyle, top: '20px', left: '20px', borderTopWidth: '1px', borderLeftWidth: '1px' }} />
+      <div style={{ ...bracketStyle, top: '20px', right: '20px', borderTopWidth: '1px', borderRightWidth: '1px' }} />
+      <div style={{ ...bracketStyle, bottom: '20px', left: '20px', borderBottomWidth: '1px', borderLeftWidth: '1px' }} />
+      <div style={{ ...bracketStyle, bottom: '20px', right: '20px', borderBottomWidth: '1px', borderRightWidth: '1px' }} />
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENTITY SILHOUETTE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function EntitySilhouette() {
+  return (
+    <div
+      style={{
+        width: '80px',
+        height: '100px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <svg viewBox="0 0 60 80" style={{ width: '100%', height: '100%' }}>
+        {/* Simple abstract entity shape made of dots */}
+        <g fill="rgba(236, 227, 214, 0.4)">
+          {/* Head */}
+          <circle cx="30" cy="15" r="2" />
+          <circle cx="26" cy="12" r="1.5" />
+          <circle cx="34" cy="12" r="1.5" />
+          <circle cx="30" cy="10" r="1.5" />
+          {/* Body */}
+          <circle cx="30" cy="25" r="2" />
+          <circle cx="25" cy="28" r="1.5" />
+          <circle cx="35" cy="28" r="1.5" />
+          <circle cx="30" cy="35" r="2" />
+          <circle cx="27" cy="40" r="1.5" />
+          <circle cx="33" cy="40" r="1.5" />
+          <circle cx="30" cy="45" r="2" />
+          <circle cx="30" cy="55" r="2" />
+          {/* Arms */}
+          <circle cx="20" cy="30" r="1.5" />
+          <circle cx="15" cy="32" r="1.5" />
+          <circle cx="40" cy="30" r="1.5" />
+          <circle cx="45" cy="32" r="1.5" />
+          {/* Legs */}
+          <circle cx="25" cy="65" r="1.5" />
+          <circle cx="22" cy="72" r="1.5" />
+          <circle cx="35" cy="65" r="1.5" />
+          <circle cx="38" cy="72" r="1.5" />
+        </g>
+      </svg>
     </div>
   );
 }
