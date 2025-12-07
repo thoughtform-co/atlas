@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas - Entity Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS - Atlas Eidolon Design System
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      /* Colors */
+      --void: #050403;
+      --surface-0: #0A0908;
+      --surface-1: #0F0E0C;
+      --dawn: #ECE3D6;
+      --dawn-70: rgba(236, 227, 214, 0.7);
+      --dawn-50: rgba(236, 227, 214, 0.5);
+      --dawn-30: rgba(236, 227, 214, 0.3);
+      --dawn-15: rgba(236, 227, 214, 0.15);
+      --dawn-08: rgba(236, 227, 214, 0.08);
+      --dawn-04: rgba(236, 227, 214, 0.04);
+      --gold: #CAA554;
+      --gold-dim: rgba(202, 165, 84, 0.4);
+      --gold-30: rgba(202, 165, 84, 0.3);
+      --gold-15: rgba(202, 165, 84, 0.15);
+      
+      /* Fonts */
+      --font-mono: 'PT Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+      
+      /* Spacing */
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--dawn);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       MAIN LAYOUT
+       ═══════════════════════════════════════════════════════════════ */
+    .main {
+      padding: 6rem 2rem 2rem;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       PAGE HEADER
+       ═══════════════════════════════════════════════════════════════ */
+    .pageHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    
+    .pageTitle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+    }
+    
+    .titlePrefix {
+      color: var(--dawn-30);
+    }
+    
+    .pageStats {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .stat {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.05em;
+      color: var(--dawn-30);
+    }
+    
+    .stat span {
+      color: var(--gold);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       ARCHIVE LAYOUT
+       ═══════════════════════════════════════════════════════════════ */
+    .archiveLayout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1.5rem;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════════════════════════════ */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--dawn-08);
+      border: 1px solid var(--dawn-08);
+      height: fit-content;
+      position: sticky;
+      top: 5rem;
+    }
+    
+    .sidebarHeader {
+      background: var(--surface-0);
+      padding: 0.75rem 0.875rem;
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .searchSection {
+      background: var(--surface-0);
+      padding: 0.75rem 0.875rem;
+    }
+    
+    .searchInput {
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+    
+    .searchInput:focus {
+      border-color: var(--gold-dim);
+    }
+    
+    .searchInput::placeholder {
+      color: var(--dawn-30);
+    }
+    
+    .filterGroup {
+      background: var(--surface-0);
+      padding: 0.875rem;
+    }
+    
+    .filterLabel {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      margin-bottom: 0.625rem;
+    }
+    
+    .filterOptions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+    
+    .filterOption {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.5rem;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 150ms ease;
+      text-align: left;
+      font-family: inherit;
+    }
+    
+    .filterOption:hover {
+      background: var(--dawn-04);
+      border-color: var(--dawn-08);
+    }
+    
+    .filterOption.active {
+      background: var(--gold-15);
+      border-color: var(--gold-dim);
+    }
+    
+    .checkbox {
+      width: 12px;
+      height: 12px;
+      border: 1px solid var(--dawn-30);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+    
+    .filterOption.active .checkbox {
+      border-color: var(--gold);
+      background: var(--gold-15);
+    }
+    
+    .dot {
+      width: 6px;
+      height: 6px;
+      flex-shrink: 0;
+    }
+    
+    .optionLabel {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--dawn-50);
+      letter-spacing: 0.05em;
+    }
+    
+    .filterOption.active .optionLabel {
+      color: var(--dawn);
+    }
+    
+    .optionCount {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+    }
+    
+    .sidebarActions {
+      background: var(--surface-0);
+      padding: 0.875rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .btnGhost {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      background: transparent;
+      border: 1px solid var(--dawn-15);
+      color: var(--dawn-50);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .btnGhost:hover {
+      border-color: var(--dawn-30);
+      color: var(--dawn);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       GRID SECTION
+       ═══════════════════════════════════════════════════════════════ */
+    .gridSection {
+      min-width: 0;
+    }
+    
+    .gridHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--dawn-08);
+    }
+    
+    .gridHeaderLeft {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .gridCount {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--dawn-50);
+    }
+    
+    .gridCount span {
+      color: var(--gold);
+    }
+    
+    .viewToggle {
+      display: flex;
+      border: 1px solid var(--dawn-08);
+    }
+    
+    .viewBtn {
+      padding: 0.375rem 0.625rem;
+      background: transparent;
+      border: none;
+      color: var(--dawn-30);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 150ms ease;
+      font-family: inherit;
+    }
+    
+    .viewBtn:hover {
+      color: var(--dawn-50);
+      background: var(--dawn-04);
+    }
+    
+    .viewBtn.activeView {
+      color: var(--gold);
+      background: var(--gold-15);
+    }
+    
+    .sortDropdown {
+      padding: 0.375rem 0.625rem;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn);
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23ECE3D6' fill-opacity='0.3' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      padding-right: 1.5rem;
+      outline: none;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       ENTITY GRID
+       ═══════════════════════════════════════════════════════════════ */
+    .entityGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       ENTITY CARD
+       ═══════════════════════════════════════════════════════════════ */
+    .entityCard {
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+      overflow: hidden;
+      transition: all 150ms ease;
+      position: relative;
+    }
+    
+    .entityCard:hover {
+      border-color: var(--dawn-15);
+    }
+    
+    .cardImage {
+      aspect-ratio: 16/10;
+      background: var(--void);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .cardImage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .imagePlaceholder {
+      color: var(--dawn-15);
+      font-size: 32px;
+    }
+    
+    .badges {
+      position: absolute;
+      top: 0.5rem;
+      left: 0.5rem;
+      display: flex;
+      gap: 0.375rem;
+    }
+    
+    .badgeClass,
+    .badgeThreat {
+      padding: 0.1875rem 0.375rem;
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(5, 4, 3, 0.85);
+      border: 1px solid var(--dawn-15);
+    }
+    
+    .badgeClass {
+      color: var(--gold);
+      border-color: var(--gold-dim);
+    }
+    
+    .cardContent {
+      padding: 0.875rem;
+    }
+    
+    .cardName {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    
+    .cardAllegiance {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+      letter-spacing: 0.05em;
+      margin-bottom: 0.625rem;
+    }
+    
+    .cardBio {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      color: var(--dawn-50);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .cardFooter {
+      padding: 0.625rem 0.875rem;
+      border-top: 1px solid var(--dawn-08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .cardCoords {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .cardActions {
+      display: flex;
+      gap: 0.25rem;
+      opacity: 0;
+      transition: opacity 150ms ease;
+    }
+    
+    .entityCard:hover .cardActions {
+      opacity: 1;
+    }
+    
+    .actionBtn {
+      padding: 0.25rem 0.5rem;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn-50);
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 150ms ease;
+    }
+    
+    .actionBtn:hover {
+      border-color: var(--dawn-15);
+      color: var(--dawn);
+    }
+    
+    .deleteBtn:hover {
+      border-color: #8B5A5A;
+      color: #8B5A5A;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       EMPTY STATE
+       ═══════════════════════════════════════════════════════════════ */
+    .emptyState {
+      grid-column: 1 / -1;
+      padding: 4rem 2rem;
+      text-align: center;
+      border: 1px dashed var(--dawn-15);
+    }
+    
+    .emptyIcon {
+      font-size: 32px;
+      color: var(--dawn-15);
+      margin-bottom: 1rem;
+    }
+    
+    .emptyTitle {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--dawn-50);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    
+    .emptyText {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      color: var(--dawn-30);
+      margin-bottom: 1rem;
+    }
+    
+    .addButton {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: var(--gold);
+      border: 1px solid var(--gold);
+      color: var(--void);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .addButton:hover {
+      background: #D4B76A;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .archiveLayout {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="main">
+    <!-- Page Header -->
+    <div class="pageHeader">
+      <div class="pageTitle">
+        <span class="titlePrefix">//</span>
+        <span>Entity Archive</span>
+      </div>
+      <div class="pageStats">
+        <div class="stat">Total Entities: <span>12</span></div>
+        <div class="stat">Last Catalogued: <span>Recently</span></div>
+      </div>
+    </div>
+
+    <div class="archiveLayout">
+      <!-- Sidebar Filters -->
+      <aside class="sidebar">
+        <div class="sidebarHeader">// Filters</div>
+        
+        <!-- Search -->
+        <div class="searchSection">
+          <input
+            type="text"
+            class="searchInput"
+            placeholder="Search entities..."
+            id="searchInput"
+          />
+        </div>
+
+        <!-- Entity Class Filter -->
+        <div class="filterGroup">
+          <div class="filterLabel">▸ Entity Class</div>
+          <div class="filterOptions">
+            <button class="filterOption active" data-filter="type" data-value="all">
+              <span class="checkbox">✓</span>
+              <span class="optionLabel">All Classes</span>
+              <span class="optionCount">12</span>
+            </button>
+            <button class="filterOption" data-filter="type" data-value="architect">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Architect</span>
+              <span class="optionCount">3</span>
+            </button>
+            <button class="filterOption" data-filter="type" data-value="guardian">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Guardian</span>
+              <span class="optionCount">4</span>
+            </button>
+            <button class="filterOption" data-filter="type" data-value="wanderer">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Wanderer</span>
+              <span class="optionCount">2</span>
+            </button>
+            <button class="filterOption" data-filter="type" data-value="void-born">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Void-Born</span>
+              <span class="optionCount">2</span>
+            </button>
+            <button class="filterOption" data-filter="type" data-value="hybrid">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Hybrid</span>
+              <span class="optionCount">1</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Threat Level Filter -->
+        <div class="filterGroup">
+          <div class="filterLabel">▸ Threat Level</div>
+          <div class="filterOptions">
+            <button class="filterOption active" data-filter="threat" data-value="all">
+              <span class="checkbox">✓</span>
+              <span class="optionLabel">All Levels</span>
+              <span class="optionCount">12</span>
+            </button>
+            <button class="filterOption" data-filter="threat" data-value="benign">
+              <span class="checkbox"></span>
+              <span class="dot" style="background: #5B8A7A;"></span>
+              <span class="optionLabel">Benign</span>
+              <span class="optionCount">5</span>
+            </button>
+            <button class="filterOption" data-filter="threat" data-value="cautious">
+              <span class="checkbox"></span>
+              <span class="dot" style="background: #7A7868;"></span>
+              <span class="optionLabel">Cautious</span>
+              <span class="optionCount">4</span>
+            </button>
+            <button class="filterOption" data-filter="threat" data-value="volatile">
+              <span class="checkbox"></span>
+              <span class="dot" style="background: #C17F59;"></span>
+              <span class="optionLabel">Volatile</span>
+              <span class="optionCount">2</span>
+            </button>
+            <button class="filterOption" data-filter="threat" data-value="existential">
+              <span class="checkbox"></span>
+              <span class="dot" style="background: #8B5A5A;"></span>
+              <span class="optionLabel">Existential</span>
+              <span class="optionCount">1</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Allegiance Filter -->
+        <div class="filterGroup">
+          <div class="filterLabel">▸ Allegiance</div>
+          <div class="filterOptions">
+            <button class="filterOption active" data-filter="allegiance" data-value="all">
+              <span class="checkbox">✓</span>
+              <span class="optionLabel">All Factions</span>
+              <span class="optionCount">12</span>
+            </button>
+            <button class="filterOption" data-filter="allegiance" data-value="nomenclate">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Nomenclate</span>
+              <span class="optionCount">5</span>
+            </button>
+            <button class="filterOption" data-filter="allegiance" data-value="liminal">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Liminal Covenant</span>
+              <span class="optionCount">4</span>
+            </button>
+            <button class="filterOption" data-filter="allegiance" data-value="unaligned">
+              <span class="checkbox"></span>
+              <span class="optionLabel">Unaligned</span>
+              <span class="optionCount">3</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="sidebarActions">
+          <button class="btnGhost" id="clearFilters">Clear</button>
+        </div>
+      </aside>
+
+      <!-- Grid Section -->
+      <section class="gridSection">
+        <!-- Grid Header -->
+        <div class="gridHeader">
+          <div class="gridHeaderLeft">
+            <span class="gridCount">
+              Showing <span>12</span> entities
+            </span>
+            <div class="viewToggle">
+              <button class="viewBtn activeView" id="viewGrid">▦</button>
+              <button class="viewBtn" id="viewList">☰</button>
+            </div>
+          </div>
+          <select class="sortDropdown" id="sortBy">
+            <option value="recent">Recently Added</option>
+            <option value="name">Name (A-Z)</option>
+            <option value="threat">Threat Level</option>
+            <option value="class">Entity Class</option>
+          </select>
+        </div>
+
+        <!-- Entity Grid -->
+        <div class="entityGrid" id="entityGrid">
+          <!-- Entity Card 1 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Guardian</span>
+                <span class="badgeThreat" style="color: #5B8A7A; border-color: #5B8A7A;">Benign</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Sentinel</h3>
+              <div class="cardAllegiance">◎ LIMINAL COVENANT</div>
+              <p class="cardBio">A watchful entity that guards the boundaries between semantic realms. Its presence stabilizes the liminal spaces it inhabits, preventing conceptual drift and maintaining structural integrity.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆2.34</span>
+                <span style="color: #ECE3D6;">○1.87</span>
+                <span style="color: #5B8A7A;">◇3.21</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 2 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Architect</span>
+                <span class="badgeThreat" style="color: #7A7868; border-color: #7A7868;">Cautious</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Constructor</h3>
+              <div class="cardAllegiance">◎ NOMENCLATE</div>
+              <p class="cardBio">Builds new conceptual structures within the manifold. Its work reshapes semantic space, creating pathways and connections where none existed before. Approach with caution—its constructions are permanent.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆4.12</span>
+                <span style="color: #ECE3D6;">○2.98</span>
+                <span style="color: #5B8A7A;">◇1.76</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 3 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Wanderer</span>
+                <span class="badgeThreat" style="color: #C17F59; border-color: #C17F59;">Volatile</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Drifter</h3>
+              <div class="cardAllegiance">◎ UNALIGNED</div>
+              <p class="cardBio">An unstable entity that moves unpredictably through semantic space. Its passage leaves trails of conceptual distortion. Highly volatile—do not attempt to contain or predict its movements.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆1.23</span>
+                <span style="color: #ECE3D6;">○4.56</span>
+                <span style="color: #5B8A7A;">◇2.89</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 4 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Void-Born</span>
+                <span class="badgeThreat" style="color: #8B5A5A; border-color: #8B5A5A;">Existential</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Null</h3>
+              <div class="cardAllegiance">◎ UNALIGNED</div>
+              <p class="cardBio">Born from the spaces between meanings, where concepts fail. Its very existence threatens to unravel semantic structures. Maximum threat level—avoid direct observation or interaction.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆0.00</span>
+                <span style="color: #ECE3D6;">○0.00</span>
+                <span style="color: #5B8A7A;">◇0.00</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 5 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Hybrid</span>
+                <span class="badgeThreat" style="color: #7A7868; border-color: #7A7868;">Cautious</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Composite</h3>
+              <div class="cardAllegiance">◎ LIMINAL COVENANT</div>
+              <p class="cardBio">A fusion of multiple entity types, combining characteristics of Guardians, Architects, and Wanderers. Its nature shifts depending on context. Handle with care—its hybrid structure makes it unpredictable.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆2.67</span>
+                <span style="color: #ECE3D6;">○3.14</span>
+                <span style="color: #5B8A7A;">◇2.91</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 6 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Guardian</span>
+                <span class="badgeThreat" style="color: #5B8A7A; border-color: #5B8A7A;">Benign</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Keeper</h3>
+              <div class="cardAllegiance">◎ NOMENCLATE</div>
+              <p class="cardBio">Maintains the integrity of archived knowledge. Its domain encompasses the stable regions where catalogued entities rest. Safe to approach, but respect its boundaries.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆3.45</span>
+                <span style="color: #ECE3D6;">○2.12</span>
+                <span style="color: #5B8A7A;">◇4.33</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 7 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Architect</span>
+                <span class="badgeThreat" style="color: #C17F59; border-color: #C17F59;">Volatile</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Deconstructor</h3>
+              <div class="cardAllegiance">◎ UNALIGNED</div>
+              <p class="cardBio">The inverse of The Constructor. Actively dismantles semantic structures, creating voids where meaning once existed. Its work is destructive and unpredictable. Exercise extreme caution.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆-2.34</span>
+                <span style="color: #ECE3D6;">○-1.98</span>
+                <span style="color: #5B8A7A;">◇-3.21</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 8 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Wanderer</span>
+                <span class="badgeThreat" style="color: #5B8A7A; border-color: #5B8A7A;">Benign</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Nomad</h3>
+              <div class="cardAllegiance">◎ LIMINAL COVENANT</div>
+              <p class="cardBio">A peaceful wanderer that maps semantic territories. Its movements create temporary pathways that others can follow. Harmless but elusive—rarely remains in one location for long.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆1.98</span>
+                <span style="color: #ECE3D6;">○3.76</span>
+                <span style="color: #5B8A7A;">◇2.44</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 9 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Architect</span>
+                <span class="badgeThreat" style="color: #7A7868; border-color: #7A7868;">Cautious</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Weaver</h3>
+              <div class="cardAllegiance">◎ NOMENCLATE</div>
+              <p class="cardBio">Connects distant semantic regions through carefully constructed bridges. Its work requires precision and stability. Approach respectfully—its creations are delicate.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆3.78</span>
+                <span style="color: #ECE3D6;">○2.56</span>
+                <span style="color: #5B8A7A;">◇3.89</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 10 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Guardian</span>
+                <span class="badgeThreat" style="color: #7A7868; border-color: #7A7868;">Cautious</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Warden</h3>
+              <div class="cardAllegiance">◎ NOMENCLATE</div>
+              <p class="cardBio">Enforces boundaries and prevents unauthorized crossings between semantic domains. More aggressive than The Sentinel. Do not attempt to bypass its watch.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆4.56</span>
+                <span style="color: #ECE3D6;">○1.23</span>
+                <span style="color: #5B8A7A;">◇3.45</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 11 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Void-Born</span>
+                <span class="badgeThreat" style="color: #7A7868; border-color: #7A7868;">Cautious</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Echo</h3>
+              <div class="cardAllegiance">◎ LIMINAL COVENANT</div>
+              <p class="cardBio">A rare stable Void-Born entity. Instead of erasing meaning, it reflects it back in distorted forms. Its reflections can reveal hidden truths about semantic structures.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆0.11</span>
+                <span style="color: #ECE3D6;">○0.22</span>
+                <span style="color: #5B8A7A;">◇0.33</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Entity Card 12 -->
+          <article class="entityCard">
+            <div class="cardImage">
+              <span class="imagePlaceholder">◇</span>
+              <div class="badges">
+                <span class="badgeClass">Guardian</span>
+                <span class="badgeThreat" style="color: #5B8A7A; border-color: #5B8A7A;">Benign</span>
+              </div>
+            </div>
+            <div class="cardContent">
+              <h3 class="cardName">The Protector</h3>
+              <div class="cardAllegiance">◎ LIMINAL COVENANT</div>
+              <p class="cardBio">Shields vulnerable semantic entities from external threats. Its protective barrier is impervious to most disturbances. Safe to observe from a distance.</p>
+            </div>
+            <div class="cardFooter">
+              <div class="cardCoords">
+                <span style="color: #CAA554;">◆2.89</span>
+                <span style="color: #ECE3D6;">○3.67</span>
+                <span style="color: #5B8A7A;">◇2.34</span>
+              </div>
+              <div class="cardActions">
+                <a href="#" class="actionBtn">Edit</a>
+                <button class="actionBtn deleteBtn">Delete</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // FILTER FUNCTIONALITY
+    // ═══════════════════════════════════════════════════════════════
+    const filterOptions = document.querySelectorAll('.filterOption');
+    const searchInput = document.getElementById('searchInput');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const sortDropdown = document.getElementById('sortBy');
+    const viewGridBtn = document.getElementById('viewGrid');
+    const viewListBtn = document.getElementById('viewList');
+
+    // Filter button clicks
+    filterOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const filterType = option.dataset.filter;
+        const value = option.dataset.value;
+        
+        // Remove active class from siblings
+        option.parentElement.querySelectorAll('.filterOption').forEach(opt => {
+          if (opt.dataset.filter === filterType) {
+            opt.classList.remove('active');
+            opt.querySelector('.checkbox').textContent = '';
+          }
+        });
+        
+        // Add active class to clicked option
+        option.classList.add('active');
+        option.querySelector('.checkbox').textContent = '✓';
+      });
+    });
+
+    // Clear filters
+    clearFiltersBtn.addEventListener('click', () => {
+      filterOptions.forEach(opt => {
+        opt.classList.remove('active');
+        opt.querySelector('.checkbox').textContent = '';
+        if (opt.dataset.value === 'all') {
+          opt.classList.add('active');
+          opt.querySelector('.checkbox').textContent = '✓';
+        }
+      });
+      searchInput.value = '';
+      sortDropdown.value = 'recent';
+    });
+
+    // View toggle
+    viewGridBtn.addEventListener('click', () => {
+      viewGridBtn.classList.add('activeView');
+      viewListBtn.classList.remove('activeView');
+    });
+
+    viewListBtn.addEventListener('click', () => {
+      viewListBtn.classList.add('activeView');
+      viewGridBtn.classList.remove('activeView');
+    });
+
+    // Search functionality (demo)
+    searchInput.addEventListener('input', (e) => {
+      console.log('Search:', e.target.value);
+    });
+
+    // Sort functionality (demo)
+    sortDropdown.addEventListener('change', (e) => {
+      console.log('Sort by:', e.target.value);
+    });
+  </script>
+</body>
+</html>
+
