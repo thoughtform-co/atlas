@@ -75,7 +75,7 @@ CREATE OR REPLACE FUNCTION search_archive_log_by_embedding(
 RETURNS TABLE (
   id UUID,
   denizen_id TEXT,
-  timestamp TIMESTAMPTZ,
+  created_timestamp TIMESTAMPTZ,
   entry TEXT,
   archivist_name TEXT,
   tags TEXT[],
@@ -89,7 +89,7 @@ BEGIN
   SELECT
     a.id,
     a.entity_id AS denizen_id,
-    a.created_at AS timestamp,
+    a.created_at AS created_timestamp,
     a.content AS entry,
     COALESCE(a.created_by::text, 'AI Archivist') AS archivist_name,
     ARRAY(SELECT jsonb_array_elements_text(a.metadata->'tags')) AS tags,

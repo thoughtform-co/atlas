@@ -165,7 +165,7 @@ export async function searchArchiveLog(
     return (data as any[]).map((row: any) => ({
       id: row.id,
       denizenId: row.denizen_id,
-      timestamp: row.timestamp,
+      timestamp: row.created_timestamp,
       entry: row.entry,
       archivistName: row.archivist_name,
       tags: row.tags,

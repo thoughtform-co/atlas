@@ -299,7 +299,7 @@ export interface Database {
         Returns: Array<{
           id: string
           denizen_id: string | null
-          timestamp: string
+          created_timestamp: string
           entry: string
           archivist_name: string
           tags: string[] | null
