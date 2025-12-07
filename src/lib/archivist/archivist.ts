@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { randomUUID } from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/database.types';
 import type {
   ArchivistSession,
   ArchivistResponse,
@@ -26,10 +28,75 @@ const anthropic = new Anthropic({
 });
 
 /**
- * In-memory session storage
- * In production, this would be replaced with a database
+ * Create Supabase client with service role for server-side operations
+ * This bypasses RLS to allow the Archivist to manage sessions
  */
-const sessions = new Map<string, ArchivistSession>();
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase credentials not configured for Archivist');
+  }
+
+  return createClient<Database>(supabaseUrl, supabaseServiceKey);
+}
+
+/**
+ * Convert database row to ArchivistSession
+ */
+function dbRowToSession(row: Database['public']['Tables']['archivist_sessions']['Row']): ArchivistSession {
+  const messages = (row.messages as unknown as ArchivistMessage[]) || [];
+  const extractedFields = (row.extracted_fields as unknown as ExtractedFields) || {};
+  const initialMedia = (row.video_analysis as unknown as MediaAnalysis | null) || undefined;
+
+  // Calculate confidence from extracted fields
+  const validation = validateFields(extractedFields);
+  const confidence = validation.confidence;
+
+  // Extract warnings from extracted_fields metadata or compute from validation
+  const warnings: string[] = validation.warnings || [];
+
+  // Map status: 'in_progress' -> 'active'
+  const status = row.status === 'in_progress' ? 'active' : row.status;
+
+  return {
+    id: row.id,
+    userId: row.user_id || '',
+    startedAt: row.created_at,
+    lastActivityAt: row.updated_at,
+    status: status as 'active' | 'completed' | 'abandoned',
+    initialMedia,
+    messages,
+    extractedFields,
+    confidence,
+    warnings,
+  };
+}
+
+/**
+ * Convert ArchivistSession to database insert/update format
+ */
+function sessionToDbRow(session: ArchivistSession): {
+  id: string;
+  user_id: string | null;
+  messages: unknown;
+  extracted_fields: unknown;
+  video_analysis: unknown;
+  status: 'in_progress' | 'completed' | 'abandoned';
+} {
+  // Map status: 'active' -> 'in_progress'
+  const dbStatus = session.status === 'active' ? 'in_progress' : session.status;
+
+  return {
+    id: session.id,
+    user_id: session.userId || null,
+    messages: session.messages as unknown,
+    extracted_fields: session.extractedFields as unknown,
+    video_analysis: (session.initialMedia || null) as unknown,
+    status: dbStatus,
+  };
+}
 
 /**
  * The Archivist - AI cataloguer for liminal entities
@@ -59,6 +126,7 @@ export class Archivist {
    */
   async startSession(userId: string, initialMedia?: MediaAnalysis): Promise<ArchivistSession> {
     const sessionId = randomUUID();
+    const supabase = getSupabaseClient();
 
     // Generate opening message
     let openingMessage: string;
@@ -91,8 +159,16 @@ export class Archivist {
       warnings: [],
     };
 
-    // Store session
-    sessions.set(sessionId, session);
+    // Store session in database
+    const dbRow = sessionToDbRow(session);
+    const { error } = await supabase
+      .from('archivist_sessions')
+      .insert(dbRow);
+
+    if (error) {
+      console.error('[Archivist] Error creating session:', error);
+      throw new Error(`Failed to create session: ${error.message}`);
+    }
 
     return session;
   }
@@ -102,10 +178,21 @@ export class Archivist {
    * Sends user message and receives Archivist response with extracted fields
    */
   async chat(sessionId: string, userMessage: string): Promise<ArchivistResponse> {
-    const session = sessions.get(sessionId);
-    if (!session) {
+    const supabase = getSupabaseClient();
+
+    // Load session from database
+    const { data: row, error: fetchError } = await supabase
+      .from('archivist_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (fetchError || !row) {
       throw new Error('Session not found');
     }
+
+    const session = dbRowToSession(row);
+
     if (session.status !== 'active') {
       throw new Error('Session is not active');
     }
@@ -173,9 +260,24 @@ export class Archivist {
     };
     session.messages.push(archivistMsg);
 
-    // Update session
+    // Update session in database
     session.lastActivityAt = new Date().toISOString();
-    sessions.set(sessionId, session);
+    const dbRow = sessionToDbRow(session);
+    
+    const { error: updateError } = await supabase
+      .from('archivist_sessions')
+      .update({
+        messages: dbRow.messages,
+        extracted_fields: dbRow.extracted_fields,
+        status: dbRow.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+
+    if (updateError) {
+      console.error('[Archivist] Error updating session:', updateError);
+      throw new Error(`Failed to update session: ${updateError.message}`);
+    }
 
     // Return response
     return {
@@ -192,7 +294,7 @@ export class Archivist {
    * Get current extracted fields from session
    */
   async getExtractedFields(sessionId: string): Promise<ExtractedFields> {
-    const session = sessions.get(sessionId);
+    const session = await this.getSession(sessionId);
     if (!session) {
       throw new Error('Session not found');
     }
@@ -203,7 +305,19 @@ export class Archivist {
    * Get full session state
    */
   async getSession(sessionId: string): Promise<ArchivistSession | null> {
-    return sessions.get(sessionId) || null;
+    const supabase = getSupabaseClient();
+
+    const { data: row, error } = await supabase
+      .from('archivist_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (error || !row) {
+      return null;
+    }
+
+    return dbRowToSession(row);
   }
 
   /**
@@ -211,10 +325,20 @@ export class Archivist {
    * Validates that all required fields are present
    */
   async commitToArchive(sessionId: string): Promise<Partial<Denizen>> {
-    const session = sessions.get(sessionId);
-    if (!session) {
+    const supabase = getSupabaseClient();
+
+    // Load session from database
+    const { data: row, error: fetchError } = await supabase
+      .from('archivist_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (fetchError || !row) {
       throw new Error('Session not found');
     }
+
+    const session = dbRowToSession(row);
 
     // Validate fields
     const validation = validateFields(session.extractedFields);
@@ -256,9 +380,21 @@ export class Archivist {
       connections: [], // Will be populated by caller based on suggestedConnections
     };
 
-    // Mark session as completed
+    // Mark session as completed in database
     session.status = 'completed';
-    sessions.set(sessionId, session);
+    const { error: updateError } = await supabase
+      .from('archivist_sessions')
+      .update({
+        status: 'completed',
+        denizen_id: id, // Link session to created denizen
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+
+    if (updateError) {
+      console.error('[Archivist] Error completing session:', updateError);
+      throw new Error(`Failed to complete session: ${updateError.message}`);
+    }
 
     return denizen;
   }
@@ -267,13 +403,20 @@ export class Archivist {
    * Abandon session without creating entity
    */
   async abandonSession(sessionId: string): Promise<void> {
-    const session = sessions.get(sessionId);
-    if (!session) {
-      throw new Error('Session not found');
-    }
+    const supabase = getSupabaseClient();
 
-    session.status = 'abandoned';
-    sessions.set(sessionId, session);
+    const { error } = await supabase
+      .from('archivist_sessions')
+      .update({
+        status: 'abandoned',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+
+    if (error) {
+      console.error('[Archivist] Error abandoning session:', error);
+      throw new Error(`Failed to abandon session: ${error.message}`);
+    }
   }
 
   /**
@@ -297,28 +440,26 @@ export class Archivist {
 
   /**
    * Clean up old abandoned sessions (maintenance)
+   * Can be called from a cron job or scheduled task
    */
-  static cleanupOldSessions(maxAgeHours: number = 24): number {
-    const cutoff = Date.now() - maxAgeHours * 60 * 60 * 1000;
-    let cleaned = 0;
+  static async cleanupOldSessions(maxAgeHours: number = 24): Promise<number> {
+    const supabase = getSupabaseClient();
+    const cutoff = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000).toISOString();
 
-    const idsToDelete: string[] = [];
-    sessions.forEach((session, id) => {
-      const lastActivity = new Date(session.lastActivityAt).getTime();
-      if (
-        (session.status === 'abandoned' || session.status === 'completed') &&
-        lastActivity < cutoff
-      ) {
-        idsToDelete.push(id);
-      }
-    });
+    // Delete old abandoned or completed sessions
+    const { data, error } = await supabase
+      .from('archivist_sessions')
+      .delete()
+      .in('status', ['abandoned', 'completed'])
+      .lt('updated_at', cutoff)
+      .select('id');
 
-    idsToDelete.forEach(id => {
-      sessions.delete(id);
-      cleaned++;
-    });
+    if (error) {
+      console.error('[Archivist] Error cleaning up old sessions:', error);
+      return 0;
+    }
 
-    return cleaned;
+    return data?.length || 0;
   }
 }
 

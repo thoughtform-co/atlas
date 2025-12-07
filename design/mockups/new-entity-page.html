@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas Admin - Catalog New Entity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS - Atlas Eidolon Design System
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      /* Colors */
+      --void: #050403;
+      --surface-0: #0A0908;
+      --surface-1: #0F0E0C;
+      --dawn: #ECE3D6;
+      --dawn-70: rgba(236, 227, 214, 0.7);
+      --dawn-50: rgba(236, 227, 214, 0.5);
+      --dawn-30: rgba(236, 227, 214, 0.3);
+      --dawn-15: rgba(236, 227, 214, 0.15);
+      --dawn-08: rgba(236, 227, 214, 0.08);
+      --dawn-04: rgba(236, 227, 214, 0.04);
+      --gold: #CAA554;
+      --gold-dim: rgba(202, 165, 84, 0.4);
+      --gold-30: rgba(202, 165, 84, 0.3);
+      --gold-15: rgba(202, 165, 84, 0.15);
+      
+      /* Fonts */
+      --font-mono: 'PT Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+      
+      /* Spacing */
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--dawn);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       MAIN LAYOUT
+       ═══════════════════════════════════════════════════════════════ */
+    .main {
+      padding: 5rem 2rem 2rem;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .headerPrefix {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+    
+    .headerTitle {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+    }
+    
+    .headerLine {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--dawn-15) 0%, transparent 100%);
+    }
+    
+    .saveButton {
+      padding: 0.5rem 1rem;
+      background: var(--gold);
+      border: 1px solid var(--gold);
+      color: var(--void);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .saveButton:hover {
+      background: #D4B76A;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       THREE COLUMN LAYOUT
+       ═══════════════════════════════════════════════════════════════ */
+    .threeCol {
+      display: grid;
+      grid-template-columns: auto 1fr 380px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    
+    .cardColumn {
+      width: 620px;
+    }
+    
+    .formColumn {
+      min-width: 0;
+    }
+    
+    .chatColumn {
+      width: 380px;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       ENTITY CARD PREVIEW
+       ═══════════════════════════════════════════════════════════════ */
+    .card {
+      width: 620px;
+      aspect-ratio: 4/5;
+      background: var(--void);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 130px 1fr 130px;
+      grid-template-rows: 32px 1fr 140px;
+      gap: 1px;
+      border: 1px solid var(--dawn-08);
+    }
+    
+    .scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to bottom, var(--gold-dim), transparent);
+      z-index: 100;
+      animation: scan 12s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes scan {
+      0% { top: 0; opacity: 0; }
+      5% { opacity: 0.6; }
+      95% { opacity: 0.6; }
+      100% { top: 100%; opacity: 0; }
+    }
+    
+    /* Card Header */
+    .cardHeader {
+      grid-column: 1 / -1;
+      background: var(--surface-0);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      gap: 12px;
+      border-bottom: 1px solid var(--dawn-08);
+    }
+    
+    .cardHeaderTitle {
+      color: var(--gold);
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+    
+    .cardHeaderData {
+      color: var(--dawn-30);
+      font-family: var(--font-mono);
+    }
+    
+    .cardHeaderData span {
+      color: var(--dawn-50);
+    }
+    
+    .cardHeaderRight {
+      margin-left: auto;
+      display: flex;
+      gap: 12px;
+      font-family: var(--font-mono);
+    }
+    
+    /* Left/Right Columns */
+    .leftCol,
+    .rightCol {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--dawn-04);
+    }
+    
+    .readout {
+      background: var(--void);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+    
+    .readoutLabel {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      margin-bottom: 6px;
+    }
+    
+    .readoutCanvas {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+    
+    .readoutCanvas canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .readoutValue {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--gold);
+      margin-top: 6px;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+    
+    .readoutValueSmall {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--gold);
+      margin-top: 6px;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+    
+    /* Center Zone */
+    .center {
+      background: var(--void);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    .centerCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .alignmentOverlay {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+    
+    .alignmentLabel {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    
+    .entityPlaceholder {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--dawn-30);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    
+    .placeholderBox {
+      width: 100px;
+      height: 100px;
+      border: 1px dashed var(--dawn-15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    /* Card Footer */
+    .cardFooter {
+      grid-column: 1 / -1;
+      background: var(--surface-0);
+      border-top: 1px solid var(--dawn-08);
+      padding: 18px 28px;
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 24px;
+    }
+    
+    .footerLeft {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .footerName {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+    
+    .footerMeta {
+      margin-top: 10px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .footerMetaLine {
+      color: var(--dawn-30);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    
+    .footerMetaLine span {
+      color: var(--dawn-50);
+    }
+    
+    .footerCardinals {
+      margin-top: 8px;
+      color: var(--dawn-30);
+      line-height: 1.4;
+    }
+    
+    .footerRight {
+      display: flex;
+      align-items: center;
+      border-left: 1px solid var(--dawn-08);
+      padding-left: 28px;
+    }
+    
+    .footerBio {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      color: var(--dawn-50);
+      line-height: 1.7;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       PARAMETER FORM PANEL
+       ═══════════════════════════════════════════════════════════════ */
+    .panel {
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(620px * 5 / 4);
+      overflow: hidden;
+    }
+    
+    .panelHeader {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--dawn-08);
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--dawn-30);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    
+    /* Media Upload Zone */
+    .mediaContainer {
+      padding: 1rem;
+      border-bottom: 1px solid var(--dawn-08);
+    }
+    
+    .dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      border: 1px dashed var(--dawn-15);
+      background: var(--surface-1);
+      cursor: pointer;
+      transition: all 150ms ease;
+      min-height: 120px;
+    }
+    
+    .dropzone:hover {
+      border-color: var(--gold-dim);
+      background: var(--gold-15);
+    }
+    
+    .dropzoneIcon {
+      font-size: 24px;
+      color: var(--dawn-30);
+      margin-bottom: 0.5rem;
+    }
+    
+    .dropzoneText {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--dawn-50);
+      letter-spacing: 0.05em;
+    }
+    
+    .dropzoneSubtext {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+      margin-top: 0.25rem;
+    }
+    
+    /* Form Fields */
+    .form {
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .fieldGroup {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+    
+    .fieldLabel {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .fieldPrefix {
+      color: var(--gold-dim);
+    }
+    
+    .fieldInput {
+      padding: 0.5rem 0.625rem;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+    
+    .fieldInput:focus {
+      border-color: var(--gold-dim);
+    }
+    
+    .fieldInput::placeholder {
+      color: var(--dawn-30);
+    }
+    
+    .fieldTextarea {
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 4.5rem;
+    }
+    
+    .fieldSelect {
+      padding: 0.5rem 0.625rem;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23ECE3D6' fill-opacity='0.3' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      padding-right: 1.5rem;
+    }
+    
+    .fieldSelect:focus {
+      border-color: var(--gold-dim);
+    }
+    
+    .fieldRow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+    
+    .divider {
+      height: 1px;
+      background: var(--dawn-08);
+      margin: 0.25rem 0;
+    }
+    
+    .sliderWrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      outline: none;
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      cursor: pointer;
+    }
+    
+    .slider::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      border: none;
+      cursor: pointer;
+    }
+    
+    .sliderValue {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--gold);
+      min-width: 2.5rem;
+      text-align: right;
+    }
+    
+    .coordsRow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+    
+    .coordInput {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .coordLabel {
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       ARCHIVIST CHAT PANEL
+       ═══════════════════════════════════════════════════════════════ */
+    .chatPanel {
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+      display: flex;
+      flex-direction: column;
+      height: calc(620px * 5 / 4);
+      overflow: hidden;
+    }
+    
+    .chatHeader {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--dawn-08);
+      flex-shrink: 0;
+    }
+    
+    .chatTitle {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      margin-bottom: 0.375rem;
+    }
+    
+    .chatAvatar {
+      width: 28px;
+      height: 28px;
+      background: var(--surface-1);
+      border: 1px solid var(--gold-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--gold);
+    }
+    
+    .chatName {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--dawn);
+      letter-spacing: 0.05em;
+    }
+    
+    .chatRole {
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      color: var(--dawn-30);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    
+    .chatStatus {
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      color: var(--dawn-30);
+      letter-spacing: 0.05em;
+    }
+    
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    
+    .message {
+      max-width: 95%;
+    }
+    
+    .messageArchivist {
+      align-self: flex-start;
+    }
+    
+    .messageUser {
+      align-self: flex-end;
+    }
+    
+    .messageContent {
+      padding: 0.5rem 0.625rem;
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      line-height: 1.5;
+    }
+    
+    .messageArchivist .messageContent {
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn-70);
+    }
+    
+    .messageUser .messageContent {
+      background: var(--surface-1);
+      border: 1px solid var(--gold-dim);
+      color: var(--dawn);
+    }
+    
+    .messageContent strong {
+      color: var(--gold);
+      font-weight: 500;
+    }
+    
+    .messageTime {
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      color: var(--dawn-30);
+      margin-top: 0.1875rem;
+      padding: 0 0.25rem;
+    }
+    
+    .messageUser .messageTime {
+      text-align: right;
+    }
+    
+    .inputArea {
+      padding: 0.75rem;
+      border-top: 1px solid var(--dawn-08);
+      flex-shrink: 0;
+    }
+    
+    .inputWrap {
+      display: flex;
+      gap: 0.375rem;
+    }
+    
+    .chatInput {
+      flex: 1;
+      padding: 0.5rem 0.625rem;
+      background: var(--surface-1);
+      border: 1px solid var(--dawn-15);
+      color: var(--dawn);
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+    
+    .chatInput:focus {
+      border-color: var(--gold-dim);
+    }
+    
+    .chatInput::placeholder {
+      color: var(--dawn-30);
+    }
+    
+    .sendButton {
+      padding: 0.5rem 0.75rem;
+      background: var(--gold);
+      border: none;
+      color: var(--void);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .sendButton:hover {
+      background: #D4B76A;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 1400px) {
+      .threeCol {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .cardColumn,
+      .chatColumn {
+        width: 100%;
+        max-width: 620px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="main">
+    <!-- Header -->
+    <div class="header">
+      <span class="headerPrefix">//</span>
+      <span class="headerTitle">Catalog New Entity</span>
+      <div class="headerLine"></div>
+      <button class="saveButton">SAVE TO ARCHIVE</button>
+    </div>
+
+    <!-- Three Column Layout -->
+    <div class="threeCol">
+      <!-- Left: Entity Card Preview -->
+      <div class="cardColumn">
+        <div class="card">
+          <div class="scanline"></div>
+          
+          <!-- Card Header -->
+          <div class="cardHeader">
+            <span class="cardHeaderTitle">ATLAS RESEARCH</span>
+            <span class="cardHeaderData">MODE: <span>Active Scan</span></span>
+            <div class="cardHeaderRight">
+              <span>SIG: <span>0.946</span></span>
+              <span>EPOCH: <span>4.2847 [00:00:00]</span></span>
+            </div>
+          </div>
+
+          <!-- Left Column -->
+          <div class="leftCol">
+            <!-- Phase State -->
+            <div class="readout">
+              <div class="readoutLabel">PHASE STATE</div>
+              <div class="readoutCanvas">
+                <canvas id="phaseCanvas"></canvas>
+              </div>
+              <div class="readoutValueSmall">UNALIGNED</div>
+            </div>
+            
+            <!-- Temp -->
+            <div class="readout">
+              <div class="readoutLabel">TEMP</div>
+              <div class="readoutValue">0.50</div>
+            </div>
+            
+            <!-- Superposition -->
+            <div class="readout">
+              <div class="readoutLabel">SUPERPOSITION</div>
+              <div class="readoutCanvas">
+                <canvas id="superCanvas"></canvas>
+              </div>
+              <div class="readoutValueSmall" style="margin-top: 4px;">[NO IMAGE]</div>
+            </div>
+            
+            <!-- Latent Position -->
+            <div class="readout">
+              <div class="readoutLabel">LATENT POSITION</div>
+              <div class="readoutValueSmall">X:0.000<br>Y:0.000<br>Z:0.000</div>
+            </div>
+            
+            <!-- Manifold Curvature -->
+            <div class="readout">
+              <div class="readoutLabel">MANIFOLD CURVATURE</div>
+              <div class="readoutValueSmall">MODERATE</div>
+            </div>
+          </div>
+
+          <!-- Center Zone -->
+          <div class="center">
+            <canvas class="centerCanvas" id="centerCanvas"></canvas>
+            <div class="alignmentOverlay">
+              <div class="alignmentLabel">UNALIGNED</div>
+            </div>
+            <div class="entityPlaceholder">
+              <div class="placeholderBox">[NO IMAGE]</div>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="rightCol">
+            <!-- Hallucination Index -->
+            <div class="readout">
+              <div class="readoutLabel">HALLUCINATION INDEX</div>
+              <div class="readoutCanvas">
+                <canvas id="hallucCanvas"></canvas>
+              </div>
+              <div class="readoutValueSmall">HIGH [3/5]</div>
+            </div>
+            
+            <!-- Embedding Signature -->
+            <div class="readout">
+              <div class="readoutLabel">EMBEDDING SIGNATURE</div>
+              <div class="readoutCanvas">
+                <canvas id="signatureCanvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Footer -->
+          <div class="cardFooter">
+            <div class="footerLeft">
+              <div class="footerName">UNNAMED ENTITY</div>
+              <div class="footerMeta">
+                <div class="footerMetaLine">CLASS <span>GUARDIAN</span></div>
+                <div class="footerMetaLine">THREAT <span>CAUTIOUS</span></div>
+                <div class="footerCardinals">0.000 0 0.000 0.000</div>
+              </div>
+            </div>
+            <div class="footerRight">
+              <div class="footerBio">No description provided.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle: Parameter Form -->
+      <div class="formColumn">
+        <div class="panel">
+          <div class="panelHeader">// Parameter Configuration</div>
+          
+          <!-- Media Upload Zone -->
+          <div class="mediaContainer">
+            <div class="dropzone">
+              <div class="dropzoneIcon">↑</div>
+              <div class="dropzoneText">Drop image or video, or click to upload</div>
+              <div class="dropzoneSubtext">jpg, png, webp, gif, mp4, webm, mov</div>
+            </div>
+          </div>
+          
+          <!-- Parameter Form -->
+          <div class="form">
+            <!-- Entity Name -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Entity Name
+              </label>
+              <input type="text" class="fieldInput" placeholder="Enter designation...">
+            </div>
+
+            <!-- Subtitle -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Subtitle
+              </label>
+              <input type="text" class="fieldInput" placeholder="Optional epithet...">
+            </div>
+
+            <!-- Description -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Description
+              </label>
+              <textarea class="fieldInput fieldTextarea" placeholder="Describe the entity..."></textarea>
+            </div>
+
+            <!-- Class / Threat / Allegiance Row -->
+            <div class="fieldRow">
+              <div class="fieldGroup">
+                <label class="fieldLabel">
+                  <span class="fieldPrefix">▸</span>
+                  Class
+                </label>
+                <select class="fieldSelect">
+                  <option>Guardian</option>
+                  <option>Wanderer</option>
+                  <option>Architect</option>
+                  <option>Void-Born</option>
+                  <option>Hybrid</option>
+                </select>
+              </div>
+
+              <div class="fieldGroup">
+                <label class="fieldLabel">
+                  <span class="fieldPrefix">▸</span>
+                  Threat
+                </label>
+                <select class="fieldSelect">
+                  <option>Benign</option>
+                  <option selected>Cautious</option>
+                  <option>Volatile</option>
+                  <option>Existential</option>
+                </select>
+              </div>
+
+              <div class="fieldGroup">
+                <label class="fieldLabel">
+                  <span class="fieldPrefix">▸</span>
+                  Allegiance
+                </label>
+                <select class="fieldSelect">
+                  <option>Liminal Covenant</option>
+                  <option>Nomenclate</option>
+                  <option selected>Unaligned</option>
+                  <option>Unknown</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Domain -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Domain
+              </label>
+              <input type="text" class="fieldInput" placeholder="Conceptual territory...">
+            </div>
+
+            <!-- Phase State -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Phase State
+              </label>
+              <select class="fieldSelect">
+                <option>Solid</option>
+                <option selected>Liminal</option>
+                <option>Spectral</option>
+                <option>Fluctuating</option>
+                <option>Crystallized</option>
+              </select>
+            </div>
+
+            <!-- Manifold Curvature -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Manifold Curvature
+              </label>
+              <select class="fieldSelect">
+                <option>Stable</option>
+                <option selected>Moderate</option>
+                <option>Severe</option>
+                <option>Critical</option>
+              </select>
+            </div>
+
+            <!-- Hallucination Index -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Hallucination Index
+              </label>
+              <div class="sliderWrap">
+                <input type="range" class="slider" min="0" max="1" step="0.01" value="0.50">
+                <span class="sliderValue">0.50</span>
+              </div>
+            </div>
+
+            <!-- Coordinates -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Coordinates
+              </label>
+              <div class="coordsRow">
+                <div class="coordInput">
+                  <label class="coordLabel" style="color: var(--dawn-30);">Geometry</label>
+                  <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
+                </div>
+                <div class="coordInput">
+                  <label class="coordLabel" style="color: var(--dawn-30);">Alterity</label>
+                  <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
+                </div>
+                <div class="coordInput">
+                  <label class="coordLabel" style="color: var(--dawn-30);">Dynamics</label>
+                  <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Archivist Chat -->
+      <div class="chatColumn">
+        <div class="chatPanel">
+          <div class="chatHeader">
+            <div class="chatTitle">
+              <div class="chatAvatar">◈</div>
+              <div>
+                <div class="chatName">The Archivist</div>
+                <div class="chatRole">ENTITY CATALOGUER</div>
+              </div>
+            </div>
+            <div class="chatStatus">Awaiting input...</div>
+          </div>
+
+          <div class="messages">
+            <div class="message messageArchivist">
+              <div class="messageContent">
+                Welcome, Navigator. I am the Archivist, keeper of the manifold's denizens. Present your offering—an image or video—and together we shall determine its nature and place in the infinite library.
+              </div>
+              <div class="messageTime">10:56 AM</div>
+            </div>
+          </div>
+
+          <div class="inputArea">
+            <div class="inputWrap">
+              <input type="text" class="chatInput" placeholder="Respond to the Archivist...">
+              <button class="sendButton">SEND</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // CANVAS VISUALIZATIONS
+    // ═══════════════════════════════════════════════════════════════
+    
+    const GRID = 3;
+    const GOLD = '202, 165, 84';
+    const DAWN = '236, 227, 214';
+    
+    function drawPixel(ctx, x, y, color, alpha, size = GRID) {
+      const px = Math.floor(x / GRID) * GRID;
+      const py = Math.floor(y / GRID) * GRID;
+      ctx.fillStyle = `rgba(${color}, ${alpha})`;
+      ctx.fillRect(px, py, size - 1, size - 1);
+    }
+    
+    function setupCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return null;
+      const parent = canvas.parentElement;
+      if (!parent) return null;
+      const rect = parent.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.scale(dpr, dpr);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+    
+    // Phase State Canvas
+    function drawPhaseState() {
+      const setup = setupCanvas('phaseCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      // Scattered particles
+      for (let i = 0; i < 15; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const alpha = 0.3 + Math.random() * 0.4;
+        drawPixel(ctx, x, y, GOLD, alpha);
+      }
+    }
+    
+    // Superposition Canvas
+    function drawSuperposition() {
+      const setup = setupCanvas('superCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      const r = Math.min(width, height) * 0.3;
+      
+      // Outer square
+      const squareSize = r * 1.2;
+      for (let i = 0; i < 4; i++) {
+        const angle = (i * Math.PI) / 2;
+        const x1 = cx + Math.cos(angle) * squareSize;
+        const y1 = cy + Math.sin(angle) * squareSize;
+        const x2 = cx + Math.cos(angle + Math.PI / 2) * squareSize;
+        const y2 = cy + Math.sin(angle + Math.PI / 2) * squareSize;
+        
+        const steps = 10;
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps;
+          const x = x1 + (x2 - x1) * t;
+          const y = y1 + (y2 - y1) * t;
+          drawPixel(ctx, x, y, GOLD, 0.4);
+        }
+      }
+      
+      // Inner diamond
+      const diamondSize = r * 0.6;
+      for (let i = 0; i < 4; i++) {
+        const angle = (i * Math.PI) / 2 + Math.PI / 4;
+        const x1 = cx + Math.cos(angle) * diamondSize;
+        const y1 = cy + Math.sin(angle) * diamondSize;
+        const x2 = cx + Math.cos(angle + Math.PI / 2) * diamondSize;
+        const y2 = cy + Math.sin(angle + Math.PI / 2) * diamondSize;
+        
+        const steps = 8;
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps;
+          const x = x1 + (x2 - x1) * t;
+          const y = y1 + (y2 - y1) * t;
+          drawPixel(ctx, x, y, GOLD, 0.5);
+        }
+      }
+      
+      // Scattered particles around
+      for (let i = 0; i < 20; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = r + Math.random() * (r * 0.5);
+        const x = cx + Math.cos(angle) * dist;
+        const y = cy + Math.sin(angle) * dist;
+        const alpha = 0.2 + Math.random() * 0.3;
+        drawPixel(ctx, x, y, GOLD, alpha);
+      }
+    }
+    
+    // Hallucination Index Canvas (bar graph)
+    function drawHallucinationIndex() {
+      const setup = setupCanvas('hallucCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      const barCount = 5;
+      const barWidth = width / (barCount + 1);
+      const maxHeight = height * 0.6;
+      
+      // Draw bars (3/5 = HIGH)
+      for (let i = 0; i < barCount; i++) {
+        const x = (i + 1) * barWidth;
+        const barHeight = i < 3 ? maxHeight * (0.6 + Math.random() * 0.4) : maxHeight * (0.2 + Math.random() * 0.2);
+        const y = height - barHeight;
+        
+        // Draw bar using pixels
+        for (let py = y; py < height; py += GRID) {
+          for (let px = x - barWidth * 0.3; px < x + barWidth * 0.3; px += GRID) {
+            const alpha = 0.4 + (py - y) / barHeight * 0.4;
+            drawPixel(ctx, px, py, GOLD, alpha);
+          }
+        }
+      }
+    }
+    
+    // Embedding Signature Canvas (vertical bars)
+    function drawEmbeddingSignature() {
+      const setup = setupCanvas('signatureCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      const barCount = 20;
+      const barWidth = width / barCount;
+      
+      for (let i = 0; i < barCount; i++) {
+        const x = i * barWidth + barWidth / 2;
+        const barHeight = height * (0.2 + Math.random() * 0.8);
+        const y = height - barHeight;
+        
+        // Draw thin vertical bar
+        for (let py = y; py < height; py += GRID) {
+          const alpha = 0.3 + (py - y) / barHeight * 0.5;
+          drawPixel(ctx, x, py, GOLD, alpha);
+          drawPixel(ctx, x - GRID, py, GOLD, alpha * 0.7);
+          drawPixel(ctx, x + GRID, py, GOLD, alpha * 0.7);
+        }
+      }
+    }
+    
+    // Center Canvas (particles)
+    function drawCenterCanvas() {
+      const setup = setupCanvas('centerCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      // Scattered particles
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const alpha = 0.1 + Math.random() * 0.2;
+        drawPixel(ctx, x, y, GOLD, alpha, GRID);
+      }
+      
+      // Some connection lines
+      for (let i = 0; i < 10; i++) {
+        const x1 = Math.random() * width;
+        const y1 = Math.random() * height;
+        const x2 = x1 + (Math.random() - 0.5) * width * 0.3;
+        const y2 = y1 + (Math.random() - 0.5) * height * 0.3;
+        
+        const steps = 15;
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps;
+          const x = x1 + (x2 - x1) * t;
+          const y = y1 + (y2 - y1) * t;
+          const alpha = 0.15 * (1 - t * 0.5);
+          drawPixel(ctx, x, y, GOLD, alpha);
+        }
+      }
+    }
+    
+    // Initialize all canvases
+    function initCanvases() {
+      drawPhaseState();
+      drawSuperposition();
+      drawHallucinationIndex();
+      drawEmbeddingSignature();
+      drawCenterCanvas();
+      
+      // Animate center canvas
+      let time = 0;
+      function animate() {
+        time += 0.01;
+        const setup = setupCanvas('centerCanvas');
+        if (setup) {
+          const { ctx, width, height } = setup;
+          ctx.clearRect(0, 0, width, height);
+          drawCenterCanvas();
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
+    
+    // Wait for DOM
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCanvases);
+    } else {
+      initCanvases();
+    }
+    
+    // Handle window resize
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(initCanvases, 100);
+    });
+    
+    // Slider value update
+    document.querySelector('.slider').addEventListener('input', (e) => {
+      document.querySelector('.sliderValue').textContent = parseFloat(e.target.value).toFixed(2);
+    });
+  </script>
+</body>
+</html>
+

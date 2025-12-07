@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { archivist } from '@/lib/archivist/archivist';
 import type { MediaAnalysis } from '@/lib/archivist/types';
+import { getAuthUser } from '@/lib/supabase-server';
 
 /**
  * POST /api/archivist/chat
@@ -11,7 +12,7 @@ import type { MediaAnalysis } from '@/lib/archivist/types';
  * {
  *   sessionId?: string,        // Existing session ID (omit to start new session)
  *   message?: string,          // User message (omit for new session)
- *   userId: string,            // User identifier
+ *   userId?: string,           // User identifier (optional - will use auth user if available)
  *   mediaAnalysis?: {          // Optional media analysis for new sessions
  *     mediaUrl?: string,
  *     mediaType?: 'image' | 'video',
@@ -36,13 +37,17 @@ import type { MediaAnalysis } from '@/lib/archivist/types';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, message, userId, mediaAnalysis } = body;
+    const { sessionId, message, userId: providedUserId, mediaAnalysis } = body;
+
+    // Get authenticated user if available, otherwise use provided userId
+    const authUser = await getAuthUser();
+    const userId = authUser?.id || providedUserId;
 
     // Validate request
     if (!sessionId && !userId) {
       return NextResponse.json(
-        { error: 'userId is required for new sessions' },
-        { status: 400 }
+        { error: 'Authentication required or userId must be provided' },
+        { status: 401 }
       );
     }
 
@@ -64,6 +69,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'message is required for existing sessions' }, {
         status: 400,
       });
+    }
+
+    // Validate session ownership if user is authenticated
+    if (userId) {
+      const session = await archivist.getSession(sessionId);
+      if (!session) {
+        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      }
+      if (session.userId && session.userId !== userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     const response = await archivist.chat(sessionId, message);
