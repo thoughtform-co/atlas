@@ -6,6 +6,33 @@ export type ThreatLevel = 'Benign' | 'Cautious' | 'Volatile' | 'Existential';
 
 export type ConnectionType = 'semantic' | 'historical' | 'adversarial';
 
+export type PhaseState = 'Solid' | 'Liminal' | 'Spectral' | 'Fluctuating' | 'Crystallized';
+
+export type ArchiveEntryType =
+  | 'entity_created'
+  | 'entity_updated'
+  | 'relationship_formed'
+  | 'lore_added'
+  | 'consistency_check'
+  | 'anomaly_detected'
+  | 'metadata_enriched';
+
+export type SessionStatus = 'in_progress' | 'completed' | 'abandoned';
+
+export interface SuperpositionState {
+  state: string;
+  probability: number;
+}
+
+export interface MetaphysicalProperties {
+  phaseState?: PhaseState;
+  superposition?: SuperpositionState[];
+  hallucinationIndex?: number;  // 0.00 to 1.00
+  latentPosition?: number[];  // Vector embedding
+  manifoldCurvature?: number;
+  embeddingSignature?: number[];  // Alternative vector embedding
+}
+
 export interface CardinalCoordinates {
   geometry: number;  // -1 to 1
   alterity: number;  // -1 to 1
@@ -46,6 +73,9 @@ export interface Denizen {
   features?: string[];
   firstObserved?: string;
 
+  // Metaphysical properties
+  metaphysical?: MetaphysicalProperties;
+
   // Relationships
   connections: string[];
 
@@ -81,4 +111,48 @@ export interface Connection {
 export interface ConstellationData {
   denizens: Denizen[];
   connections: Connection[];
+}
+
+// Archive Log Types
+export interface ArchiveLog {
+  id: string;
+  entryType: ArchiveEntryType;
+  entityId?: string;
+  content: string;
+  embedding?: number[];
+  metadata: Record<string, any>;
+  createdBy?: string;
+  createdAt: string;
+}
+
+// Archivist Session Types
+export interface ChatMessage {
+  role: 'user' | 'archivist';
+  content: string;
+  timestamp: string;
+}
+
+export interface VideoFrame {
+  timestamp: string;
+  description: string;
+  entities: string[];
+}
+
+export interface VideoAnalysis {
+  frames: VideoFrame[];
+  summary: string;
+  entities?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface ArchivistSession {
+  id: string;
+  denizenId?: string;
+  userId?: string;
+  messages: ChatMessage[];
+  extractedFields: Partial<Denizen>;
+  videoAnalysis?: VideoAnalysis;
+  status: SessionStatus;
+  createdAt: string;
+  updatedAt: string;
 }
