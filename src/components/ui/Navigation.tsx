@@ -10,268 +10,211 @@ export function Navigation() {
   const pathname = usePathname();
   const { isAuthenticated, isAdmin, signOut, user } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
+  const isArchiveActive = pathname === '/archive';
   const isCanonActive = pathname === '/';
-  const isArcsActive = pathname === '/archive';
 
   return (
     <>
-      <header
+      {/* Fixed container to center the nav */}
+      <div
         style={{
           position: 'fixed',
-          top: 0,
+          top: '24px',
           left: 0,
           right: 0,
           zIndex: 100,
-          height: '48px',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          background: 'rgba(5, 4, 3, 0.92)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
+          justifyContent: 'center',
+          pointerEvents: 'none',
         }}
       >
-        {/* Left: Logo + Add button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {isAdmin && (
+        {/* Navigation bar - inline, not full width */}
+        <nav
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'var(--surface-0, #0A0908)',
+            border: '1px solid rgba(236, 227, 214, 0.15)',
+            pointerEvents: 'auto',
+          }}
+        >
+          {/* Logo Section */}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px' }}>
             <Link
-              href="/admin/new-entity"
+              href="/"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: '24px',
-                height: '24px',
+                gap: '8px',
                 color: 'var(--gold, #CAA554)',
-                fontSize: '20px',
-                fontWeight: 300,
+                fontSize: '13px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
                 textDecoration: 'none',
-                transition: 'opacity 150ms',
+                fontFamily: 'var(--font-mono)',
               }}
-              title="Add New Entity"
             >
-              +
+              <span style={{ fontSize: '16px', opacity: 0.8 }}>◇</span>
+              <span>Atlas</span>
             </Link>
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: '1px', height: '24px', background: 'rgba(236, 227, 214, 0.15)' }} />
+
+          {/* New Entity CTA (admin only) */}
+          {isAdmin && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px' }}>
+                <Link
+                  href="/admin/new-entity"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    background: 'var(--gold, #CAA554)',
+                    border: '1px solid var(--gold, #CAA554)',
+                    color: 'var(--void, #050403)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 150ms ease',
+                  }}
+                >
+                  <span style={{ fontSize: '14px', fontWeight: 'bold' }}>+</span>
+                  <span>New Entity</span>
+                </Link>
+              </div>
+              <div style={{ width: '1px', height: '24px', background: 'rgba(236, 227, 214, 0.15)' }} />
+            </>
           )}
-          
-          <Link
-            href="/"
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
-              letterSpacing: '0.2em',
-              color: 'var(--gold, #CAA554)',
-              textDecoration: 'none',
-            }}
-          >
-            ATLAS
-          </Link>
-        </div>
 
-        {/* Center: Nav tabs */}
-        <nav
-          style={{
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0',
-            border: '1px solid rgba(236, 227, 214, 0.12)',
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              padding: '6px 20px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              letterSpacing: '0.08em',
-              textDecoration: 'none',
-              color: isCanonActive ? 'var(--gold, #CAA554)' : 'rgba(236, 227, 214, 0.4)',
-              background: isCanonActive ? 'rgba(202, 165, 84, 0.08)' : 'transparent',
-              borderRight: '1px solid rgba(236, 227, 214, 0.12)',
-              transition: 'all 150ms',
-            }}
-          >
-            CANON
-          </Link>
-          <Link
-            href="/archive"
-            style={{
-              padding: '6px 20px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              letterSpacing: '0.08em',
-              textDecoration: 'none',
-              color: isArcsActive ? 'var(--gold, #CAA554)' : 'rgba(236, 227, 214, 0.4)',
-              background: isArcsActive ? 'rgba(202, 165, 84, 0.08)' : 'transparent',
-              transition: 'all 150ms',
-            }}
-          >
-            ARCS
-          </Link>
-        </nav>
+          {/* Navigation Links */}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px', gap: '4px' }}>
+            <Link
+              href="/"
+              style={{
+                padding: '8px 12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                border: '1px solid transparent',
+                transition: 'all 150ms ease',
+                cursor: 'pointer',
+                color: isCanonActive ? 'var(--gold, #CAA554)' : 'rgba(236, 227, 214, 0.5)',
+                background: isCanonActive ? 'rgba(202, 165, 84, 0.15)' : 'transparent',
+                borderColor: isCanonActive ? 'rgba(202, 165, 84, 0.4)' : 'transparent',
+              }}
+            >
+              Canon
+            </Link>
+            <Link
+              href="/archive"
+              style={{
+                padding: '8px 12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                border: '1px solid transparent',
+                transition: 'all 150ms ease',
+                cursor: 'pointer',
+                color: isArchiveActive ? 'var(--gold, #CAA554)' : 'rgba(236, 227, 214, 0.5)',
+                background: isArchiveActive ? 'rgba(202, 165, 84, 0.15)' : 'transparent',
+                borderColor: isArchiveActive ? 'rgba(202, 165, 84, 0.4)' : 'transparent',
+              }}
+            >
+              Archive
+            </Link>
+          </div>
 
-        {/* Right: Auth */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {isAuthenticated ? (
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+          {/* Divider */}
+          <div style={{ width: '1px', height: '24px', background: 'rgba(236, 227, 214, 0.15)' }} />
+
+          {/* User Section */}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px' }}>
+            {isAuthenticated ? (
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '4px 0',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  letterSpacing: '0.08em',
+                  color: 'rgba(236, 227, 214, 0.3)',
+                }}
+              >
+                <span>User:</span>
+                <span style={{ color: 'var(--dawn, #ECE3D6)', textTransform: 'uppercase' }}>
+                  {user?.email?.split('@')[0] || 'Navigator'}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    border: '1px solid rgba(236, 227, 214, 0.3)',
+                    background: 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    color: 'rgba(236, 227, 214, 0.5)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                    transition: 'all 150ms ease',
+                  }}
+                  title="Sign Out"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  letterSpacing: '0.08em',
+                  color: 'rgba(236, 227, 214, 0.5)',
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '10px',
-                  letterSpacing: '0.05em',
-                  color: 'rgba(236, 227, 214, 0.5)',
-                  transition: 'color 150ms',
+                  transition: 'color 150ms ease',
                 }}
               >
-                <span>{user?.email?.split('@')[0] || 'PROFILE'}</span>
-                <span style={{ fontSize: '8px', opacity: 0.5 }}>▼</span>
+                <span>Sign In</span>
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    border: '1px solid rgba(236, 227, 214, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    color: 'rgba(236, 227, 214, 0.5)',
+                  }}
+                >
+                  ◆
+                </div>
               </button>
-
-              {showProfileDropdown && (
-                <>
-                  {/* Backdrop */}
-                  <div
-                    onClick={() => setShowProfileDropdown(false)}
-                    style={{
-                      position: 'fixed',
-                      inset: 0,
-                      zIndex: 90,
-                    }}
-                  />
-                  
-                  {/* Dropdown */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      marginTop: '8px',
-                      minWidth: '180px',
-                      background: 'var(--surface-0, #0A0908)',
-                      border: '1px solid rgba(236, 227, 214, 0.12)',
-                      zIndex: 100,
-                    }}
-                  >
-                    {isAdmin && (
-                      <>
-                        <div
-                          style={{
-                            padding: '8px 12px',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '9px',
-                            letterSpacing: '0.1em',
-                            color: 'rgba(236, 227, 214, 0.3)',
-                            borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
-                          }}
-                        >
-                          ADMIN
-                        </div>
-                        <Link
-                          href="/admin/new-entity"
-                          onClick={() => setShowProfileDropdown(false)}
-                          style={{
-                            display: 'block',
-                            padding: '10px 12px',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '11px',
-                            color: 'var(--gold, #CAA554)',
-                            textDecoration: 'none',
-                            transition: 'background 150ms',
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(202, 165, 84, 0.08)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          + New Entity
-                        </Link>
-                        <Link
-                          href="/admin/prompts"
-                          onClick={() => setShowProfileDropdown(false)}
-                          style={{
-                            display: 'block',
-                            padding: '10px 12px',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '11px',
-                            color: 'rgba(236, 227, 214, 0.6)',
-                            textDecoration: 'none',
-                            borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
-                            transition: 'background 150ms',
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          System Prompts
-                        </Link>
-                      </>
-                    )}
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setShowProfileDropdown(false);
-                      }}
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '11px',
-                        color: 'rgba(236, 227, 214, 0.4)',
-                        textAlign: 'left',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'background 150ms',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowLoginModal(true)}
-              style={{
-                padding: '6px 12px',
-                background: 'transparent',
-                border: '1px solid rgba(236, 227, 214, 0.15)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
-                letterSpacing: '0.08em',
-                color: 'rgba(236, 227, 214, 0.5)',
-                cursor: 'pointer',
-                transition: 'all 150ms',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(202, 165, 84, 0.4)';
-                e.currentTarget.style.color = 'var(--gold, #CAA554)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
-                e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)';
-              }}
-            >
-              SIGN IN
-            </button>
-          )}
-        </div>
-      </header>
+            )}
+          </div>
+        </nav>
+      </div>
 
       {/* Login Modal */}
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
