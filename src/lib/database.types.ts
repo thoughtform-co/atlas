@@ -12,6 +12,14 @@ export type ThreatLevelEnum = 'Benign' | 'Cautious' | 'Volatile' | 'Existential'
 export type ConnectionTypeEnum = 'semantic' | 'historical' | 'adversarial';
 
 export type MediaType = 'image' | 'video' | 'thumbnail';
+export type PhaseState = 'Solid' | 'Liminal' | 'Spectral' | 'Fluctuating' | 'Crystallized';
+export type ArchiveEntryType = 'entity_created' | 'entity_updated' | 'relationship_formed' | 'lore_added' | 'consistency_check' | 'anomaly_detected' | 'metadata_enriched';
+export type SessionStatus = 'in_progress' | 'completed' | 'abandoned';
+
+export interface SuperpositionState {
+  state: string;
+  probability: number;
+}
 
 export interface Database {
   public: {
@@ -38,6 +46,12 @@ export interface Database {
           lore: string | null
           features: string[] | null
           first_observed: string | null
+          phase_state: PhaseState | null
+          superposition: SuperpositionState[] | null
+          hallucination_index: number | null
+          latent_position: string | null
+          manifold_curvature: number | null
+          embedding_signature: string | null
           created_at: string
           updated_at: string
         }
@@ -62,6 +76,12 @@ export interface Database {
           lore?: string | null
           features?: string[] | null
           first_observed?: string | null
+          phase_state?: PhaseState | null
+          superposition?: SuperpositionState[] | null
+          hallucination_index?: number | null
+          latent_position?: string | null
+          manifold_curvature?: number | null
+          embedding_signature?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -86,6 +106,12 @@ export interface Database {
           lore?: string | null
           features?: string[] | null
           first_observed?: string | null
+          phase_state?: PhaseState | null
+          superposition?: SuperpositionState[] | null
+          hallucination_index?: number | null
+          latent_position?: string | null
+          manifold_curvature?: number | null
+          embedding_signature?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -161,6 +187,73 @@ export interface Database {
           strength?: number
           type?: ConnectionTypeEnum
           created_at?: string
+        }
+      }
+      archive_log: {
+        Row: {
+          id: string
+          entry_type: ArchiveEntryType
+          entity_id: string | null
+          content: string
+          embedding: string | null
+          metadata: Json
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          entry_type: ArchiveEntryType
+          entity_id?: string | null
+          content: string
+          embedding?: string | null
+          metadata?: Json
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          entry_type?: ArchiveEntryType
+          entity_id?: string | null
+          content?: string
+          embedding?: string | null
+          metadata?: Json
+          created_by?: string | null
+          created_at?: string
+        }
+      }
+      archivist_sessions: {
+        Row: {
+          id: string
+          denizen_id: string | null
+          user_id: string | null
+          messages: Json
+          extracted_fields: Json
+          video_analysis: Json | null
+          status: SessionStatus
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          denizen_id?: string | null
+          user_id?: string | null
+          messages?: Json
+          extracted_fields?: Json
+          video_analysis?: Json | null
+          status?: SessionStatus
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          denizen_id?: string | null
+          user_id?: string | null
+          messages?: Json
+          extracted_fields?: Json
+          video_analysis?: Json | null
+          status?: SessionStatus
+          created_at?: string
+          updated_at?: string
         }
       }
     }
