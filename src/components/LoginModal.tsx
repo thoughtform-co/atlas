@@ -21,21 +21,30 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setIsLoading(true);
 
     try {
+      console.log('[LoginModal] Starting authentication...');
+      
       // Add timeout to prevent infinite hanging
-      const timeoutPromise = new Promise((_, reject) => {
+      const timeoutPromise = new Promise<{ error: Error }>((_, reject) => {
         setTimeout(() => reject(new Error('Authentication timeout. Please check your connection and try again.')), 10000);
       });
 
+      const authPromise = signIn(email, password);
+      console.log('[LoginModal] Auth promise created, waiting for response...');
+      
       const result = await Promise.race([
-        signIn(email, password),
+        authPromise,
         timeoutPromise,
-      ]) as { error: Error | null };
+      ]);
+
+      console.log('[LoginModal] Auth result:', result);
 
       if (result.error) {
+        console.error('[LoginModal] Auth failed:', result.error);
         setError(result.error.message);
         setIsLoading(false);
       } else {
         // Auth succeeded - wait a brief moment for auth state to update
+        console.log('[LoginModal] Auth succeeded, closing modal...');
         await new Promise(resolve => setTimeout(resolve, 300));
         setIsLoading(false);
         onClose();

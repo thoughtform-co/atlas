@@ -94,15 +94,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchUserRole]);
 
   const signIn = async (email: string, password: string) => {
+    console.log('[Auth] signIn called, checking Supabase client...');
+    
     if (!supabase) {
-      return { error: new Error('Supabase not configured') };
+      console.error('[Auth] Supabase client is null - credentials may not be configured');
+      return { error: new Error('Supabase not configured. Please check environment variables.') };
     }
 
+    console.log('[Auth] Calling supabase.auth.signInWithPassword...');
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+
+      console.log('[Auth] Sign in response received:', { data: !!data, error: error?.message });
 
       if (error) {
         console.error('[Auth] Sign in error:', error);
@@ -110,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Success - auth state change listener will update the user state
+      console.log('[Auth] Sign in successful');
       return { error: null };
     } catch (err) {
       console.error('[Auth] Unexpected sign in error:', err);
