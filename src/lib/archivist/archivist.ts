@@ -161,7 +161,7 @@ export class Archivist {
 
     // Store session in database
     const dbRow = sessionToDbRow(session);
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('archivist_sessions')
       .insert(dbRow);
 
@@ -181,7 +181,7 @@ export class Archivist {
     const supabase = getSupabaseClient();
 
     // Load session from database
-    const { data: row, error: fetchError } = await supabase
+    const { data: row, error: fetchError } = await (supabase as any)
       .from('archivist_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -264,7 +264,7 @@ export class Archivist {
     session.lastActivityAt = new Date().toISOString();
     const dbRow = sessionToDbRow(session);
     
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('archivist_sessions')
       .update({
         messages: dbRow.messages,
@@ -307,7 +307,7 @@ export class Archivist {
   async getSession(sessionId: string): Promise<ArchivistSession | null> {
     const supabase = getSupabaseClient();
 
-    const { data: row, error } = await supabase
+    const { data: row, error } = await (supabase as any)
       .from('archivist_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -328,7 +328,7 @@ export class Archivist {
     const supabase = getSupabaseClient();
 
     // Load session from database
-    const { data: row, error: fetchError } = await supabase
+    const { data: row, error: fetchError } = await (supabase as any)
       .from('archivist_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -382,7 +382,7 @@ export class Archivist {
 
     // Mark session as completed in database
     session.status = 'completed';
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('archivist_sessions')
       .update({
         status: 'completed',
@@ -405,7 +405,7 @@ export class Archivist {
   async abandonSession(sessionId: string): Promise<void> {
     const supabase = getSupabaseClient();
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('archivist_sessions')
       .update({
         status: 'abandoned',
@@ -447,7 +447,7 @@ export class Archivist {
     const cutoff = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000).toISOString();
 
     // Delete old abandoned or completed sessions
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('archivist_sessions')
       .delete()
       .in('status', ['abandoned', 'completed'])
