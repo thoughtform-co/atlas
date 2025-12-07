@@ -18,7 +18,7 @@ function drawPixel(ctx: CanvasRenderingContext2D, x: number, y: number, color: s
   ctx.fillRect(px, py, size - 1, size - 1);
 }
 
-function setupIcon(canvasRef: React.RefObject<HTMLCanvasElement>, size: number) {
+function setupIcon(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: number) {
   if (!canvasRef.current) return null;
   const canvas = canvasRef.current;
   const dpr = window.devicePixelRatio || 1;

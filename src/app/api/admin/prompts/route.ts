@@ -31,8 +31,12 @@ export async function GET() {
 
     if (error) {
       console.error('[prompts] Fetch error:', error);
+      // If table doesn't exist yet, return empty array instead of error
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({ prompts: [] });
+      }
       return NextResponse.json(
-        { error: 'Failed to fetch prompts' },
+        { error: 'Failed to fetch prompts', details: error.message },
         { status: 500 }
       );
     }

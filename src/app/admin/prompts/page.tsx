@@ -42,12 +42,13 @@ export default function PromptsPage() {
       try {
         const response = await fetch('/api/admin/prompts');
         if (!response.ok) {
-          throw new Error('Failed to fetch prompts');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch prompts`);
         }
         const data = await response.json();
         setPrompts(data.prompts || []);
       } catch (err) {
-        console.error('Fetch error:', err);
+        console.error('[Prompts] Fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load prompts');
       } finally {
         setLoading(false);
@@ -56,6 +57,8 @@ export default function PromptsPage() {
 
     if (isAdmin) {
       fetchPrompts();
+    } else {
+      setLoading(false);
     }
   }, [isAdmin]);
 
