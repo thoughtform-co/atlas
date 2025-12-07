@@ -261,7 +261,52 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_denizens_by_embedding: {
+        Args: {
+          query_embedding: number[]
+          match_threshold: number
+          match_count: number
+        }
+        Returns: Array<{
+          id: string
+          name: string
+          subtitle: string | null
+          type: DenizenTypeEnum
+          image: string | null
+          thumbnail: string | null
+          video_url: string | null
+          glyphs: string
+          position_x: number
+          position_y: number
+          coord_geometry: number
+          coord_alterity: number
+          coord_dynamics: number
+          allegiance: AllegianceEnum
+          threat_level: ThreatLevelEnum
+          domain: string
+          description: string
+          lore: string | null
+          features: string[] | null
+          first_observed: string | null
+          similarity: number
+        }>
+      }
+      search_archive_log_by_embedding: {
+        Args: {
+          query_embedding: number[]
+          match_count: number
+        }
+        Returns: Array<{
+          id: string
+          denizen_id: string | null
+          timestamp: string
+          entry: string
+          archivist_name: string
+          tags: string[] | null
+          metadata: Json
+          similarity: number
+        }>
+      }
     }
     Enums: {
       denizen_type: DenizenTypeEnum

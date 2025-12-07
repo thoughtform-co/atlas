@@ -63,14 +63,18 @@ export async function searchSimilarEntities(
     if (!isSupabaseConfigured() || !supabase) {
       throw new Error('Supabase not configured');
     }
-
+    
     // Use pgvector's cosine similarity operator (<=>)
     // Note: This uses RPC function for similarity search
-    const { data, error } = await supabase.rpc('search_denizens_by_embedding', {
-      query_embedding: embedding,
-      match_threshold: threshold,
-      match_count: limit,
-    });
+    // Type assertion needed due to Supabase generic inference limitations
+    const { data, error } = await (supabase as NonNullable<typeof supabase>).rpc(
+      'search_denizens_by_embedding',
+      {
+        query_embedding: embedding,
+        match_threshold: threshold,
+        match_count: limit,
+      } as any
+    );
 
     if (error) {
       throw new Error(`Supabase RPC error: ${error.message}`);
@@ -81,7 +85,7 @@ export async function searchSimilarEntities(
     }
 
     // Transform database rows to Denizen objects with similarity scores
-    const results: SimilarEntity[] = data.map((row: any) => ({
+    const results: SimilarEntity[] = (data as any[]).map((row: any) => ({
       denizen: {
         id: row.id,
         name: row.name,
@@ -140,11 +144,15 @@ export async function searchArchiveLog(
     if (!isSupabaseConfigured() || !supabase) {
       throw new Error('Supabase not configured');
     }
-
-    const { data, error } = await supabase.rpc('search_archive_log_by_embedding', {
-      query_embedding: embedding,
-      match_count: limit,
-    });
+    
+    // Type assertion needed due to Supabase generic inference limitations
+    const { data, error } = await (supabase as NonNullable<typeof supabase>).rpc(
+      'search_archive_log_by_embedding',
+      {
+        query_embedding: embedding,
+        match_count: limit,
+      } as any
+    );
 
     if (error) {
       throw new Error(`Supabase RPC error: ${error.message}`);
@@ -154,7 +162,7 @@ export async function searchArchiveLog(
       return [];
     }
 
-    return data.map((row: any) => ({
+    return (data as any[]).map((row: any) => ({
       id: row.id,
       denizenId: row.denizen_id,
       timestamp: row.timestamp,
@@ -316,9 +324,12 @@ export async function updateDenizenEmbedding(
     const embedding = await generateDenizenEmbedding(denizen);
 
     // Update denizen record with embedding
-    const { error } = await supabase
+    // Type assertion needed due to Supabase generic inference limitations with pgvector types
+    const client = supabase as NonNullable<typeof supabase>;
+    const { error } = await client
       .from('denizens')
-      .update({ embedding_signature: embedding as any })
+      // @ts-ignore pgvector embedding type not supported by generated types
+      .update({ embedding_signature: embedding })
       .eq('id', denizenId);
 
     if (error) {
@@ -353,13 +364,25 @@ export async function batchUpdateAllEmbeddings(
     }
 
     // Fetch all denizens
-    const { data: denizens, error } = await supabase
+    // Type assertion needed due to Supabase generic inference limitations
+    const client = supabase as NonNullable<typeof supabase>;
+    const { data, error } = await client
       .from('denizens')
       .select('id, name, description, domain, lore, features');
 
     if (error) {
       throw new Error(`Failed to fetch denizens: ${error.message}`);
     }
+
+    // Cast data to proper type (needed due to Supabase inference issues)
+    const denizens = data as Array<{
+      id: string;
+      name: string;
+      description: string;
+      domain?: string;
+      lore?: string;
+      features?: string[];
+    }> | null;
 
     if (!denizens || denizens.length === 0) {
       return 0;
