@@ -2,7 +2,7 @@
 /* Following the Astrolabe design system: no border-radius, PT Mono, Dawn/Gold/Void colors */
 
 .main {
-  padding: 5rem 2rem 2rem;
+  padding: 6rem 2rem 2rem;
   max-width: 1600px;
   margin: 0 auto;
   min-height: 100vh;

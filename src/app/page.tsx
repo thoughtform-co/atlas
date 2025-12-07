@@ -1,4 +1,3 @@
-import { Navigation } from '@/components/ui/Navigation';
 import { ConstellationView } from '@/components/constellation';
 import { fetchDenizens, fetchConnections, checkDatabaseHealth } from '@/lib/data';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
@@ -46,7 +45,6 @@ export default async function Home() {
 
   return (
     <main>
-      <Navigation />
       {databaseError && (
         <div
           style={{

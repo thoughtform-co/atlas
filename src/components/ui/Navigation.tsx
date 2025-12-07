@@ -55,7 +55,7 @@ export function Navigation() {
   // Draw icons
   useEffect(() => {
     // Add icon (+)
-    const addSetup = setupIcon(addIconRef, 18);
+    const addSetup = setupIcon(addIconRef, 22);
     if (addSetup) {
       const { ctx, size } = addSetup;
       const cx = size / 2;
@@ -74,7 +74,7 @@ export function Navigation() {
     }
 
     // Atlas icon (◇)
-    const atlasSetup = setupIcon(atlasIconRef, 14);
+    const atlasSetup = setupIcon(atlasIconRef, 17);
     if (atlasSetup) {
       const { ctx, size } = atlasSetup;
       const cx = size / 2;
@@ -101,7 +101,7 @@ export function Navigation() {
     }
 
     // Archive icon (grid)
-    const archiveSetup = setupIcon(archiveIconRef, 14);
+    const archiveSetup = setupIcon(archiveIconRef, 17);
     if (archiveSetup) {
       const { ctx } = archiveSetup;
       for (let row = 0; row < 3; row++) {
@@ -115,7 +115,7 @@ export function Navigation() {
     }
 
     // User icon
-    const userSetup = setupIcon(userIconRef, 14);
+    const userSetup = setupIcon(userIconRef, 17);
     if (userSetup) {
       const { ctx, size } = userSetup;
       const cx = size / 2;
@@ -128,7 +128,7 @@ export function Navigation() {
     }
 
     // Admin icon (gear)
-    const adminSetup = setupIcon(adminIconRef, 12);
+    const adminSetup = setupIcon(adminIconRef, 14);
     if (adminSetup) {
       const { ctx, size } = adminSetup;
       const cx = size / 2;
@@ -145,7 +145,7 @@ export function Navigation() {
     }
 
     // Logout icon (arrow out)
-    const logoutSetup = setupIcon(logoutIconRef, 12);
+    const logoutSetup = setupIcon(logoutIconRef, 14);
     if (logoutSetup) {
       const { ctx } = logoutSetup;
       for (let y = 2; y <= 10; y += GRID) {
@@ -170,7 +170,7 @@ export function Navigation() {
       <div
         style={{
           position: 'fixed',
-          top: '24px',
+          top: '20px',
           left: 0,
           right: 0,
           zIndex: 100,
@@ -179,14 +179,14 @@ export function Navigation() {
           pointerEvents: 'none',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', pointerEvents: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
           {/* Add Button */}
           {isAdmin && (
             <Link
               href="/admin/new-entity"
               style={{
-                width: '36px',
-                height: '36px',
+                width: '44px',
+                height: '44px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -206,7 +206,7 @@ export function Navigation() {
               }}
               title="New Entity"
             >
-              <canvas ref={addIconRef} width={18} height={18} />
+              <canvas ref={addIconRef} width={22} height={22} />
             </Link>
           )}
 
@@ -217,7 +217,7 @@ export function Navigation() {
               alignItems: 'center',
               background: 'var(--surface-0, #0A0908)',
               border: '1px solid rgba(236, 227, 214, 0.1)',
-              height: '36px',
+              height: '44px',
             }}
           >
             {/* Atlas */}
@@ -227,10 +227,10 @@ export function Navigation() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
-                padding: '0 14px',
+                gap: '10px',
+                padding: '0 18px',
                 height: '100%',
-                fontSize: '10px',
+                fontSize: '12px',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: isAtlasActive ? 'var(--dawn, #ECE3D6)' : 'rgba(202, 165, 84, 0.5)',
@@ -240,7 +240,7 @@ export function Navigation() {
                 transition: 'all 150ms ease',
               }}
             >
-              <canvas ref={atlasIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+              <canvas ref={atlasIconRef} width={17} height={17} style={{ width: '17px', height: '17px' }} />
               <span>Atlas</span>
             </Link>
 
@@ -251,10 +251,10 @@ export function Navigation() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
-                padding: '0 14px',
+                gap: '10px',
+                padding: '0 18px',
                 height: '100%',
-                fontSize: '10px',
+                fontSize: '12px',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 color: isArchiveActive ? 'var(--dawn, #ECE3D6)' : 'rgba(236, 227, 214, 0.3)',
@@ -264,7 +264,7 @@ export function Navigation() {
                 transition: 'all 150ms ease',
               }}
             >
-              <canvas ref={archiveIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+              <canvas ref={archiveIconRef} width={17} height={17} style={{ width: '17px', height: '17px' }} />
               <span>Archive</span>
             </Link>
 
@@ -282,22 +282,22 @@ export function Navigation() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '0 14px',
+                    gap: '10px',
+                    padding: '0 18px',
                     height: '100%',
-                    fontSize: '10px',
+                    fontSize: '12px',
                     letterSpacing: '0.08em',
                     color: 'rgba(236, 227, 214, 0.3)',
                     cursor: 'pointer',
                   }}
                 >
-                  <canvas ref={userIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+                  <canvas ref={userIconRef} width={17} height={17} style={{ width: '17px', height: '17px' }} />
                   <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>
                     {user?.email?.split('@')[0] || 'Navigator'}
                   </span>
                   <span
                     style={{
-                      fontSize: '8px',
+                      fontSize: '10px',
                       color: 'rgba(236, 227, 214, 0.2)',
                       marginLeft: '4px',
                       transition: 'transform 150ms ease',
@@ -331,9 +331,9 @@ export function Navigation() {
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
-                            padding: '10px 12px',
-                            fontSize: '9px',
+                            gap: '10px',
+                            padding: '12px 14px',
+                            fontSize: '10px',
                             letterSpacing: '0.08em',
                             textTransform: 'uppercase',
                             color: 'rgba(236, 227, 214, 0.3)',
@@ -354,7 +354,7 @@ export function Navigation() {
                             e.currentTarget.style.background = 'transparent';
                           }}
                         >
-                          <canvas ref={adminIconRef} width={12} height={12} style={{ width: '12px', height: '12px' }} />
+                          <canvas ref={adminIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
                           <span>Admin</span>
                         </button>
                         <div style={{ height: '1px', background: 'rgba(236, 227, 214, 0.08)' }} />
@@ -368,9 +368,9 @@ export function Navigation() {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        padding: '10px 12px',
-                        fontSize: '9px',
+                        gap: '10px',
+                        padding: '12px 14px',
+                        fontSize: '10px',
                         letterSpacing: '0.08em',
                         textTransform: 'uppercase',
                         color: 'rgba(236, 227, 214, 0.3)',
@@ -391,7 +391,7 @@ export function Navigation() {
                         e.currentTarget.style.background = 'transparent';
                       }}
                     >
-                      <canvas ref={logoutIconRef} width={12} height={12} style={{ width: '12px', height: '12px' }} />
+                      <canvas ref={logoutIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
                       <span>Log out</span>
                     </button>
                   </div>
@@ -404,10 +404,10 @@ export function Navigation() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px',
-                  padding: '0 14px',
+                  gap: '10px',
+                  padding: '0 18px',
                   height: '100%',
-                  fontSize: '10px',
+                  fontSize: '12px',
                   letterSpacing: '0.08em',
                   color: 'rgba(236, 227, 214, 0.5)',
                   background: 'transparent',
