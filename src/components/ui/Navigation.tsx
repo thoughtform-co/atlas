@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -8,9 +8,23 @@ import { LoginModal } from '@/components/LoginModal';
 
 export function Navigation() {
   const pathname = usePathname();
-  const { isAuthenticated, isAdmin, signOut, user } = useAuth();
+  const { isAuthenticated, isAdmin, signOut, user, refreshRole, role } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  // Refresh role on mount (in case it was updated in database)
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshRole();
+    }
+  }, [isAuthenticated, refreshRole]);
+
+  // Debug: log role status
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('[Navigation] User:', user.email, 'Role:', role, 'isAdmin:', isAdmin);
+    }
+  }, [isAuthenticated, user, role, isAdmin]);
 
   const isArchiveActive = pathname === '/archive';
   const isAtlasActive = pathname === '/';
@@ -211,6 +225,31 @@ export function Navigation() {
                           </Link>
                         </>
                       )}
+                      <button
+                        onClick={async () => {
+                          await refreshRole();
+                          console.log('[Navigation] Role refreshed. Current role:', role, 'isAdmin:', isAdmin);
+                          setShowUserDropdown(false);
+                        }}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '11px',
+                          color: 'rgba(236, 227, 214, 0.5)',
+                          textAlign: 'left',
+                          background: 'transparent',
+                          border: 'none',
+                          borderTop: '1px solid rgba(236, 227, 214, 0.08)',
+                          cursor: 'pointer',
+                          transition: 'background 150ms',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        Refresh Role (Debug)
+                      </button>
                       <button
                         onClick={() => {
                           signOut();
