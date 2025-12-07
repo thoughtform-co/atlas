@@ -98,12 +98,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Supabase not configured') };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    return { error: error ? new Error(error.message) : null };
+      if (error) {
+        console.error('[Auth] Sign in error:', error);
+        return { error: new Error(error.message) };
+      }
+
+      // Success - auth state change listener will update the user state
+      return { error: null };
+    } catch (err) {
+      console.error('[Auth] Unexpected sign in error:', err);
+      return { error: new Error(err instanceof Error ? err.message : 'Authentication failed') };
+    }
   };
 
   const signOut = async () => {

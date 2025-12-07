@@ -20,15 +20,32 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setError(null);
     setIsLoading(true);
 
-    const { error } = await signIn(email, password);
+    try {
+      // Add timeout to prevent infinite hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Authentication timeout. Please check your connection and try again.')), 10000);
+      });
 
-    if (error) {
-      setError(error.message);
+      const result = await Promise.race([
+        signIn(email, password),
+        timeoutPromise,
+      ]) as { error: Error | null };
+
+      if (result.error) {
+        setError(result.error.message);
+        setIsLoading(false);
+      } else {
+        // Auth succeeded - wait a brief moment for auth state to update
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setIsLoading(false);
+        onClose();
+        setEmail('');
+        setPassword('');
+      }
+    } catch (err) {
+      console.error('[LoginModal] Auth error:', err);
+      setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
       setIsLoading(false);
-    } else {
-      onClose();
-      setEmail('');
-      setPassword('');
     }
   };
 
