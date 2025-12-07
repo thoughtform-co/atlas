@@ -1,0 +1,164 @@
+/* ParameterForm Styles - Astrolabe Design System */
+
+.form {
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fieldLabel {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.5625rem;
+  color: rgba(236, 227, 214, 0.3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.fieldPrefix {
+  color: rgba(202, 165, 84, 0.4);
+}
+
+.fieldInput {
+  padding: 0.5rem 0.625rem;
+  background: var(--surface-1, #0F0E0C);
+  border: 1px solid rgba(236, 227, 214, 0.08);
+  color: var(--dawn, #ECE3D6);
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.75rem;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.fieldInput:focus {
+  border-color: rgba(202, 165, 84, 0.4);
+}
+
+.fieldInput::placeholder {
+  color: rgba(236, 227, 214, 0.3);
+}
+
+.fieldTextarea {
+  font-family: var(--font-sans, 'IBM Plex Sans', sans-serif);
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.fieldSelect {
+  padding: 0.5rem 0.625rem;
+  background: var(--surface-1, #0F0E0C);
+  border: 1px solid rgba(236, 227, 214, 0.08);
+  color: var(--dawn, #ECE3D6);
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.6875rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23ECE3D6' fill-opacity='0.3' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  padding-right: 1.5rem;
+}
+
+.fieldSelect:focus {
+  border-color: rgba(202, 165, 84, 0.4);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(236, 227, 214, 0.08);
+  margin: 0.25rem 0;
+}
+
+.sliderWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--surface-1, #0F0E0C);
+  border: 1px solid rgba(236, 227, 214, 0.08);
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--gold, #CAA554);
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--gold, #CAA554);
+  border: none;
+  cursor: pointer;
+}
+
+.sliderValue {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.6875rem;
+  color: var(--gold, #CAA554);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.coordsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.coordInput {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.coordLabel {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+}
+
+.addButton {
+  margin-top: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background: transparent;
+  border: 1px dashed rgba(236, 227, 214, 0.15);
+  color: rgba(236, 227, 214, 0.5);
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.5625rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.addButton:hover {
+  border-color: rgba(202, 165, 84, 0.4);
+  color: var(--gold, #CAA554);
+}
+

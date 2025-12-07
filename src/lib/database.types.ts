@@ -256,6 +256,58 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_roles: {
+        Row: {
+          id: string
+          user_id: string
+          role: 'user' | 'admin' | 'archivist'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          role?: 'user' | 'admin' | 'archivist'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          role?: 'user' | 'admin' | 'archivist'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      system_prompts: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          content: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          content: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          content?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

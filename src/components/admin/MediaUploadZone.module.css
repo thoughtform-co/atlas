@@ -1,0 +1,144 @@
+/* MediaUploadZone Styles */
+
+.container {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(236, 227, 214, 0.08);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  border: 1px dashed rgba(236, 227, 214, 0.15);
+  background: var(--surface-1, #0F0E0C);
+  cursor: pointer;
+  transition: all 150ms ease;
+  min-height: 120px;
+}
+
+.dropzone:hover {
+  border-color: rgba(202, 165, 84, 0.4);
+  background: rgba(202, 165, 84, 0.05);
+}
+
+.dragging {
+  border-color: var(--gold, #CAA554);
+  background: rgba(202, 165, 84, 0.1);
+}
+
+.analyzing {
+  cursor: wait;
+  border-color: rgba(202, 165, 84, 0.3);
+}
+
+.dropzoneIcon {
+  font-size: 24px;
+  color: rgba(236, 227, 214, 0.3);
+  margin-bottom: 0.5rem;
+}
+
+.dropzoneText {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.6875rem;
+  color: rgba(236, 227, 214, 0.5);
+  letter-spacing: 0.05em;
+}
+
+.dropzoneSubtext {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.5625rem;
+  color: rgba(236, 227, 214, 0.3);
+  margin-top: 0.25rem;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(236, 227, 214, 0.15);
+  border-top-color: var(--gold, #CAA554);
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.progressBar {
+  width: 100%;
+  max-width: 200px;
+  height: 4px;
+  background: rgba(236, 227, 214, 0.1);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--gold, #CAA554);
+  transition: width 200ms ease;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.previewMedia {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  background: var(--void, #050403);
+  border: 1px solid rgba(236, 227, 214, 0.08);
+}
+
+.previewInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.previewName {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.625rem;
+  color: rgba(236, 227, 214, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.clearButton {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid rgba(139, 90, 90, 0.3);
+  color: rgba(139, 90, 90, 0.8);
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.5625rem;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.clearButton:hover {
+  border-color: #8B5A5A;
+  color: #8B5A5A;
+  background: rgba(139, 90, 90, 0.1);
+}
+
+.error {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(139, 90, 90, 0.1);
+  border: 1px solid rgba(139, 90, 90, 0.3);
+  color: #8B5A5A;
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.625rem;
+}
+

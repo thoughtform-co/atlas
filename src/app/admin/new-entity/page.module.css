@@ -1,0 +1,141 @@
+/* Atlas Admin - New Entity Page Styles */
+/* Following the Astrolabe design system: no border-radius, PT Mono, Dawn/Gold/Void colors */
+
+.main {
+  padding: 5rem 2rem 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--void, #050403);
+}
+
+.loadingText {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--gold, #CAA554);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.headerPrefix {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(202, 165, 84, 0.4);
+}
+
+.headerTitle {
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(236, 227, 214, 0.5);
+}
+
+.headerLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(236, 227, 214, 0.15) 0%, transparent 100%);
+}
+
+.saveButton {
+  padding: 0.5rem 1rem;
+  background: var(--gold, #CAA554);
+  border: 1px solid var(--gold, #CAA554);
+  color: var(--void, #050403);
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #D4B76A;
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Three-column layout */
+.threeCol {
+  display: grid;
+  grid-template-columns: auto 1fr 380px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Card preview column */
+.cardColumn {
+  width: 620px;
+}
+
+/* Form column */
+.formColumn {
+  min-width: 0;
+}
+
+/* Chat column */
+.chatColumn {
+  width: 380px;
+}
+
+/* Panel styling */
+.panel {
+  background: var(--surface-0, #0A0908);
+  border: 1px solid rgba(236, 227, 214, 0.08);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(620px * 5 / 4);
+  overflow: hidden;
+}
+
+.panelHeader {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(236, 227, 214, 0.08);
+  font-family: var(--font-mono, 'PT Mono', monospace);
+  font-size: 0.625rem;
+  color: rgba(236, 227, 214, 0.3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .threeCol {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .cardColumn,
+  .chatColumn {
+    width: 100%;
+    max-width: 620px;
+  }
+}
+

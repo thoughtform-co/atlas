@@ -53,6 +53,19 @@ export {
   batchUpdateAllEmbeddings,
 } from './vector-search';
 
+// Gemini AI for Media Analysis
+export {
+  analyzeImage as analyzeImageWithGemini,
+  analyzeVideo as analyzeVideoWithGemini,
+  analyzeMediaUrl,
+  isGeminiConfigured,
+} from './gemini';
+
+export type {
+  EntityAnalysisData,
+  EntityAnalysisResult,
+} from './gemini';
+
 // Type Definitions
 export type {
   VideoAnalysis,
