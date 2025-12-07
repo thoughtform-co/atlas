@@ -1,37 +1,172 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { LoginModal } from '@/components/LoginModal';
 
+const GRID = 2;
+const GOLD = '202, 165, 84';
+const DAWN = '236, 227, 214';
+
+// Canvas icon drawing utilities
+function drawPixel(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, alpha: number, size: number = GRID) {
+  const px = Math.floor(x / GRID) * GRID;
+  const py = Math.floor(y / GRID) * GRID;
+  ctx.fillStyle = `rgba(${color}, ${alpha})`;
+  ctx.fillRect(px, py, size - 1, size - 1);
+}
+
+function setupIcon(canvasRef: React.RefObject<HTMLCanvasElement>, size: number) {
+  if (!canvasRef.current) return null;
+  const canvas = canvasRef.current;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.scale(dpr, dpr);
+  return { ctx, size };
+}
+
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isAuthenticated, isAdmin, signOut, user, refreshRole, role } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
-  // Refresh role on mount (in case it was updated in database)
+  // Canvas refs
+  const addIconRef = useRef<HTMLCanvasElement>(null);
+  const atlasIconRef = useRef<HTMLCanvasElement>(null);
+  const archiveIconRef = useRef<HTMLCanvasElement>(null);
+  const userIconRef = useRef<HTMLCanvasElement>(null);
+  const adminIconRef = useRef<HTMLCanvasElement>(null);
+  const logoutIconRef = useRef<HTMLCanvasElement>(null);
+
+  // Refresh role on mount
   useEffect(() => {
     if (isAuthenticated) {
       refreshRole();
     }
   }, [isAuthenticated, refreshRole]);
 
-  // Debug: log role status
+  // Draw icons
   useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('[Navigation] User:', user.email, 'Role:', role, 'isAdmin:', isAdmin);
+    // Add icon (+)
+    const addSetup = setupIcon(addIconRef, 18);
+    if (addSetup) {
+      const { ctx, size } = addSetup;
+      const cx = size / 2;
+      const cy = size / 2;
+      for (let x = 4; x <= size - 4; x += GRID) {
+        const dist = Math.abs(x - cx);
+        const alpha = 0.7 - dist * 0.03;
+        drawPixel(ctx, x, cy, DAWN, alpha);
+      }
+      for (let y = 4; y <= size - 4; y += GRID) {
+        const dist = Math.abs(y - cy);
+        const alpha = 0.7 - dist * 0.03;
+        drawPixel(ctx, cx, y, DAWN, alpha);
+      }
+      drawPixel(ctx, cx, cy, GOLD, 0.9);
     }
-  }, [isAuthenticated, user, role, isAdmin]);
+
+    // Atlas icon (◇)
+    const atlasSetup = setupIcon(atlasIconRef, 14);
+    if (atlasSetup) {
+      const { ctx, size } = atlasSetup;
+      const cx = size / 2;
+      const cy = size / 2;
+      const r = 5;
+      const points = [
+        { x: cx, y: cy - r },
+        { x: cx + r, y: cy },
+        { x: cx, y: cy + r },
+        { x: cx - r, y: cy }
+      ];
+      for (let i = 0; i < 4; i++) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % 4];
+        const steps = 6;
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps;
+          const x = p1.x + (p2.x - p1.x) * t;
+          const y = p1.y + (p2.y - p1.y) * t;
+          drawPixel(ctx, x, y, GOLD, 0.5 + t * 0.2);
+        }
+      }
+      drawPixel(ctx, cx, cy, GOLD, 0.8);
+    }
+
+    // Archive icon (grid)
+    const archiveSetup = setupIcon(archiveIconRef, 14);
+    if (archiveSetup) {
+      const { ctx } = archiveSetup;
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const x = 3 + col * 4;
+          const y = 3 + row * 4;
+          const alpha = 0.3 + (row * 0.15) + (col * 0.1);
+          drawPixel(ctx, x, y, DAWN, alpha);
+        }
+      }
+    }
+
+    // User icon
+    const userSetup = setupIcon(userIconRef, 14);
+    if (userSetup) {
+      const { ctx, size } = userSetup;
+      const cx = size / 2;
+      drawPixel(ctx, cx, 3, DAWN, 0.7);
+      for (let y = 6; y <= 10; y += GRID) {
+        drawPixel(ctx, cx, y, DAWN, 0.5);
+      }
+      drawPixel(ctx, cx - 3, 7, DAWN, 0.35);
+      drawPixel(ctx, cx + 3, 7, DAWN, 0.35);
+    }
+
+    // Admin icon (gear)
+    const adminSetup = setupIcon(adminIconRef, 12);
+    if (adminSetup) {
+      const { ctx, size } = adminSetup;
+      const cx = size / 2;
+      const cy = size / 2;
+      drawPixel(ctx, cx, cy - 4, DAWN, 0.5);
+      drawPixel(ctx, cx, cy + 4, DAWN, 0.5);
+      drawPixel(ctx, cx - 4, cy, DAWN, 0.5);
+      drawPixel(ctx, cx + 4, cy, DAWN, 0.5);
+      drawPixel(ctx, cx - 3, cy - 3, DAWN, 0.35);
+      drawPixel(ctx, cx + 3, cy - 3, DAWN, 0.35);
+      drawPixel(ctx, cx - 3, cy + 3, DAWN, 0.35);
+      drawPixel(ctx, cx + 3, cy + 3, DAWN, 0.35);
+      drawPixel(ctx, cx, cy, DAWN, 0.7);
+    }
+
+    // Logout icon (arrow out)
+    const logoutSetup = setupIcon(logoutIconRef, 12);
+    if (logoutSetup) {
+      const { ctx } = logoutSetup;
+      for (let y = 2; y <= 10; y += GRID) {
+        drawPixel(ctx, 2, y, DAWN, 0.3);
+      }
+      drawPixel(ctx, 4, 2, DAWN, 0.3);
+      drawPixel(ctx, 4, 10, DAWN, 0.3);
+      const arrowY = 6;
+      for (let x = 5; x <= 10; x += GRID) {
+        drawPixel(ctx, x, arrowY, DAWN, 0.5);
+      }
+      drawPixel(ctx, 8, arrowY - 2, DAWN, 0.4);
+      drawPixel(ctx, 8, arrowY + 2, DAWN, 0.4);
+    }
+  }, []);
 
   const isArchiveActive = pathname === '/archive';
   const isAtlasActive = pathname === '/';
 
   return (
     <>
-      {/* Fixed container to center the nav */}
       <div
         style={{
           position: 'fixed',
@@ -44,275 +179,249 @@ export function Navigation() {
           pointerEvents: 'none',
         }}
       >
-        {/* Navigation bar - inline, not full width */}
-        <nav
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            background: 'var(--surface-0, #0A0908)',
-            border: '1px solid rgba(236, 227, 214, 0.15)',
-            pointerEvents: 'auto',
-          }}
-        >
-          {/* ATLAS Button */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', pointerEvents: 'auto' }}>
+          {/* Add Button */}
+          {isAdmin && (
+            <Link
+              href="/admin/new-entity"
+              style={{
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
+                border: '1px solid rgba(236, 227, 214, 0.15)',
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(202, 165, 84, 0.5)';
+                e.currentTarget.style.background = 'rgba(202, 165, 84, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+              title="New Entity"
+            >
+              <canvas ref={addIconRef} width={18} height={18} />
+            </Link>
+          )}
+
+          {/* Main Navigation */}
+          <nav
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--surface-0, #0A0908)',
+              border: '1px solid rgba(236, 227, 214, 0.1)',
+              height: '36px',
+            }}
+          >
+            {/* Atlas */}
             <Link
               href="/"
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '8px',
-                padding: '8px 12px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                letterSpacing: '0.1em',
+                padding: '0 14px',
+                height: '100%',
+                fontSize: '10px',
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
+                color: isAtlasActive ? 'var(--dawn, #ECE3D6)' : 'rgba(202, 165, 84, 0.5)',
                 textDecoration: 'none',
-                border: '1px solid transparent',
+                background: isAtlasActive ? 'rgba(236, 227, 214, 0.1)' : 'transparent',
+                borderRight: '1px solid rgba(236, 227, 214, 0.08)',
                 transition: 'all 150ms ease',
-                cursor: 'pointer',
-                color: isAtlasActive ? 'var(--gold, #CAA554)' : 'rgba(236, 227, 214, 0.5)',
-                background: isAtlasActive ? 'rgba(202, 165, 84, 0.15)' : 'transparent',
-                borderColor: isAtlasActive ? 'rgba(202, 165, 84, 0.4)' : 'rgba(236, 227, 214, 0.15)',
               }}
             >
-              <span style={{ fontSize: '14px', opacity: 0.8 }}>◇</span>
+              <canvas ref={atlasIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
               <span>Atlas</span>
             </Link>
-          </div>
 
-          {/* Divider */}
-          <div style={{ width: '1px', height: '24px', background: 'rgba(236, 227, 214, 0.15)' }} />
-
-          {/* New Entity CTA (admin only) */}
-          {isAdmin && (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px' }}>
-                <Link
-                  href="/admin/new-entity"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    background: 'var(--gold, #CAA554)',
-                    border: '1px solid var(--gold, #CAA554)',
-                    color: 'var(--void, #050403)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '10px',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    textDecoration: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 150ms ease',
-                  }}
-                >
-                  <span style={{ fontSize: '14px', fontWeight: 'bold' }}>+</span>
-                  <span>New Entity</span>
-                </Link>
-              </div>
-              <div style={{ width: '1px', height: '24px', background: 'rgba(236, 227, 214, 0.15)' }} />
-            </>
-          )}
-
-          {/* ARCHIVE Button */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px' }}>
+            {/* Archive */}
             <Link
               href="/archive"
               style={{
-                padding: '8px 12px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '0 14px',
+                height: '100%',
+                fontSize: '10px',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
+                color: isArchiveActive ? 'var(--dawn, #ECE3D6)' : 'rgba(236, 227, 214, 0.3)',
                 textDecoration: 'none',
-                border: '1px solid transparent',
+                background: isArchiveActive ? 'rgba(236, 227, 214, 0.1)' : 'transparent',
+                borderRight: '1px solid rgba(236, 227, 214, 0.08)',
                 transition: 'all 150ms ease',
-                cursor: 'pointer',
-                color: isArchiveActive ? 'var(--gold, #CAA554)' : 'rgba(236, 227, 214, 0.5)',
-                background: isArchiveActive ? 'rgba(202, 165, 84, 0.15)' : 'transparent',
-                borderColor: isArchiveActive ? 'rgba(202, 165, 84, 0.4)' : 'rgba(236, 227, 214, 0.15)',
               }}
             >
-              Archive
+              <canvas ref={archiveIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+              <span>Archive</span>
             </Link>
-          </div>
 
-          {/* Divider */}
-          <div style={{ width: '1px', height: '24px', background: 'rgba(236, 227, 214, 0.15)' }} />
-
-          {/* User Section */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '48px', position: 'relative' }}>
+            {/* User Dropdown */}
             {isAuthenticated ? (
-              <>
-                <button
-                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+              <div
+                style={{
+                  position: 'relative',
+                  height: '100%',
+                }}
+                onMouseEnter={() => setShowUserDropdown(true)}
+                onMouseLeave={() => setShowUserDropdown(false)}
+              >
+                <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    fontFamily: 'var(--font-mono)',
+                    padding: '0 14px',
+                    height: '100%',
                     fontSize: '10px',
                     letterSpacing: '0.08em',
                     color: 'rgba(236, 227, 214, 0.3)',
-                    background: 'transparent',
-                    border: 'none',
                     cursor: 'pointer',
-                    padding: '4px 0',
                   }}
                 >
-                  <span>User:</span>
-                  <span style={{ color: 'var(--gold, #CAA554)', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                  <canvas ref={userIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+                  <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>
                     {user?.email?.split('@')[0] || 'Navigator'}
                   </span>
-                  <span style={{ fontSize: '8px', color: 'var(--gold, #CAA554)', opacity: 0.6 }}>▼</span>
-                </button>
+                  <span
+                    style={{
+                      fontSize: '8px',
+                      color: 'rgba(236, 227, 214, 0.2)',
+                      marginLeft: '4px',
+                      transition: 'transform 150ms ease',
+                      transform: showUserDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                  >
+                    ▼
+                  </span>
+                </div>
 
-                {/* User Dropdown */}
+                {/* Dropdown Menu */}
                 {showUserDropdown && (
-                  <>
-                    <div
-                      onClick={() => setShowUserDropdown(false)}
-                      style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: 90,
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 4px)',
+                      right: 0,
+                      background: 'var(--surface-0, #0A0908)',
+                      border: '1px solid rgba(236, 227, 214, 0.1)',
+                      minWidth: '120px',
+                      zIndex: 100,
+                    }}
+                  >
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => {
+                            router.push('/admin/prompts');
+                            setShowUserDropdown(false);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 12px',
+                            fontSize: '9px',
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: 'rgba(236, 227, 214, 0.3)',
+                            cursor: 'pointer',
+                            border: 'none',
+                            background: 'transparent',
+                            width: '100%',
+                            fontFamily: 'var(--font-mono)',
+                            textAlign: 'left',
+                            transition: 'all 150ms ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
+                            e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <canvas ref={adminIconRef} width={12} height={12} style={{ width: '12px', height: '12px' }} />
+                          <span>Admin</span>
+                        </button>
+                        <div style={{ height: '1px', background: 'rgba(236, 227, 214, 0.08)' }} />
+                      </>
+                    )}
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setShowUserDropdown(false);
                       }}
-                    />
-                    <div
                       style={{
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '8px',
-                        minWidth: '180px',
-                        background: 'var(--surface-0, #0A0908)',
-                        border: '1px solid rgba(236, 227, 214, 0.15)',
-                        zIndex: 100,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 12px',
+                        fontSize: '9px',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(236, 227, 214, 0.3)',
+                        cursor: 'pointer',
+                        border: 'none',
+                        background: 'transparent',
+                        width: '100%',
+                        fontFamily: 'var(--font-mono)',
+                        textAlign: 'left',
+                        transition: 'all 150ms ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
+                        e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
+                        e.currentTarget.style.background = 'transparent';
                       }}
                     >
-                      {isAdmin && (
-                        <>
-                          <div
-                            style={{
-                              padding: '8px 12px',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '9px',
-                              letterSpacing: '0.1em',
-                              color: 'rgba(236, 227, 214, 0.3)',
-                              borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
-                            }}
-                          >
-                            ADMIN
-                          </div>
-                          <Link
-                            href="/admin/prompts"
-                            onClick={() => setShowUserDropdown(false)}
-                            style={{
-                              display: 'block',
-                              padding: '10px 12px',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '11px',
-                              color: 'rgba(236, 227, 214, 0.6)',
-                              textDecoration: 'none',
-                              borderBottom: '1px solid rgba(236, 227, 214, 0.08)',
-                              transition: 'background 150ms',
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                          >
-                            System Prompts
-                          </Link>
-                        </>
-                      )}
-                      <button
-                        onClick={async () => {
-                          await refreshRole();
-                          console.log('[Navigation] Role refreshed. Current role:', role, 'isAdmin:', isAdmin);
-                          setShowUserDropdown(false);
-                        }}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          padding: '10px 12px',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '11px',
-                          color: 'rgba(236, 227, 214, 0.5)',
-                          textAlign: 'left',
-                          background: 'transparent',
-                          border: 'none',
-                          borderTop: '1px solid rgba(236, 227, 214, 0.08)',
-                          cursor: 'pointer',
-                          transition: 'background 150ms',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        Refresh Role (Debug)
-                      </button>
-                      <button
-                        onClick={() => {
-                          signOut();
-                          setShowUserDropdown(false);
-                        }}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          padding: '10px 12px',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '11px',
-                          color: 'rgba(236, 227, 214, 0.4)',
-                          textAlign: 'left',
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'background 150ms',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(236, 227, 214, 0.04)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  </>
+                      <canvas ref={logoutIconRef} width={12} height={12} style={{ width: '12px', height: '12px' }} />
+                      <span>Log out</span>
+                    </button>
+                  </div>
                 )}
-              </>
+              </div>
             ) : (
               <button
                 onClick={() => setShowLoginModal(true)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '8px',
-                  fontFamily: 'var(--font-mono)',
+                  padding: '0 14px',
+                  height: '100%',
                   fontSize: '10px',
                   letterSpacing: '0.08em',
                   color: 'rgba(236, 227, 214, 0.5)',
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
                   transition: 'color 150ms ease',
                 }}
               >
                 <span>Sign In</span>
-                <div
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                    border: '1px solid rgba(236, 227, 214, 0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '10px',
-                    color: 'rgba(236, 227, 214, 0.5)',
-                  }}
-                >
-                  ◆
-                </div>
               </button>
             )}
-          </div>
-        </nav>
+          </nav>
+        </div>
       </div>
 
       {/* Login Modal */}
