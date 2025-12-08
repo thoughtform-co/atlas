@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas - Particle Effects Reference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --void: #050403;
+      --surface-0: #0A0908;
+      --surface-1: #0F0E0C;
+      --dawn: #ECE3D6;
+      --dawn-70: rgba(236, 227, 214, 0.7);
+      --dawn-30: rgba(236, 227, 214, 0.3);
+      --dawn-08: rgba(236, 227, 214, 0.08);
+      --gold: #CAA554;
+      --gold-dim: rgba(202, 165, 84, 0.4);
+      --dynamics: #5B8A7A;
+      --volatile: #C17F59;
+      
+      --font-mono: 'PT Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--dawn);
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    
+    h1 {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    
+    h2 {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      color: var(--dawn-30);
+      text-transform: uppercase;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--dawn-08);
+    }
+    
+    p {
+      font-size: 0.875rem;
+      color: var(--dawn-70);
+      max-width: 600px;
+      margin-bottom: 1rem;
+    }
+    
+    .intro {
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--dawn-08);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       EFFECT GRID
+       ═══════════════════════════════════════════════════════════════ */
+    .effects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .effect-card {
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+    }
+    
+    .effect-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--dawn-08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .effect-title {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+    
+    .effect-tag {
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.05em;
+      color: var(--dawn-30);
+      padding: 0.25rem 0.5rem;
+      background: var(--surface-1);
+    }
+    
+    .effect-canvas {
+      height: 120px;
+      position: relative;
+      background: var(--void);
+    }
+    
+    .effect-canvas canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .effect-desc {
+      padding: 0.75rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+      line-height: 1.6;
+      border-top: 1px solid var(--dawn-08);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       PRINCIPLES
+       ═══════════════════════════════════════════════════════════════ */
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .principle {
+      padding: 1rem;
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+    }
+    
+    .principle-title {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    
+    .principle-text {
+      font-size: 0.75rem;
+      color: var(--dawn-70);
+      line-height: 1.5;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       CODE BLOCK
+       ═══════════════════════════════════════════════════════════════ */
+    .code-section {
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+      margin-bottom: 2rem;
+    }
+    
+    .code-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--dawn-08);
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.08em;
+      color: var(--dawn-30);
+      text-transform: uppercase;
+    }
+    
+    pre {
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      line-height: 1.6;
+      color: var(--dawn-70);
+      overflow-x: auto;
+    }
+    
+    .comment { color: var(--dawn-30); }
+    .keyword { color: var(--volatile); }
+    .string { color: var(--dynamics); }
+    .number { color: var(--gold); }
+    .function { color: var(--dawn); }
+  </style>
+</head>
+<body>
+  <!-- INTRO -->
+  <div class="intro">
+    <h1>Atlas Particle Effects</h1>
+    <p>
+      Our visualization system uses pixel-based particle rendering on HTML5 Canvas. 
+      Every effect snaps to a 3px grid, creating a unified "data readout" aesthetic 
+      that feels like viewing sensor data from an arcane research terminal.
+    </p>
+    <p>
+      The particles respond to entity parameters—hallucination index affects wave 
+      frequency, coordinates move position markers, curvature strength warps the 
+      manifold. This creates a living, breathing data visualization.
+    </p>
+  </div>
+
+  <!-- DESIGN PRINCIPLES -->
+  <h2>▸ Design Principles</h2>
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-title">Grid Snapping</div>
+      <div class="principle-text">
+        All particles snap to a 3px grid using <code>Math.floor(x / GRID) * GRID</code>. 
+        This creates sharp, pixel-perfect rendering that avoids anti-aliased blur.
+      </div>
+    </div>
+    <div class="principle">
+      <div class="principle-title">Additive Trails</div>
+      <div class="principle-text">
+        Instead of clearing canvases, we draw semi-transparent backgrounds each frame. 
+        This creates natural motion trails and afterglow effects.
+      </div>
+    </div>
+    <div class="principle">
+      <div class="principle-title">Semantic Color</div>
+      <div class="principle-text">
+        Gold (#CAA554) = primary data. Dynamics (#5B8A7A) = stable/benign. 
+        Volatile (#C17F59) = warning/alert. Dawn = neutral grid elements.
+      </div>
+    </div>
+    <div class="principle">
+      <div class="principle-title">Data-Driven Animation</div>
+      <div class="principle-text">
+        Entity parameters directly influence visualizations. The UI isn't decorative—
+        it's a functional readout of the entity's semantic properties.
+      </div>
+    </div>
+  </div>
+
+  <!-- EFFECTS SHOWCASE -->
+  <h2>▸ Effect Showcase</h2>
+  <div class="effects-grid">
+    <!-- Phase State -->
+    <div class="effect-card">
+      <div class="effect-header">
+        <span class="effect-title">Phase State</span>
+        <span class="effect-tag">Wave</span>
+      </div>
+      <div class="effect-canvas"><canvas id="phaseCanvas"></canvas></div>
+      <div class="effect-desc">
+        Sine wave particles with vertical fill trails. Wave frequency modulated by 
+        hallucinationIndex—higher values = more chaotic motion.
+      </div>
+    </div>
+
+    <!-- Superposition -->
+    <div class="effect-card">
+      <div class="effect-header">
+        <span class="effect-title">Superposition</span>
+        <span class="effect-tag">Grid Blink</span>
+      </div>
+      <div class="effect-canvas"><canvas id="superCanvas"></canvas></div>
+      <div class="effect-desc">
+        4x3 indicator grid with phase-offset blinking. Each indicator has random 
+        activation probability, creating quantum uncertainty aesthetic.
+      </div>
+    </div>
+
+    <!-- Hallucination Index -->
+    <div class="effect-card">
+      <div class="effect-header">
+        <span class="effect-title">Hallucination Index</span>
+        <span class="effect-tag">Rolling Graph</span>
+      </div>
+      <div class="effect-canvas"><canvas id="hallucCanvas"></canvas></div>
+      <div class="effect-desc">
+        Scrolling waveform with vertical fill. New values pushed, old values shifted. 
+        Uses Volatile color to indicate warning/alert state.
+      </div>
+    </div>
+
+    <!-- Latent Position -->
+    <div class="effect-card">
+      <div class="effect-header">
+        <span class="effect-title">Latent Position</span>
+        <span class="effect-tag">Coordinate Grid</span>
+      </div>
+      <div class="effect-canvas"><canvas id="coordsCanvas"></canvas></div>
+      <div class="effect-desc">
+        Sparse dot grid with pulsing position marker. Position controlled by 
+        geometry/alterity coordinates. Particle glow adds depth.
+      </div>
+    </div>
+
+    <!-- Manifold Curvature -->
+    <div class="effect-card">
+      <div class="effect-header">
+        <span class="effect-title">Manifold Curvature</span>
+        <span class="effect-tag">Gravity Well</span>
+      </div>
+      <div class="effect-canvas"><canvas id="manifoldCanvas"></canvas></div>
+      <div class="effect-desc">
+        7x7 particle grid pulled toward center. Pull strength based on curvature 
+        severity (Stable→Critical). Simulates spacetime warping.
+      </div>
+    </div>
+
+    <!-- Embedding Signature -->
+    <div class="effect-card">
+      <div class="effect-header">
+        <span class="effect-title">Embedding Signature</span>
+        <span class="effect-tag">Spectrum</span>
+      </div>
+      <div class="effect-canvas"><canvas id="spectralCanvas"></canvas></div>
+      <div class="effect-desc">
+        16-band frequency spectrum with scanning line. First half uses Dynamics 
+        color, second half uses Gold. Represents embedding vector signature.
+      </div>
+    </div>
+  </div>
+
+  <!-- CORE CODE -->
+  <h2>▸ Core Implementation</h2>
+  <div class="code-section">
+    <div class="code-header">// Pixel Drawing Foundation</div>
+    <pre><span class="comment">// Constants - the 3px grid creates our pixel aesthetic</span>
+<span class="keyword">const</span> GRID = <span class="number">3</span>;
+<span class="keyword">const</span> GOLD = <span class="string">'202, 165, 84'</span>;
+<span class="keyword">const</span> DAWN = <span class="string">'236, 227, 214'</span>;
+<span class="keyword">const</span> DYNAMICS = <span class="string">'91, 138, 122'</span>;
+<span class="keyword">const</span> VOLATILE = <span class="string">'193, 127, 89'</span>;
+
+<span class="comment">// Core pixel drawing function - snaps to grid</span>
+<span class="keyword">function</span> <span class="function">drawPixel</span>(ctx, x, y, color, alpha, size = GRID) {
+  <span class="keyword">const</span> px = Math.floor(x / GRID) * GRID;  <span class="comment">// Snap to grid</span>
+  <span class="keyword">const</span> py = Math.floor(y / GRID) * GRID;
+  ctx.fillStyle = <span class="string">`rgba(${color}, ${alpha})`</span>;
+  ctx.fillRect(px, py, size - <span class="number">1</span>, size - <span class="number">1</span>);  <span class="comment">// 1px gap between pixels</span>
+}
+
+<span class="comment">// Particle circle - used for rings and orbital effects</span>
+<span class="keyword">function</span> <span class="function">drawParticleCircle</span>(ctx, cx, cy, radius, color, alpha, density = <span class="number">0.15</span>) {
+  <span class="keyword">const</span> circumference = <span class="number">2</span> * Math.PI * radius;
+  <span class="keyword">const</span> steps = Math.floor(circumference * density);
+  <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i < steps; i++) {
+    <span class="keyword">const</span> angle = (i / steps) * Math.PI * <span class="number">2</span>;
+    <span class="function">drawPixel</span>(ctx, cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius, color, alpha);
+  }
+}</pre>
+  </div>
+
+  <div class="code-section">
+    <div class="code-header">// Trail Effect via Semi-Transparent Clear</div>
+    <pre><span class="comment">// Instead of ctx.clearRect(), we draw a semi-transparent background</span>
+<span class="comment">// This creates natural motion blur/afterglow</span>
+
+ctx.fillStyle = <span class="string">'rgba(5, 4, 3, 0.15)'</span>;  <span class="comment">// 15% opacity void color</span>
+ctx.fillRect(<span class="number">0</span>, <span class="number">0</span>, width, height);
+
+<span class="comment">// Lower opacity = longer trails (0.05 for center field)</span>
+<span class="comment">// Higher opacity = crisper updates (0.15 for wave forms)</span></pre>
+  </div>
+
+  <div class="code-section">
+    <div class="code-header">// Example: Phase State Wave</div>
+    <pre><span class="comment">// Each wave point has random phase, amplitude, and frequency</span>
+<span class="keyword">const</span> phasePoints = [];
+<span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i < <span class="number">20</span>; i++) {
+  phasePoints.push({
+    phase: Math.random() * Math.PI * <span class="number">2</span>,
+    amp: <span class="number">0.2</span> + Math.random() * <span class="number">0.5</span>,
+    freq: <span class="number">0.5</span> + Math.random() * <span class="number">1.5</span>,
+  });
+}
+
+<span class="comment">// In animation loop:</span>
+<span class="keyword">const</span> baseline = height * <span class="number">0.85</span>;
+<span class="keyword">const</span> tempMod = <span class="number">0.5</span> + hallucinationIndex;  <span class="comment">// Parameter affects speed</span>
+
+phasePoints.forEach((p, i) => {
+  <span class="keyword">const</span> x = (i / phasePoints.length) * width;
+  <span class="keyword">const</span> wave = Math.sin(time * p.freq * tempMod + p.phase) * p.amp;
+  <span class="keyword">const</span> y = baseline - (wave + <span class="number">0.5</span>) * height * <span class="number">0.6</span>;
+  
+  <span class="function">drawPixel</span>(ctx, x, y, GOLD, <span class="number">0.5</span> + wave * <span class="number">0.3</span>);
+  
+  <span class="comment">// Vertical fill trail</span>
+  <span class="keyword">for</span> (<span class="keyword">let</span> ty = y; ty < baseline; ty += GRID * <span class="number">2</span>) {
+    <span class="function">drawPixel</span>(ctx, x, ty, GOLD, <span class="number">0.06</span> * (<span class="number">1</span> - (ty - y) / (baseline - y)));
+  }
+});</pre>
+  </div>
+
+  <div class="code-section">
+    <div class="code-header">// Example: Manifold Curvature Gravity</div>
+    <pre><span class="comment">// 7x7 grid of particles pulled toward center</span>
+<span class="keyword">const</span> manifoldParticles = [];
+<span class="keyword">for</span> (<span class="keyword">let</span> x = <span class="number">0</span>; x < <span class="number">7</span>; x++) {
+  <span class="keyword">for</span> (<span class="keyword">let</span> y = <span class="number">0</span>; y < <span class="number">7</span>; y++) {
+    manifoldParticles.push({ baseX: x / <span class="number">6</span>, baseY: y / <span class="number">6</span> });
+  }
+}
+
+<span class="comment">// Severity affects pull strength</span>
+<span class="keyword">const</span> severityMap = { Stable: <span class="number">8</span>, Moderate: <span class="number">15</span>, Severe: <span class="number">22</span>, Critical: <span class="number">30</span> };
+<span class="keyword">const</span> strength = severityMap[curvature] + Math.sin(time * <span class="number">0.5</span>) * <span class="number">4</span>;
+
+manifoldParticles.forEach(p => {
+  <span class="keyword">const</span> x = p.baseX * width;
+  <span class="keyword">const</span> y = p.baseY * height;
+  <span class="keyword">const</span> dx = x - cx, dy = y - cy;
+  <span class="keyword">const</span> dist = Math.sqrt(dx * dx + dy * dy);
+  <span class="keyword">const</span> pull = Math.max(<span class="number">0</span>, <span class="number">1</span> - dist / <span class="number">45</span>) * strength;
+  
+  <span class="comment">// Particle position warped toward center</span>
+  <span class="function">drawPixel</span>(ctx, x - (dx / dist) * pull, y - (dy / dist) * pull, GOLD, <span class="number">0.2</span> + (dist / <span class="number">50</span>) * <span class="number">0.3</span>);
+});</pre>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // PARTICLE SYSTEM - Same as EntityCardPreview.tsx
+    // ═══════════════════════════════════════════════════════════════
+    
+    const GRID = 3;
+    const GOLD = '202, 165, 84';
+    const DAWN = '236, 227, 214';
+    const DYNAMICS = '91, 138, 122';
+    const VOLATILE = '193, 127, 89';
+    
+    const state = {
+      phasePoints: [],
+      superStates: [],
+      hallucHistory: [],
+      manifoldParticles: [],
+      signature: [],
+      time: 0
+    };
+    
+    function drawPixel(ctx, x, y, color, alpha, size = GRID) {
+      const px = Math.floor(x / GRID) * GRID;
+      const py = Math.floor(y / GRID) * GRID;
+      ctx.fillStyle = `rgba(${color}, ${alpha})`;
+      ctx.fillRect(px, py, size - 1, size - 1);
+    }
+    
+    function setupCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return null;
+      const parent = canvas.parentElement;
+      if (!parent) return null;
+      const rect = parent.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.scale(dpr, dpr);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+    
+    function initStates() {
+      state.phasePoints = Array.from({ length: 20 }, () => ({
+        phase: Math.random() * Math.PI * 2,
+        amp: 0.2 + Math.random() * 0.5,
+        freq: 0.5 + Math.random() * 1.5,
+      }));
+      
+      state.superStates = Array.from({ length: 12 }, () => ({
+        active: Math.random() > 0.6,
+        phase: Math.random() * Math.PI * 2,
+      }));
+      
+      state.hallucHistory = Array.from({ length: 25 }, (_, i) => 
+        0.6 + Math.sin(i * 0.2) * 0.2 + Math.random() * 0.1
+      );
+      
+      state.manifoldParticles = [];
+      for (let x = 0; x < 7; x++) {
+        for (let y = 0; y < 7; y++) {
+          state.manifoldParticles.push({ baseX: x / 6, baseY: y / 6 });
+        }
+      }
+      
+      state.signature = Array.from({ length: 16 }, (_, i) => ({
+        base: Math.sin(i * 0.3) * 0.3 + Math.sin(i * 0.7) * 0.2 + 0.5,
+        variance: Math.random() * 0.1,
+      }));
+    }
+    
+    function drawPhaseState() {
+      const setup = setupCanvas('phaseCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.15)';
+      ctx.fillRect(0, 0, width, height);
+      const baseline = height * 0.85;
+      for (let x = 0; x < width; x += GRID * 2) drawPixel(ctx, x, baseline, DAWN, 0.1);
+      state.phasePoints.forEach((p, i) => {
+        const x = (i / state.phasePoints.length) * width;
+        const wave = Math.sin(state.time * p.freq + p.phase) * p.amp;
+        const y = baseline - (wave + 0.5) * height * 0.6;
+        drawPixel(ctx, x, y, GOLD, 0.5 + wave * 0.3);
+        for (let ty = y; ty < baseline; ty += GRID * 2) {
+          drawPixel(ctx, x, ty, GOLD, 0.06 * (1 - (ty - y) / (baseline - y)));
+        }
+      });
+    }
+    
+    function drawSuperposition() {
+      const setup = setupCanvas('superCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+      ctx.fillRect(0, 0, width, height);
+      const cols = 4, rows = 3;
+      state.superStates.forEach((s, i) => {
+        const col = i % cols, row = Math.floor(i / cols);
+        const x = (col + 0.5) * (width / cols);
+        const y = (row + 0.5) * (height / rows);
+        const isOn = s.active ? Math.sin(state.time + s.phase) > 0.3 : Math.random() > 0.97;
+        if (isOn) {
+          drawPixel(ctx, x, y, GOLD, 0.8, 4);
+          drawPixel(ctx, x - GRID, y, GOLD, 0.15);
+          drawPixel(ctx, x + GRID, y, GOLD, 0.15);
+        } else {
+          drawPixel(ctx, x, y, DAWN, 0.1, 4);
+        }
+      });
+    }
+    
+    function drawHallucinationIndex() {
+      const setup = setupCanvas('hallucCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.1)';
+      ctx.fillRect(0, 0, width, height);
+      state.hallucHistory.shift();
+      state.hallucHistory.push(0.5 + Math.sin(state.time) * 0.1 + Math.sin(state.time * 2.3) * 0.05 + (Math.random() - 0.5) * 0.05);
+      state.hallucHistory.forEach((v, i) => {
+        const x = (i / state.hallucHistory.length) * width;
+        const y = height - v * height * 0.85;
+        drawPixel(ctx, x, y, VOLATILE, 0.7);
+        for (let fy = y; fy < height; fy += GRID * 2) drawPixel(ctx, x, fy, VOLATILE, 0.05);
+      });
+    }
+    
+    function drawLatentPosition() {
+      const setup = setupCanvas('coordsCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+      ctx.fillRect(0, 0, width, height);
+      for (let x = 0; x < width; x += GRID * 3) {
+        for (let y = 0; y < height; y += GRID * 3) drawPixel(ctx, x, y, DAWN, 0.06);
+      }
+      const cx = width / 2, cy = height / 2;
+      const pulse = 0.7 + Math.sin(state.time * 2) * 0.3;
+      for (let i = 0; i < 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 6;
+        drawPixel(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, GOLD, 0.1 * pulse);
+      }
+      drawPixel(ctx, cx, cy, GOLD, 0.85 * pulse, 4);
+    }
+    
+    function drawManifoldCurvature() {
+      const setup = setupCanvas('manifoldCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+      ctx.fillRect(0, 0, width, height);
+      const cx = width / 2, cy = height / 2;
+      const strength = 15 + Math.sin(state.time * 0.5) * 4;
+      state.manifoldParticles.forEach(p => {
+        const x = p.baseX * width, y = p.baseY * height;
+        const dx = x - cx, dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const pull = Math.max(0, 1 - dist / 45) * strength;
+        drawPixel(ctx, x - (dx / (dist || 1)) * pull, y - (dy / (dist || 1)) * pull, GOLD, 0.2 + (dist / 50) * 0.3);
+      });
+      for (let i = 0; i < 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 10;
+        drawPixel(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, VOLATILE, 0.2 * (1 - dist / 10));
+      }
+      drawPixel(ctx, cx, cy, VOLATILE, 0.9, 4);
+    }
+    
+    function drawEmbeddingSignature() {
+      const setup = setupCanvas('spectralCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+      ctx.fillRect(0, 0, width, height);
+      state.signature.forEach((band, i) => {
+        const animate = Math.sin(state.time + i * 0.2) * band.variance;
+        const h = (band.base + animate) * height * 0.8;
+        const color = i / state.signature.length < 0.5 ? DYNAMICS : GOLD;
+        for (let y = height; y > height - h; y -= GRID) {
+          drawPixel(ctx, i * (width / state.signature.length) + (width / state.signature.length) / 2, y, color, 0.2 + (1 - y / height) * 0.35);
+        }
+      });
+      const scanX = (state.time * 4) % width;
+      for (let y = 0; y < height; y += GRID * 2) drawPixel(ctx, scanX, y, DAWN, 0.2);
+    }
+    
+    function animate() {
+      state.time += 0.015;
+      drawPhaseState();
+      drawSuperposition();
+      drawHallucinationIndex();
+      drawLatentPosition();
+      drawManifoldCurvature();
+      drawEmbeddingSignature();
+      requestAnimationFrame(animate);
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      initStates();
+      animate();
+    });
+  </script>
+</body>
+</html>
+
