@@ -28,6 +28,13 @@
       --gold-30: rgba(202, 165, 84, 0.3);
       --gold-15: rgba(202, 165, 84, 0.15);
       
+      /* Semantic Colors */
+      --threat-benign: #5B8A7A;
+      --threat-cautious: #7A7868;
+      --threat-volatile: #C17F59;
+      --threat-existential: #8B5A5A;
+      --dynamics: #5B8A7A;
+      
       /* Fonts */
       --font-mono: 'PT Mono', monospace;
       --font-sans: 'IBM Plex Sans', sans-serif;
@@ -60,7 +67,7 @@
        MAIN LAYOUT
        ═══════════════════════════════════════════════════════════════ */
     .main {
-      padding: 5rem 2rem 2rem;
+      padding: 6rem 2rem 2rem;
       max-width: 1600px;
       margin: 0 auto;
       min-height: 100vh;
@@ -111,8 +118,13 @@
       transition: all 150ms ease;
     }
     
-    .saveButton:hover {
+    .saveButton:hover:not(:disabled) {
       background: #D4B76A;
+    }
+    
+    .saveButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     
     /* ═══════════════════════════════════════════════════════════════
@@ -138,7 +150,7 @@
     }
     
     /* ═══════════════════════════════════════════════════════════════
-       ENTITY CARD PREVIEW
+       ENTITY CARD PREVIEW - 4:5 Aspect Ratio
        ═══════════════════════════════════════════════════════════════ */
     .card {
       width: 620px;
@@ -179,6 +191,7 @@
       display: flex;
       align-items: center;
       padding: 0 12px;
+      font-family: var(--font-mono);
       font-size: 9px;
       letter-spacing: 0.1em;
       gap: 12px;
@@ -188,12 +201,10 @@
     .cardHeaderTitle {
       color: var(--gold);
       text-transform: uppercase;
-      font-family: var(--font-mono);
     }
     
     .cardHeaderData {
       color: var(--dawn-30);
-      font-family: var(--font-mono);
     }
     
     .cardHeaderData span {
@@ -204,7 +215,6 @@
       margin-left: auto;
       display: flex;
       gap: 12px;
-      font-family: var(--font-mono);
     }
     
     /* Left/Right Columns */
@@ -256,6 +266,15 @@
       letter-spacing: 0.05em;
     }
     
+    .readoutValueAlert {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--threat-volatile);
+      margin-top: 6px;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+    
     .readoutValueSmall {
       font-family: var(--font-mono);
       font-size: 9px;
@@ -297,6 +316,14 @@
       color: var(--gold);
       letter-spacing: 0.08em;
       text-transform: uppercase;
+    }
+    
+    .entityImage {
+      position: relative;
+      z-index: 10;
+      max-width: 70%;
+      max-height: 85%;
+      object-fit: contain;
     }
     
     .entityPlaceholder {
@@ -347,6 +374,7 @@
       letter-spacing: 0.1em;
       line-height: 1.1;
       text-transform: uppercase;
+      white-space: pre-line;
     }
     
     .footerMeta {
@@ -435,6 +463,16 @@
       background: var(--gold-15);
     }
     
+    .dropzone.dragging {
+      border-color: var(--gold);
+      background: rgba(202, 165, 84, 0.1);
+    }
+    
+    .dropzone.analyzing {
+      cursor: wait;
+      border-color: var(--gold-30);
+    }
+    
     .dropzoneIcon {
       font-size: 24px;
       color: var(--dawn-30);
@@ -453,6 +491,81 @@
       font-size: 0.5625rem;
       color: var(--dawn-30);
       margin-top: 0.25rem;
+    }
+    
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--dawn-15);
+      border-top-color: var(--gold);
+      animation: spin 1s linear infinite;
+      margin-bottom: 0.5rem;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .progressBar {
+      width: 100%;
+      max-width: 200px;
+      height: 4px;
+      background: rgba(236, 227, 214, 0.1);
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+    }
+    
+    .progressFill {
+      height: 100%;
+      background: var(--gold);
+      transition: width 200ms ease;
+    }
+    
+    .preview {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .previewMedia {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      background: var(--void);
+      border: 1px solid var(--dawn-08);
+    }
+    
+    .previewInfo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .previewName {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--dawn-50);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 200px;
+    }
+    
+    .clearButton {
+      padding: 0.25rem 0.5rem;
+      background: transparent;
+      border: 1px solid rgba(139, 90, 90, 0.3);
+      color: rgba(139, 90, 90, 0.8);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .clearButton:hover {
+      border-color: var(--threat-existential);
+      color: var(--threat-existential);
+      background: rgba(139, 90, 90, 0.1);
     }
     
     /* Form Fields */
@@ -537,6 +650,12 @@
       gap: 0.5rem;
     }
     
+    .fieldRow2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+    
     .divider {
       height: 1px;
       background: var(--dawn-08);
@@ -598,6 +717,24 @@
       font-family: var(--font-mono);
       font-size: 0.5rem;
       letter-spacing: 0.08em;
+    }
+    
+    .addButton {
+      margin-top: 0.5rem;
+      padding: 0.375rem 0.5rem;
+      background: transparent;
+      border: 1px dashed var(--dawn-15);
+      color: var(--dawn-50);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .addButton:hover {
+      border-color: var(--gold-dim);
+      color: var(--gold);
     }
     
     /* ═══════════════════════════════════════════════════════════════
@@ -704,6 +841,11 @@
       font-weight: 500;
     }
     
+    .messageContent em {
+      font-style: italic;
+      color: var(--dawn-50);
+    }
+    
     .messageTime {
       font-family: var(--font-mono);
       font-size: 0.5rem;
@@ -714,6 +856,168 @@
     
     .messageUser .messageTime {
       text-align: right;
+    }
+    
+    /* Tool Usage Display */
+    .toolUsage {
+      margin-top: 0.5rem;
+      border-top: 1px solid rgba(236, 227, 214, 0.06);
+      padding-top: 0.375rem;
+    }
+    
+    .toolToggle {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      background: none;
+      border: none;
+      padding: 0.25rem 0;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+      letter-spacing: 0.05em;
+      transition: color 150ms ease;
+    }
+    
+    .toolToggle:hover {
+      color: var(--dawn-50);
+    }
+    
+    .toolIcon {
+      font-size: 0.625rem;
+    }
+    
+    .toolSummary {
+      flex: 1;
+      text-align: left;
+    }
+    
+    .toolFail {
+      color: var(--threat-existential);
+    }
+    
+    .toolChevron {
+      font-size: 0.5rem;
+      opacity: 0.5;
+    }
+    
+    .toolDetails {
+      margin-top: 0.375rem;
+      padding: 0.375rem;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--dawn-04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .toolItem {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      padding: 0.25rem 0.375rem;
+      background: rgba(236, 227, 214, 0.02);
+    }
+    
+    .toolItem.toolSuccess .toolStatus {
+      color: #5A8B5A;
+    }
+    
+    .toolItem.toolError .toolStatus {
+      color: var(--threat-existential);
+    }
+    
+    .toolName {
+      color: var(--dawn-50);
+      flex: 1;
+    }
+    
+    .toolStatus {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .toolDuration {
+      color: var(--dawn-30);
+      font-size: 0.5rem;
+    }
+    
+    /* Warning Message */
+    .warning {
+      background: rgba(139, 90, 90, 0.1);
+      border: 1px solid rgba(139, 90, 90, 0.3);
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    
+    .warningHeader {
+      display: flex;
+      align-items: center;
+      gap: 0.3125rem;
+      font-family: var(--font-mono);
+      font-size: 0.5rem;
+      color: var(--threat-existential);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    
+    .warningText {
+      font-size: 0.6875rem;
+      color: var(--dawn-70);
+      line-height: 1.4;
+    }
+    
+    /* Apply Button */
+    .applyButton {
+      margin-top: 0.5rem;
+      padding: 0.375rem 0.5rem;
+      background: var(--gold-15);
+      border: 1px solid var(--gold-30);
+      color: var(--gold);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    
+    .applyButton:hover {
+      background: rgba(202, 165, 84, 0.25);
+      border-color: var(--gold-dim);
+    }
+    
+    /* Typing Indicator */
+    .typing {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    
+    .typingDot {
+      display: inline-block;
+      animation: typingBounce 1.4s infinite ease-in-out both;
+      color: var(--gold);
+    }
+    
+    .typingDot:nth-child(1) { animation-delay: -0.32s; }
+    .typingDot:nth-child(2) { animation-delay: -0.16s; }
+    .typingDot:nth-child(3) { animation-delay: 0s; }
+    
+    @keyframes typingBounce {
+      0%, 80%, 100% { opacity: 0.3; }
+      40% { opacity: 1; }
+    }
+    
+    .typingStatus {
+      margin-left: 0.5rem;
+      font-size: 0.625rem;
+      color: var(--dawn-30);
+      font-style: italic;
     }
     
     .inputArea {
@@ -764,6 +1068,11 @@
       background: #D4B76A;
     }
     
+    .sendButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
     /* ═══════════════════════════════════════════════════════════════
        RESPONSIVE
        ═══════════════════════════════════════════════════════════════ */
@@ -800,11 +1109,12 @@
           
           <!-- Card Header -->
           <div class="cardHeader">
-            <span class="cardHeaderTitle">ATLAS RESEARCH</span>
+            <span class="cardHeaderTitle">Atlas Research</span>
             <span class="cardHeaderData">MODE: <span>Active Scan</span></span>
+            <span class="cardHeaderData">SIG: <span>0.946</span></span>
             <div class="cardHeaderRight">
-              <span>SIG: <span>0.946</span></span>
-              <span>EPOCH: <span>4.2847 [00:00:00]</span></span>
+              <span class="cardHeaderData">EPOCH: <span>4.2847</span></span>
+              <span class="cardHeaderData">[00:00:00]</span>
             </div>
           </div>
 
@@ -812,38 +1122,28 @@
           <div class="leftCol">
             <!-- Phase State -->
             <div class="readout">
-              <div class="readoutLabel">PHASE STATE</div>
+              <div class="readoutLabel">▸ Phase State</div>
               <div class="readoutCanvas">
                 <canvas id="phaseCanvas"></canvas>
               </div>
-              <div class="readoutValueSmall">UNALIGNED</div>
-            </div>
-            
-            <!-- Temp -->
-            <div class="readout">
-              <div class="readoutLabel">TEMP</div>
-              <div class="readoutValue">0.50</div>
+              <div class="readoutValue">TEMP: 0.50</div>
             </div>
             
             <!-- Superposition -->
             <div class="readout">
-              <div class="readoutLabel">SUPERPOSITION</div>
+              <div class="readoutLabel">▸ Superposition</div>
               <div class="readoutCanvas">
                 <canvas id="superCanvas"></canvas>
               </div>
-              <div class="readoutValueSmall" style="margin-top: 4px;">[NO IMAGE]</div>
             </div>
             
-            <!-- Latent Position -->
+            <!-- Hallucination Index -->
             <div class="readout">
-              <div class="readoutLabel">LATENT POSITION</div>
-              <div class="readoutValueSmall">X:0.000<br>Y:0.000<br>Z:0.000</div>
-            </div>
-            
-            <!-- Manifold Curvature -->
-            <div class="readout">
-              <div class="readoutLabel">MANIFOLD CURVATURE</div>
-              <div class="readoutValueSmall">MODERATE</div>
+              <div class="readoutLabel">▸ Hallucination Index</div>
+              <div class="readoutCanvas">
+                <canvas id="hallucCanvas"></canvas>
+              </div>
+              <div class="readoutValueAlert">HIGH [3/5]</div>
             </div>
           </div>
 
@@ -851,29 +1151,39 @@
           <div class="center">
             <canvas class="centerCanvas" id="centerCanvas"></canvas>
             <div class="alignmentOverlay">
-              <div class="alignmentLabel">UNALIGNED</div>
+              <div class="alignmentLabel">◎ UNALIGNED</div>
             </div>
             <div class="entityPlaceholder">
-              <div class="placeholderBox">[NO IMAGE]</div>
+              <div class="placeholderBox">◇</div>
+              <span>[NO IMAGE]</span>
             </div>
           </div>
 
           <!-- Right Column -->
           <div class="rightCol">
-            <!-- Hallucination Index -->
+            <!-- Latent Position -->
             <div class="readout">
-              <div class="readoutLabel">HALLUCINATION INDEX</div>
+              <div class="readoutLabel">▸ Latent Position</div>
               <div class="readoutCanvas">
-                <canvas id="hallucCanvas"></canvas>
+                <canvas id="coordsCanvas"></canvas>
               </div>
-              <div class="readoutValueSmall">HIGH [3/5]</div>
+              <div class="readoutValueSmall">X:0.000 Y:0.000<br>Z:0.000</div>
+            </div>
+            
+            <!-- Manifold Curvature -->
+            <div class="readout">
+              <div class="readoutLabel">▸ Manifold Curvature</div>
+              <div class="readoutCanvas">
+                <canvas id="manifoldCanvas"></canvas>
+              </div>
+              <div class="readoutValueAlert">MODERATE</div>
             </div>
             
             <!-- Embedding Signature -->
             <div class="readout">
-              <div class="readoutLabel">EMBEDDING SIGNATURE</div>
+              <div class="readoutLabel">▸ Embedding Signature</div>
               <div class="readoutCanvas">
-                <canvas id="signatureCanvas"></canvas>
+                <canvas id="spectralCanvas"></canvas>
               </div>
             </div>
           </div>
@@ -881,11 +1191,16 @@
           <!-- Card Footer -->
           <div class="cardFooter">
             <div class="footerLeft">
-              <div class="footerName">UNNAMED ENTITY</div>
+              <div class="footerName">UNNAMED
+ENTITY</div>
               <div class="footerMeta">
                 <div class="footerMetaLine">CLASS <span>GUARDIAN</span></div>
-                <div class="footerMetaLine">THREAT <span>CAUTIOUS</span></div>
-                <div class="footerCardinals">0.000 0 0.000 0.000</div>
+                <div class="footerMetaLine">THREAT <span style="color: var(--threat-cautious);">CAUTIOUS</span></div>
+                <div class="footerCardinals">
+                  <span style="color: var(--gold);">◆</span> 0.000
+                  <span style="margin-left: 6px; color: var(--dawn);">○</span> 0.000
+                  <span style="margin-left: 6px; color: var(--dynamics);">◇</span> 0.000
+                </div>
               </div>
             </div>
             <div class="footerRight">
@@ -903,9 +1218,9 @@
           <!-- Media Upload Zone -->
           <div class="mediaContainer">
             <div class="dropzone">
-              <div class="dropzoneIcon">↑</div>
-              <div class="dropzoneText">Drop image or video, or click to upload</div>
-              <div class="dropzoneSubtext">jpg, png, webp, gif, mp4, webm, mov</div>
+              <span class="dropzoneIcon">↑</span>
+              <span class="dropzoneText">Drop image or video, or click to upload</span>
+              <span class="dropzoneSubtext">jpg, png, webp, gif, mp4, webm, mov</span>
             </div>
           </div>
           
@@ -935,7 +1250,7 @@
                 <span class="fieldPrefix">▸</span>
                 Description
               </label>
-              <textarea class="fieldInput fieldTextarea" placeholder="Describe the entity..."></textarea>
+              <textarea class="fieldInput fieldTextarea" placeholder="Describe the entity..." rows="3"></textarea>
             </div>
 
             <!-- Class / Threat / Allegiance Row -->
@@ -992,33 +1307,34 @@
               <input type="text" class="fieldInput" placeholder="Conceptual territory...">
             </div>
 
-            <!-- Phase State -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
-                Phase State
-              </label>
-              <select class="fieldSelect">
-                <option>Solid</option>
-                <option selected>Liminal</option>
-                <option>Spectral</option>
-                <option>Fluctuating</option>
-                <option>Crystallized</option>
-              </select>
-            </div>
+            <!-- Phase State & Manifold Curvature Row -->
+            <div class="fieldRow2">
+              <div class="fieldGroup">
+                <label class="fieldLabel">
+                  <span class="fieldPrefix">▸</span>
+                  Phase State
+                </label>
+                <select class="fieldSelect">
+                  <option>Solid</option>
+                  <option selected>Liminal</option>
+                  <option>Spectral</option>
+                  <option>Fluctuating</option>
+                  <option>Crystallized</option>
+                </select>
+              </div>
 
-            <!-- Manifold Curvature -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
-                Manifold Curvature
-              </label>
-              <select class="fieldSelect">
-                <option>Stable</option>
-                <option selected>Moderate</option>
-                <option>Severe</option>
-                <option>Critical</option>
-              </select>
+              <div class="fieldGroup">
+                <label class="fieldLabel">
+                  <span class="fieldPrefix">▸</span>
+                  Manifold Curvature
+                </label>
+                <select class="fieldSelect">
+                  <option>Stable</option>
+                  <option selected>Moderate</option>
+                  <option>Severe</option>
+                  <option>Critical</option>
+                </select>
+              </div>
             </div>
 
             <!-- Hallucination Index -->
@@ -1033,26 +1349,58 @@
               </div>
             </div>
 
-            <!-- Coordinates -->
+            <div class="divider"></div>
+
+            <!-- Latent Position Coordinates -->
             <div class="fieldGroup">
               <label class="fieldLabel">
                 <span class="fieldPrefix">▸</span>
-                Coordinates
+                Latent Position
               </label>
               <div class="coordsRow">
                 <div class="coordInput">
-                  <label class="coordLabel" style="color: var(--dawn-30);">Geometry</label>
+                  <span class="coordLabel" style="color: var(--gold);">◆ Geometry</span>
                   <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
                 </div>
                 <div class="coordInput">
-                  <label class="coordLabel" style="color: var(--dawn-30);">Alterity</label>
+                  <span class="coordLabel" style="color: var(--dawn);">○ Alterity</span>
                   <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
                 </div>
                 <div class="coordInput">
-                  <label class="coordLabel" style="color: var(--dawn-30);">Dynamics</label>
+                  <span class="coordLabel" style="color: var(--dynamics);">◇ Dynamics</span>
                   <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
                 </div>
               </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Glyphs -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Glyphs (4 symbols)
+              </label>
+              <input type="text" class="fieldInput" value="◆●∇⊗" maxlength="8">
+            </div>
+
+            <!-- Features -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Features (up to 5)
+              </label>
+              <input type="text" class="fieldInput" placeholder="Feature 1...">
+              <button type="button" class="addButton">+ Add Feature</button>
+            </div>
+
+            <!-- Lore -->
+            <div class="fieldGroup">
+              <label class="fieldLabel">
+                <span class="fieldPrefix">▸</span>
+                Lore
+              </label>
+              <textarea class="fieldInput fieldTextarea" placeholder="Historical context, theories..." rows="4"></textarea>
             </div>
           </div>
         </div>
@@ -1063,28 +1411,97 @@
         <div class="chatPanel">
           <div class="chatHeader">
             <div class="chatTitle">
-              <div class="chatAvatar">◈</div>
+              <div class="chatAvatar">◇</div>
               <div>
                 <div class="chatName">The Archivist</div>
-                <div class="chatRole">ENTITY CATALOGUER</div>
+                <div class="chatRole">Semantic Cartographer</div>
               </div>
             </div>
-            <div class="chatStatus">Awaiting input...</div>
+            <div class="chatStatus">Ready</div>
           </div>
 
           <div class="messages">
+            <!-- Greeting Message -->
             <div class="message messageArchivist">
               <div class="messageContent">
-                Welcome, Navigator. I am the Archivist, keeper of the manifold's denizens. Present your offering—an image or video—and together we shall determine its nature and place in the infinite library.
+                <em>*awaits*</em><br><br>
+                Welcome, Navigator. What entity shall we explore today? You can share an image, describe what you've witnessed, or ask about patterns in the archive.
               </div>
               <div class="messageTime">10:56 AM</div>
             </div>
+
+            <!-- User Message Example -->
+            <div class="message messageUser">
+              <div class="messageContent">
+                I've uploaded an image of a crystalline being I encountered. What can you tell me about it?
+              </div>
+              <div class="messageTime">10:57 AM</div>
+            </div>
+
+            <!-- Archivist Response with Tool Usage -->
+            <div class="message messageArchivist">
+              <div class="messageContent">
+                <em>*studies the visual signature*</em><br><br>
+                I see a being of <strong>crystalline</strong> form, emanating a warm gold-umber gradient. The structure suggests kinship with entities in the <strong>Starhaven Reaches</strong> domain.<br><br>
+                Let me search for similar patterns in the archive...
+                
+                <!-- Tool Usage Display -->
+                <div class="toolUsage">
+                  <button class="toolToggle">
+                    <span class="toolIcon">⚙</span>
+                    <span class="toolSummary">2 tools used</span>
+                    <span class="toolChevron">▼</span>
+                  </button>
+                  <div class="toolDetails">
+                    <div class="toolItem toolSuccess">
+                      <span class="toolName">analyze_image</span>
+                      <span class="toolStatus">✓ <span class="toolDuration">1247ms</span></span>
+                    </div>
+                    <div class="toolItem toolSuccess">
+                      <span class="toolName">find_similar</span>
+                      <span class="toolStatus">✓ <span class="toolDuration">342ms</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="messageTime">10:57 AM</div>
+            </div>
+
+            <!-- Archivist with Warning -->
+            <div class="message messageArchivist">
+              <div class="messageContent">
+                This entity clusters near <strong>Eonprism</strong> and <strong>Fatebinder</strong> in semantic space. They share crystalline materiality and cosmic purpose.<br><br>
+                I suggest classifying it as a <strong>Guardian</strong> class with <strong>Cautious</strong> threat level.
+                
+                <div class="warning">
+                  <div class="warningHeader">⚠ Observation</div>
+                  <div class="warningText">High hallucination index detected. Verify visual details with source material.</div>
+                </div>
+                
+                <button class="applyButton">Apply Suggestion</button>
+              </div>
+              <div class="messageTime">10:58 AM</div>
+            </div>
+
+            <!-- Typing Indicator (shown when loading) -->
+            <!--
+            <div class="message messageArchivist">
+              <div class="messageContent">
+                <span class="typing">
+                  <span class="typingDot">.</span>
+                  <span class="typingDot">.</span>
+                  <span class="typingDot">.</span>
+                </span>
+                <span class="typingStatus">consulting the archive</span>
+              </div>
+            </div>
+            -->
           </div>
 
           <div class="inputArea">
             <div class="inputWrap">
-              <input type="text" class="chatInput" placeholder="Respond to the Archivist...">
-              <button class="sendButton">SEND</button>
+              <input type="text" class="chatInput" placeholder="Ask about patterns, connections, or describe the entity...">
+              <button class="sendButton">Send</button>
             </div>
           </div>
         </div>
@@ -1094,18 +1511,40 @@
 
   <script>
     // ═══════════════════════════════════════════════════════════════
-    // CANVAS VISUALIZATIONS
+    // CANVAS VISUALIZATIONS - Matching EntityCardPreview.tsx
     // ═══════════════════════════════════════════════════════════════
     
     const GRID = 3;
     const GOLD = '202, 165, 84';
     const DAWN = '236, 227, 214';
+    const DYNAMICS = '91, 138, 122';
+    const VOLATILE = '193, 127, 89';
+    
+    // State for animations
+    const state = {
+      phasePoints: [],
+      superStates: [],
+      hallucHistory: [],
+      manifoldParticles: [],
+      signature: [],
+      fieldParticles: [],
+      time: 0
+    };
     
     function drawPixel(ctx, x, y, color, alpha, size = GRID) {
       const px = Math.floor(x / GRID) * GRID;
       const py = Math.floor(y / GRID) * GRID;
       ctx.fillStyle = `rgba(${color}, ${alpha})`;
       ctx.fillRect(px, py, size - 1, size - 1);
+    }
+    
+    function drawParticleCircle(ctx, cx, cy, r, color, alpha, density = 0.15) {
+      const circumference = 2 * Math.PI * r;
+      const steps = Math.floor(circumference * density);
+      for (let i = 0; i < steps; i++) {
+        const angle = (i / steps) * Math.PI * 2;
+        drawPixel(ctx, cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, color, alpha);
+      }
     }
     
     function setupCanvas(canvasId) {
@@ -1123,180 +1562,284 @@
       return { ctx, width: rect.width, height: rect.height };
     }
     
-    // Phase State Canvas
+    // Initialize visualization states
+    function initStates() {
+      // Phase points
+      state.phasePoints = [];
+      for (let i = 0; i < 20; i++) {
+        state.phasePoints.push({
+          phase: Math.random() * Math.PI * 2,
+          amp: 0.2 + Math.random() * 0.5,
+          freq: 0.5 + Math.random() * 1.5,
+        });
+      }
+
+      // Super states (12 indicators in 4x3 grid)
+      state.superStates = [];
+      for (let i = 0; i < 12; i++) {
+        state.superStates.push({
+          active: Math.random() > 0.6,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+
+      // Hallucination history
+      state.hallucHistory = [];
+      for (let i = 0; i < 25; i++) {
+        state.hallucHistory.push(0.6 + Math.sin(i * 0.2) * 0.2 + Math.random() * 0.1);
+      }
+
+      // Manifold particles (7x7 grid)
+      state.manifoldParticles = [];
+      for (let x = 0; x < 7; x++) {
+        for (let y = 0; y < 7; y++) {
+          state.manifoldParticles.push({ baseX: x / 6, baseY: y / 6 });
+        }
+      }
+
+      // Spectral signature (16 bands)
+      state.signature = [];
+      for (let i = 0; i < 16; i++) {
+        state.signature.push({
+          base: Math.sin(i * 0.3) * 0.3 + Math.sin(i * 0.7) * 0.2 + 0.5,
+          variance: Math.random() * 0.1,
+        });
+      }
+    }
+    
+    // Initialize center field particles
+    function initCenterParticles(width, height) {
+      state.fieldParticles = [];
+      for (let i = 0; i < 30; i++) {
+        state.fieldParticles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.06,
+          vy: (Math.random() - 0.5) * 0.06,
+          alpha: 0.06 + Math.random() * 0.08,
+        });
+      }
+    }
+    
+    // Phase State Canvas - Wave visualization
     function drawPhaseState() {
       const setup = setupCanvas('phaseCanvas');
       if (!setup) return;
       const { ctx, width, height } = setup;
       
-      // Scattered particles
-      for (let i = 0; i < 15; i++) {
-        const x = Math.random() * width;
-        const y = Math.random() * height;
-        const alpha = 0.3 + Math.random() * 0.4;
-        drawPixel(ctx, x, y, GOLD, alpha);
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.15)';
+      ctx.fillRect(0, 0, width, height);
+      
+      const baseline = height * 0.85;
+      for (let x = 0; x < width; x += GRID * 2) {
+        drawPixel(ctx, x, baseline, DAWN, 0.1);
       }
+      
+      const tempMod = 0.5 + 0.5; // hallucinationIndex = 0.5
+      state.phasePoints.forEach((p, i) => {
+        const x = (i / state.phasePoints.length) * width;
+        const wave = Math.sin(state.time * p.freq * tempMod + p.phase) * p.amp;
+        const y = baseline - (wave + 0.5) * height * 0.6;
+        drawPixel(ctx, x, y, GOLD, 0.5 + wave * 0.3);
+        for (let ty = y; ty < baseline; ty += GRID * 2) {
+          drawPixel(ctx, x, ty, GOLD, 0.06 * (1 - (ty - y) / (baseline - y)));
+        }
+      });
     }
     
-    // Superposition Canvas
+    // Superposition Canvas - Grid of blinking indicators
     function drawSuperposition() {
       const setup = setupCanvas('superCanvas');
       if (!setup) return;
       const { ctx, width, height } = setup;
       
-      const cx = width / 2;
-      const cy = height / 2;
-      const r = Math.min(width, height) * 0.3;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+      ctx.fillRect(0, 0, width, height);
       
-      // Outer square
-      const squareSize = r * 1.2;
-      for (let i = 0; i < 4; i++) {
-        const angle = (i * Math.PI) / 2;
-        const x1 = cx + Math.cos(angle) * squareSize;
-        const y1 = cy + Math.sin(angle) * squareSize;
-        const x2 = cx + Math.cos(angle + Math.PI / 2) * squareSize;
-        const y2 = cy + Math.sin(angle + Math.PI / 2) * squareSize;
-        
-        const steps = 10;
-        for (let j = 0; j <= steps; j++) {
-          const t = j / steps;
-          const x = x1 + (x2 - x1) * t;
-          const y = y1 + (y2 - y1) * t;
-          drawPixel(ctx, x, y, GOLD, 0.4);
+      const cols = 4, rows = 3;
+      state.superStates.forEach((s, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = (col + 0.5) * (width / cols);
+        const y = (row + 0.5) * (height / rows);
+        const isOn = s.active ? Math.sin(state.time + s.phase) > 0.3 : Math.random() > 0.97;
+        if (isOn) {
+          drawPixel(ctx, x, y, GOLD, 0.8, 4);
+          drawPixel(ctx, x - GRID, y, GOLD, 0.15);
+          drawPixel(ctx, x + GRID, y, GOLD, 0.15);
+        } else {
+          drawPixel(ctx, x, y, DAWN, 0.1, 4);
         }
-      }
-      
-      // Inner diamond
-      const diamondSize = r * 0.6;
-      for (let i = 0; i < 4; i++) {
-        const angle = (i * Math.PI) / 2 + Math.PI / 4;
-        const x1 = cx + Math.cos(angle) * diamondSize;
-        const y1 = cy + Math.sin(angle) * diamondSize;
-        const x2 = cx + Math.cos(angle + Math.PI / 2) * diamondSize;
-        const y2 = cy + Math.sin(angle + Math.PI / 2) * diamondSize;
-        
-        const steps = 8;
-        for (let j = 0; j <= steps; j++) {
-          const t = j / steps;
-          const x = x1 + (x2 - x1) * t;
-          const y = y1 + (y2 - y1) * t;
-          drawPixel(ctx, x, y, GOLD, 0.5);
-        }
-      }
-      
-      // Scattered particles around
-      for (let i = 0; i < 20; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = r + Math.random() * (r * 0.5);
-        const x = cx + Math.cos(angle) * dist;
-        const y = cy + Math.sin(angle) * dist;
-        const alpha = 0.2 + Math.random() * 0.3;
-        drawPixel(ctx, x, y, GOLD, alpha);
-      }
+      });
     }
     
-    // Hallucination Index Canvas (bar graph)
+    // Hallucination Index Canvas - Rolling wave graph
     function drawHallucinationIndex() {
       const setup = setupCanvas('hallucCanvas');
       if (!setup) return;
       const { ctx, width, height } = setup;
       
-      const barCount = 5;
-      const barWidth = width / (barCount + 1);
-      const maxHeight = height * 0.6;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.1)';
+      ctx.fillRect(0, 0, width, height);
       
-      // Draw bars (3/5 = HIGH)
-      for (let i = 0; i < barCount; i++) {
-        const x = (i + 1) * barWidth;
-        const barHeight = i < 3 ? maxHeight * (0.6 + Math.random() * 0.4) : maxHeight * (0.2 + Math.random() * 0.2);
-        const y = height - barHeight;
-        
-        // Draw bar using pixels
-        for (let py = y; py < height; py += GRID) {
-          for (let px = x - barWidth * 0.3; px < x + barWidth * 0.3; px += GRID) {
-            const alpha = 0.4 + (py - y) / barHeight * 0.4;
-            drawPixel(ctx, px, py, GOLD, alpha);
-          }
+      state.hallucHistory.shift();
+      const level = Math.round(0.5 * 5); // hallucinationIndex = 0.5
+      const baseValue = level / 5;
+      state.hallucHistory.push(
+        baseValue * 0.8 + Math.sin(state.time) * 0.1 + Math.sin(state.time * 2.3) * 0.05 + (Math.random() - 0.5) * 0.05
+      );
+      
+      state.hallucHistory.forEach((v, i) => {
+        const x = (i / state.hallucHistory.length) * width;
+        const y = height - v * height * 0.85;
+        drawPixel(ctx, x, y, VOLATILE, 0.7);
+        for (let fy = y; fy < height; fy += GRID * 2) {
+          drawPixel(ctx, x, fy, VOLATILE, 0.05);
         }
-      }
+      });
     }
     
-    // Embedding Signature Canvas (vertical bars)
-    function drawEmbeddingSignature() {
-      const setup = setupCanvas('signatureCanvas');
+    // Latent Position Canvas - Grid with position dot
+    function drawLatentPosition() {
+      const setup = setupCanvas('coordsCanvas');
       if (!setup) return;
       const { ctx, width, height } = setup;
       
-      const barCount = 20;
-      const barWidth = width / barCount;
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+      ctx.fillRect(0, 0, width, height);
       
-      for (let i = 0; i < barCount; i++) {
-        const x = i * barWidth + barWidth / 2;
-        const barHeight = height * (0.2 + Math.random() * 0.8);
-        const y = height - barHeight;
-        
-        // Draw thin vertical bar
-        for (let py = y; py < height; py += GRID) {
-          const alpha = 0.3 + (py - y) / barHeight * 0.5;
-          drawPixel(ctx, x, py, GOLD, alpha);
-          drawPixel(ctx, x - GRID, py, GOLD, alpha * 0.7);
-          drawPixel(ctx, x + GRID, py, GOLD, alpha * 0.7);
+      // Draw grid
+      for (let x = 0; x < width; x += GRID * 3) {
+        for (let y = 0; y < height; y += GRID * 3) {
+          drawPixel(ctx, x, y, DAWN, 0.06);
         }
+      }
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      const entityX = cx + 0 * width * 0.35; // geometry = 0
+      const entityY = cy - 0 * height * 0.35; // alterity = 0
+      const pulse = 0.7 + Math.sin(state.time * 2) * 0.3;
+      
+      // Draw particle glow around entity position
+      for (let i = 0; i < 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 6;
+        drawPixel(ctx, entityX + Math.cos(angle) * dist, entityY + Math.sin(angle) * dist, GOLD, 0.1 * pulse);
+      }
+      drawPixel(ctx, entityX, entityY, GOLD, 0.85 * pulse, 4);
+    }
+    
+    // Manifold Curvature Canvas - Particles being pulled toward center
+    function drawManifoldCurvature() {
+      const setup = setupCanvas('manifoldCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+      ctx.fillRect(0, 0, width, height);
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      const severityMap = { Stable: 8, Moderate: 15, Severe: 22, Critical: 30 };
+      const baseStrength = severityMap['Moderate'] || 15;
+      const strength = baseStrength + Math.sin(state.time * 0.5) * 4;
+      
+      state.manifoldParticles.forEach(p => {
+        const x = p.baseX * width;
+        const y = p.baseY * height;
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const pull = Math.max(0, 1 - dist / 45) * strength;
+        drawPixel(ctx, x - (dx / (dist || 1)) * pull, y - (dy / (dist || 1)) * pull, GOLD, 0.2 + (dist / 50) * 0.3);
+      });
+      
+      // Center glow
+      for (let i = 0; i < 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 10;
+        drawPixel(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, VOLATILE, 0.2 * (1 - dist / 10));
+      }
+      drawPixel(ctx, cx, cy, VOLATILE, 0.9, 4);
+    }
+    
+    // Embedding Signature Canvas - Vertical bars with scan line
+    function drawEmbeddingSignature() {
+      const setup = setupCanvas('spectralCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+      ctx.fillRect(0, 0, width, height);
+      
+      state.signature.forEach((band, i) => {
+        const animate = Math.sin(state.time + i * 0.2) * band.variance;
+        const h = (band.base + animate) * height * 0.8;
+        const color = i / state.signature.length < 0.5 ? DYNAMICS : GOLD;
+        for (let y = height; y > height - h; y -= GRID) {
+          drawPixel(ctx, i * (width / state.signature.length) + (width / state.signature.length) / 2, y, color, 0.2 + (1 - y / height) * 0.35);
+        }
+      });
+      
+      // Scan line
+      const scanX = (state.time * 4) % width;
+      for (let y = 0; y < height; y += GRID * 2) {
+        drawPixel(ctx, scanX, y, DAWN, 0.2);
       }
     }
     
-    // Center Canvas (particles)
-    function drawCenterCanvas() {
+    // Center Field Canvas - Floating particles with concentric rings
+    function drawCenterField() {
       const setup = setupCanvas('centerCanvas');
       if (!setup) return;
       const { ctx, width, height } = setup;
       
-      // Scattered particles
-      for (let i = 0; i < 50; i++) {
-        const x = Math.random() * width;
-        const y = Math.random() * height;
-        const alpha = 0.1 + Math.random() * 0.2;
-        drawPixel(ctx, x, y, GOLD, alpha, GRID);
+      if (state.fieldParticles.length === 0) {
+        initCenterParticles(width, height);
       }
       
-      // Some connection lines
-      for (let i = 0; i < 10; i++) {
-        const x1 = Math.random() * width;
-        const y1 = Math.random() * height;
-        const x2 = x1 + (Math.random() - 0.5) * width * 0.3;
-        const y2 = y1 + (Math.random() - 0.5) * height * 0.3;
-        
-        const steps = 15;
-        for (let j = 0; j <= steps; j++) {
-          const t = j / steps;
-          const x = x1 + (x2 - x1) * t;
-          const y = y1 + (y2 - y1) * t;
-          const alpha = 0.15 * (1 - t * 0.5);
-          drawPixel(ctx, x, y, GOLD, alpha);
-        }
-      }
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.05)';
+      ctx.fillRect(0, 0, width, height);
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      
+      // Draw concentric rings
+      [0.3, 0.45, 0.6].forEach(r => {
+        drawParticleCircle(ctx, cx, cy, Math.min(width, height) * r * 0.45, GOLD, 0.08, 0.05);
+      });
+      
+      // Update and draw floating particles
+      state.fieldParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+        drawPixel(ctx, p.x, p.y, GOLD, p.alpha);
+      });
+    }
+    
+    // Animation loop
+    function animate() {
+      state.time += 0.015;
+      
+      drawPhaseState();
+      drawSuperposition();
+      drawHallucinationIndex();
+      drawLatentPosition();
+      drawManifoldCurvature();
+      drawEmbeddingSignature();
+      drawCenterField();
+      
+      requestAnimationFrame(animate);
     }
     
     // Initialize all canvases
     function initCanvases() {
-      drawPhaseState();
-      drawSuperposition();
-      drawHallucinationIndex();
-      drawEmbeddingSignature();
-      drawCenterCanvas();
-      
-      // Animate center canvas
-      let time = 0;
-      function animate() {
-        time += 0.01;
-        const setup = setupCanvas('centerCanvas');
-        if (setup) {
-          const { ctx, width, height } = setup;
-          ctx.clearRect(0, 0, width, height);
-          drawCenterCanvas();
-        }
-        requestAnimationFrame(animate);
-      }
+      initStates();
       animate();
     }
     
@@ -1311,14 +1854,34 @@
     let resizeTimeout;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(initCanvases, 100);
+      resizeTimeout = setTimeout(() => {
+        // Re-initialize center particles on resize
+        const setup = setupCanvas('centerCanvas');
+        if (setup) {
+          initCenterParticles(setup.width, setup.height);
+        }
+      }, 100);
     });
     
     // Slider value update
     document.querySelector('.slider').addEventListener('input', (e) => {
       document.querySelector('.sliderValue').textContent = parseFloat(e.target.value).toFixed(2);
     });
+    
+    // Tool toggle interaction
+    document.querySelectorAll('.toolToggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const details = toggle.nextElementSibling;
+        const chevron = toggle.querySelector('.toolChevron');
+        if (details.style.display === 'none' || !details.style.display) {
+          details.style.display = 'flex';
+          chevron.textContent = '▼';
+        } else {
+          details.style.display = 'none';
+          chevron.textContent = '▶';
+        }
+      });
+    });
   </script>
 </body>
 </html>
-
