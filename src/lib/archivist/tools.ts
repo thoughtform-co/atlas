@@ -228,7 +228,7 @@ async function handleAnalyzeImage(input: { image_url: string }): Promise<string>
       description: result.data.description,
       phase_state: result.data.phaseState,
       visual_notes: result.data.visualNotes,
-      colors: result.data.coordinates ? {
+      colors: result.data.coordinates?.geometry != null ? {
         gradient: result.data.coordinates.geometry > 0 ? 'warm-gold' : 'cool-white',
       } : null,
       mood: result.data.lore?.substring(0, 100),
