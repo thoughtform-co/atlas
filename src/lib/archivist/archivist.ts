@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { MessageParam, ContentBlock, ToolUseBlock, TextBlock } from '@anthropic-ai/sdk/resources/messages';
 import { randomUUID } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
@@ -19,9 +20,14 @@ import {
   extractFieldsFromResponse,
   mergeFields,
   validateFields,
-  calculateConfidence,
   generateSuggestedQuestions,
 } from './field-extraction';
+import {
+  ARCHIVIST_TOOLS,
+  executeToolCall,
+  getToolConfig,
+  type ToolInvocation,
+} from './tools';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -176,9 +182,11 @@ export class Archivist {
   /**
    * Continue conversation with the Archivist
    * Sends user message and receives Archivist response with extracted fields
+   * Now supports tool calling for grounded responses
    */
-  async chat(sessionId: string, userMessage: string): Promise<ArchivistResponse> {
+  async chat(sessionId: string, userMessage: string, imageUrl?: string): Promise<ArchivistResponse & { toolsUsed?: ToolInvocation[] }> {
     const supabase = getSupabaseClient();
+    const toolConfig = getToolConfig();
 
     // Load session from database
     const { data: row, error: fetchError } = await (supabase as any)
@@ -206,25 +214,85 @@ export class Archivist {
     session.messages.push(userMsg);
 
     // Build conversation history for Claude
-    const conversationHistory = session.messages.map((msg) => ({
+    const conversationHistory: MessageParam[] = session.messages.map((msg) => ({
       role: msg.role === 'archivist' ? ('assistant' as const) : ('user' as const),
       content: msg.content,
     }));
 
-    // Call Claude with Archivist personality
-    const response = await anthropic.messages.create({
+    // If an image URL is provided, add it to the context for the Archivist
+    if (imageUrl) {
+      const lastUserMsg = conversationHistory[conversationHistory.length - 1];
+      if (lastUserMsg.role === 'user') {
+        lastUserMsg.content = `[Image available for analysis: ${imageUrl}]\n\n${lastUserMsg.content}`;
+      }
+    }
+
+    // Tool invocations tracking
+    const toolsUsed: ToolInvocation[] = [];
+    let toolCallCount = 0;
+
+    // Initial Claude call with tools
+    let response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4000,
-      temperature: 0.7, // Higher temperature for more character personality
+      temperature: 0.7,
       system: ARCHIVIST_SYSTEM_PROMPT,
+      tools: ARCHIVIST_TOOLS,
       messages: conversationHistory,
     });
 
-    const archivistMessage = response.content[0].type === 'text' ? response.content[0].text : '';
+    // Tool calling loop - process tool_use blocks until we get a final response
+    while (response.stop_reason === 'tool_use' && toolCallCount < toolConfig.maxToolCalls) {
+      toolCallCount++;
+      console.log(`[Archivist] Tool call round ${toolCallCount}/${toolConfig.maxToolCalls}`);
+
+      // Find all tool_use blocks in the response
+      const toolUseBlocks = response.content.filter(
+        (block): block is ToolUseBlock => block.type === 'tool_use'
+      );
+
+      // Execute all tool calls
+      const toolResults = await Promise.all(
+        toolUseBlocks.map(async (toolUse) => {
+          const result = await executeToolCall(
+            toolUse.id,
+            toolUse.name,
+            toolUse.input as Record<string, unknown>
+          );
+          toolsUsed.push(result.invocation);
+          return result.result;
+        })
+      );
+
+      // Add assistant's tool use to conversation
+      conversationHistory.push({
+        role: 'assistant',
+        content: response.content,
+      });
+
+      // Add tool results to conversation
+      conversationHistory.push({
+        role: 'user',
+        content: toolResults,
+      });
+
+      // Continue the conversation with tool results
+      response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 4000,
+        temperature: 0.7,
+        system: ARCHIVIST_SYSTEM_PROMPT,
+        tools: ARCHIVIST_TOOLS,
+        messages: conversationHistory,
+      });
+    }
+
+    // Extract final text response
+    const archivistMessage = this.extractTextFromResponse(response.content);
 
     // Extract fields from this exchange
     const conversationContext = session.messages
-      .slice(-4, -1) // Last few messages for context
+      .slice(-4, -1)
       .map((m) => `${m.role === 'user' ? 'User' : 'Archivist'}: ${m.content}`)
       .join('\n\n');
 
@@ -241,7 +309,7 @@ export class Archivist {
     const validation = validateFields(session.extractedFields);
     session.confidence = validation.confidence;
 
-    // Check for conflicts with existing lore (placeholder - would query database)
+    // Check for conflicts with existing lore
     const warnings = await this.checkForConflicts(session.extractedFields);
     session.warnings = [...session.warnings, ...warnings];
 
@@ -279,7 +347,7 @@ export class Archivist {
       throw new Error(`Failed to update session: ${updateError.message}`);
     }
 
-    // Return response
+    // Return response with tool usage info
     return {
       message: archivistMessage,
       extractedFields,
@@ -287,7 +355,18 @@ export class Archivist {
       suggestedQuestions: suggestedQuestions.length > 0 ? suggestedQuestions : undefined,
       warnings: warnings.length > 0 ? warnings : undefined,
       isComplete,
+      toolsUsed: toolsUsed.length > 0 ? toolsUsed : undefined,
     };
+  }
+
+  /**
+   * Extract text content from Claude response blocks
+   */
+  private extractTextFromResponse(content: ContentBlock[]): string {
+    const textBlocks = content.filter(
+      (block): block is TextBlock => block.type === 'text'
+    );
+    return textBlocks.map((block) => block.text).join('\n');
   }
 
   /**

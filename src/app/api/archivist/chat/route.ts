@@ -13,6 +13,7 @@ import { getAuthUser } from '@/lib/supabase-server';
  *   sessionId?: string,        // Existing session ID (omit to start new session)
  *   message?: string,          // User message (omit for new session)
  *   userId?: string,           // User identifier (optional - will use auth user if available)
+ *   imageUrl?: string,         // Optional image URL for analysis
  *   mediaAnalysis?: {          // Optional media analysis for new sessions
  *     mediaUrl?: string,
  *     mediaType?: 'image' | 'video',
@@ -31,13 +32,18 @@ import { getAuthUser } from '@/lib/supabase-server';
  *   confidence: number,              // Overall classification confidence (0-1)
  *   suggestedQuestions?: string[],   // Follow-up questions
  *   warnings?: string[],             // Conflicts or concerns
- *   isComplete?: boolean             // Whether enough info has been gathered
+ *   isComplete?: boolean,            // Whether enough info has been gathered
+ *   toolsUsed?: Array<{              // Tools invoked during this response
+ *     name: string,
+ *     success: boolean,
+ *     error?: string
+ *   }>
  * }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, message, userId: providedUserId, mediaAnalysis } = body;
+    const { sessionId, message, userId: providedUserId, mediaAnalysis, imageUrl } = body;
 
     // Get authenticated user if available, otherwise use provided userId
     const authUser = await getAuthUser();
@@ -82,11 +88,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const response = await archivist.chat(sessionId, message);
+    // Pass image URL to chat if provided
+    const response = await archivist.chat(sessionId, message, imageUrl);
+
+    // Format tool usage for response (simplified for UI)
+    const toolsUsed = response.toolsUsed?.map(tool => ({
+      name: tool.name,
+      success: tool.success,
+      error: tool.error,
+      durationMs: tool.endTime && tool.startTime ? tool.endTime - tool.startTime : undefined,
+    }));
 
     return NextResponse.json({
       sessionId,
-      ...response,
+      message: response.message,
+      extractedFields: response.extractedFields,
+      confidence: response.confidence,
+      suggestedQuestions: response.suggestedQuestions,
+      warnings: response.warnings,
+      isComplete: response.isComplete,
+      toolsUsed,
     });
   } catch (error) {
     console.error('Archivist chat error:', error);

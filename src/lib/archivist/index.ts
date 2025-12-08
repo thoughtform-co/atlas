@@ -58,6 +58,17 @@ export {
   ARCHIVIST_OPENING_WITH_MEDIA,
   ARCHIVIST_OPENING_WITHOUT_MEDIA,
 } from './system-prompt';
+export {
+  ARCHIVIST_TOOLS,
+  executeToolCall,
+  getToolConfig,
+  getRecentToolInvocations,
+} from './tools';
+export type {
+  ToolInvocation,
+  ToolExecutionResult,
+  ToolInput,
+} from './tools';
 export type {
   PhaseState,
   ExtendedClassification,

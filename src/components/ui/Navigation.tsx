@@ -162,7 +162,7 @@ export function Navigation() {
     }
   }, []);
 
-  const isArchiveActive = pathname === '/archive';
+  const isLoreActive = pathname === '/lore';
   const isAtlasActive = pathname === '/';
 
   return (
@@ -244,9 +244,9 @@ export function Navigation() {
               <span>Atlas</span>
             </Link>
 
-            {/* Archive */}
+            {/* Lore */}
             <Link
-              href="/archive"
+              href="/lore"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -257,15 +257,15 @@ export function Navigation() {
                 fontSize: '12px',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                color: isArchiveActive ? 'var(--dawn, #ECE3D6)' : 'rgba(236, 227, 214, 0.3)',
+                color: isLoreActive ? 'var(--dawn, #ECE3D6)' : 'rgba(236, 227, 214, 0.3)',
                 textDecoration: 'none',
-                background: isArchiveActive ? 'rgba(236, 227, 214, 0.1)' : 'transparent',
+                background: isLoreActive ? 'rgba(236, 227, 214, 0.1)' : 'transparent',
                 borderRight: '1px solid rgba(236, 227, 214, 0.08)',
                 transition: 'all 150ms ease',
               }}
             >
               <canvas ref={archiveIconRef} width={17} height={17} style={{ width: '17px', height: '17px' }} />
-              <span>Archive</span>
+              <span>Lore</span>
             </Link>
 
             {/* User Dropdown */}
