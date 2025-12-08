@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  roleLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
   role: UserRole;
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('user');
 
   // Fetch user role from database
@@ -49,14 +51,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshRole = useCallback(async () => {
     if (user?.id) {
-      const userRole = await fetchUserRole(user.id);
-      setRole(userRole);
+      setRoleLoading(true);
+      try {
+        const userRole = await fetchUserRole(user.id);
+        setRole(userRole);
+      } finally {
+        setRoleLoading(false);
+      }
     }
   }, [user?.id, fetchUserRole]);
 
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) {
       setLoading(false);
+      setRoleLoading(false);
       return;
     }
 
@@ -66,10 +74,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user?.id) {
-        const userRole = await fetchUserRole(session.user.id);
-        setRole(userRole);
+        try {
+          const userRole = await fetchUserRole(session.user.id);
+          setRole(userRole);
+        } catch (error) {
+          console.error('[Auth] Failed to fetch initial role:', error);
+        }
       }
       
+      setRoleLoading(false);
       setLoading(false);
     });
 
@@ -80,10 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user?.id) {
-          const userRole = await fetchUserRole(session.user.id);
-          setRole(userRole);
+          setRoleLoading(true);
+          try {
+            const userRole = await fetchUserRole(session.user.id);
+            setRole(userRole);
+          } catch (error) {
+            console.error('[Auth] Failed to fetch role on auth change:', error);
+          } finally {
+            setRoleLoading(false);
+          }
         } else {
           setRole('user');
+          setRoleLoading(false);
         }
         
         setLoading(false);
@@ -133,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setSession(null);
       setRole('user');
+      setRoleLoading(false);
       // Force a page reload to clear any cached state
       if (typeof window !== 'undefined') {
         window.location.href = '/';
@@ -148,6 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         loading,
+        roleLoading,
         isAuthenticated: !!user,
         isAdmin: role === 'admin' || role === 'archivist',
         role,

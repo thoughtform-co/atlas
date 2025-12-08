@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -33,9 +33,10 @@ function setupIcon(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: n
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, isAdmin, signOut, user, refreshRole, role } = useAuth();
+  const { isAuthenticated, isAdmin, signOut, user, refreshRole, roleLoading } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Canvas refs
   const addIconRef = useRef<HTMLCanvasElement>(null);
@@ -51,6 +52,30 @@ export function Navigation() {
       refreshRole();
     }
   }, [isAuthenticated, refreshRole]);
+
+  // Dropdown hover handlers with delay to prevent flicker
+  const handleDropdownEnter = useCallback(() => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setShowUserDropdown(true);
+  }, []);
+
+  const handleDropdownLeave = useCallback(() => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setShowUserDropdown(false);
+    }, 150); // Small delay to allow mouse to move to dropdown
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) {
+        clearTimeout(dropdownTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Draw icons
   useEffect(() => {
@@ -180,8 +205,8 @@ export function Navigation() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
-          {/* Add Button */}
-          {isAdmin && (
+          {/* Add Button - Only show after role is resolved */}
+          {!roleLoading && isAdmin && (
             <Link
               href="/admin/new-entity"
               style={{
@@ -275,8 +300,8 @@ export function Navigation() {
                   position: 'relative',
                   height: '100%',
                 }}
-                onMouseEnter={() => setShowUserDropdown(true)}
-                onMouseLeave={() => setShowUserDropdown(false)}
+                onMouseEnter={handleDropdownEnter}
+                onMouseLeave={handleDropdownLeave}
               >
                 <div
                   style={{
@@ -286,13 +311,15 @@ export function Navigation() {
                     padding: '0 18px',
                     height: '100%',
                     fontSize: '12px',
-                    letterSpacing: '0.08em',
-                    color: 'rgba(236, 227, 214, 0.3)',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: showUserDropdown ? 'var(--dawn, #ECE3D6)' : 'rgba(236, 227, 214, 0.5)',
                     cursor: 'pointer',
+                    transition: 'color 150ms ease',
                   }}
                 >
                   <canvas ref={userIconRef} width={17} height={17} style={{ width: '17px', height: '17px' }} />
-                  <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>
+                  <span>
                     {user?.email?.split('@')[0] || 'Navigator'}
                   </span>
                   <span
@@ -313,87 +340,94 @@ export function Navigation() {
                   <div
                     style={{
                       position: 'absolute',
-                      top: 'calc(100% + 4px)',
+                      top: '100%',
                       right: 0,
-                      background: 'var(--surface-0, #0A0908)',
-                      border: '1px solid rgba(236, 227, 214, 0.1)',
-                      minWidth: '120px',
-                      zIndex: 100,
+                      paddingTop: '4px', // Creates visual gap but keeps hover area connected
                     }}
+                    onMouseEnter={handleDropdownEnter}
+                    onMouseLeave={handleDropdownLeave}
                   >
-                    {isAdmin && (
-                      <>
-                        <button
-                          onClick={() => {
-                            router.push('/admin/prompts');
-                            setShowUserDropdown(false);
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            padding: '12px 14px',
-                            fontSize: '10px',
-                            letterSpacing: '0.08em',
-                            textTransform: 'uppercase',
-                            color: 'rgba(236, 227, 214, 0.3)',
-                            cursor: 'pointer',
-                            border: 'none',
-                            background: 'transparent',
-                            width: '100%',
-                            fontFamily: 'var(--font-mono)',
-                            textAlign: 'left',
-                            transition: 'all 150ms ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
-                            e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
-                            e.currentTarget.style.background = 'transparent';
-                          }}
-                        >
-                          <canvas ref={adminIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
-                          <span>Admin</span>
-                        </button>
-                        <div style={{ height: '1px', background: 'rgba(236, 227, 214, 0.08)' }} />
-                      </>
-                    )}
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setShowUserDropdown(false);
-                      }}
+                    <div
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '12px 14px',
-                        fontSize: '10px',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: 'rgba(236, 227, 214, 0.3)',
-                        cursor: 'pointer',
-                        border: 'none',
-                        background: 'transparent',
-                        width: '100%',
-                        fontFamily: 'var(--font-mono)',
-                        textAlign: 'left',
-                        transition: 'all 150ms ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
-                        e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
-                        e.currentTarget.style.background = 'transparent';
+                        background: 'var(--surface-0, #0A0908)',
+                        border: '1px solid rgba(236, 227, 214, 0.1)',
+                        minWidth: '120px',
                       }}
                     >
-                      <canvas ref={logoutIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
-                      <span>Log out</span>
-                    </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => {
+                              router.push('/admin/prompts');
+                              setShowUserDropdown(false);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '12px 14px',
+                              fontSize: '10px',
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                              color: 'rgba(236, 227, 214, 0.3)',
+                              cursor: 'pointer',
+                              border: 'none',
+                              background: 'transparent',
+                              width: '100%',
+                              fontFamily: 'var(--font-mono)',
+                              textAlign: 'left',
+                              transition: 'all 150ms ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
+                              e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <canvas ref={adminIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+                            <span>Admin</span>
+                          </button>
+                          <div style={{ height: '1px', background: 'rgba(236, 227, 214, 0.08)' }} />
+                        </>
+                      )}
+                      <button
+                        onClick={() => {
+                          signOut();
+                          setShowUserDropdown(false);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '12px 14px',
+                          fontSize: '10px',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          color: 'rgba(236, 227, 214, 0.3)',
+                          cursor: 'pointer',
+                          border: 'none',
+                          background: 'transparent',
+                          width: '100%',
+                          fontFamily: 'var(--font-mono)',
+                          textAlign: 'left',
+                          transition: 'all 150ms ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
+                          e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <canvas ref={logoutIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+                        <span>Log out</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -408,7 +442,8 @@ export function Navigation() {
                   padding: '0 18px',
                   height: '100%',
                   fontSize: '12px',
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
                   color: 'rgba(236, 227, 214, 0.5)',
                   background: 'transparent',
                   border: 'none',
