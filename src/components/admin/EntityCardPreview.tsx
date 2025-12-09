@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { EntityFormData } from '@/app/admin/new-entity/page';
+import { MediaUploadZone } from '@/components/admin/MediaUploadZone';
 import styles from './EntityCardPreview.module.css';
 
 // Particle system constants
