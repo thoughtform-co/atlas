@@ -7,7 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getUserFromRequest, isUserAdmin } from '@/lib/auth/admin-check';
+import { getAuthUser } from '@/lib/supabase-server';
+import { isUserAdmin } from '@/lib/auth/admin-check';
 import type { Database } from '@/lib/database.types';
 
 const BUCKET_NAME = 'entity-media';
@@ -23,18 +24,22 @@ const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getUserFromRequest(request);
+    // Check authentication using cookie-based auth
+    const user = await getAuthUser();
     if (!user) {
+      console.log('[upload] No authenticated user found');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    console.log('[upload] User authenticated:', user.id);
+
     // Check admin role
     const isAdmin = await isUserAdmin(user.id);
     if (!isAdmin) {
+      console.log('[upload] User is not admin:', user.id);
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -138,8 +143,8 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getUserFromRequest(request);
+    // Check authentication using cookie-based auth
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

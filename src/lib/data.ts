@@ -1,7 +1,29 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { createClient } from '@supabase/supabase-js';
 import { Denizen, Connection, DenizenMedia, PhaseState } from './types';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
 import type { Database } from './database.types';
+
+/**
+ * Get a Supabase client that works in both client and server contexts
+ * Uses the browser client on client-side, creates a new client on server-side
+ */
+function getDataClient() {
+  // On client-side, use the singleton browser client
+  if (typeof window !== 'undefined' && supabase) {
+    return supabase;
+  }
+  
+  // On server-side, create a simple client (no auth needed for public reads)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return null;
+  }
+  
+  return createClient<Database>(supabaseUrl, supabaseAnonKey);
+}
 
 // Type aliases for Supabase table operations
 type DenizenInsert = Database['public']['Tables']['denizens']['Insert'];
@@ -154,8 +176,10 @@ export interface DatabaseHealth {
  * Check database health and verify tables exist and are accessible
  */
 export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
+  const client = getDataClient();
+  
   const health: DatabaseHealth = {
-    isConfigured: isSupabaseConfigured() && supabase !== null,
+    isConfigured: isSupabaseConfigured(),
     tables: {
       denizens: { exists: false, accessible: false },
       connections: { exists: false, accessible: false },
@@ -170,14 +194,14 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
     return health;
   }
 
-  if (!supabase) {
+  if (!client) {
     health.errors.push('Supabase client is null');
     return health;
   }
 
   // Check denizens table
   try {
-    const { error } = await supabase.from('denizens').select('id').limit(1);
+    const { error } = await client.from('denizens').select('id').limit(1);
     if (error) {
       health.tables.denizens.error = `${error.code}: ${error.message}`;
       health.errors.push(`denizens table: ${error.message} (${error.code})`);
@@ -197,7 +221,7 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
 
   // Check connections table
   try {
-    const { error } = await supabase.from('connections').select('id').limit(1);
+    const { error } = await client.from('connections').select('id').limit(1);
     if (error) {
       health.tables.connections.error = `${error.code}: ${error.message}`;
       health.errors.push(`connections table: ${error.message} (${error.code})`);
@@ -214,7 +238,7 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
   // Check denizen_media table
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from('denizen_media').select('id').limit(1);
+    const { error } = await (client as any).from('denizen_media').select('id').limit(1);
     if (error) {
       health.tables.denizen_media.error = `${error.code}: ${error.message}`;
       health.errors.push(`denizen_media table: ${error.message} (${error.code})`);
@@ -247,14 +271,16 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
  * Fetch all denizens from Supabase or return static data
  */
 export async function fetchDenizens(): Promise<Denizen[]> {
-  if (!isSupabaseConfigured() || !supabase) {
+  const client = getDataClient();
+  
+  if (!isSupabaseConfigured() || !client) {
     console.warn('[fetchDenizens] Supabase not configured - using static data');
     return staticDenizens;
   }
 
   try {
     // Fetch denizens
-    const { data: denizenRows, error: denizenError } = await supabase
+    const { data: denizenRows, error: denizenError } = await client
       .from('denizens')
       .select('*');
 
@@ -272,7 +298,7 @@ export async function fetchDenizens(): Promise<Denizen[]> {
     }
 
     // Fetch connections to build connection arrays
-    const { data: connectionRows, error: connectionError } = await supabase
+    const { data: connectionRows, error: connectionError } = await client
       .from('connections')
       .select('from_denizen_id, to_denizen_id');
 
@@ -291,7 +317,7 @@ export async function fetchDenizens(): Promise<Denizen[]> {
 
     // Fetch all denizen media
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: mediaRows, error: mediaError } = await (supabase as any)
+    const { data: mediaRows, error: mediaError } = await (client as any)
       .from('denizen_media')
       .select('*')
       .order('display_order', { ascending: true });
@@ -356,13 +382,15 @@ export async function fetchDenizens(): Promise<Denizen[]> {
  * Fetch all connections from Supabase or return static data
  */
 export async function fetchConnections(): Promise<Connection[]> {
-  if (!isSupabaseConfigured() || !supabase) {
+  const client = getDataClient();
+  
+  if (!isSupabaseConfigured() || !client) {
     console.warn('[fetchConnections] Supabase not configured - using static data');
     return staticConnections;
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('connections')
       .select('from_denizen_id, to_denizen_id, strength, type');
 
@@ -400,13 +428,15 @@ export async function fetchConnections(): Promise<Connection[]> {
  * Fetch a single denizen by ID
  */
 export async function fetchDenizenById(id: string): Promise<Denizen | null> {
-  if (!isSupabaseConfigured() || !supabase) {
+  const client = getDataClient();
+  
+  if (!isSupabaseConfigured() || !client) {
     console.warn(`[fetchDenizenById] Supabase not configured for denizen ${id} - using static data`);
     return staticDenizens.find(d => d.id === id) || null;
   }
 
   try {
-    const { data: denizenRow, error: denizenError } = await supabase
+    const { data: denizenRow, error: denizenError } = await client
       .from('denizens')
       .select('*')
       .eq('id', id)
@@ -432,7 +462,7 @@ export async function fetchDenizenById(id: string): Promise<Denizen | null> {
     }
 
     // Fetch connections for this denizen
-    const { data: connectionRows, error: connectionError } = await supabase
+    const { data: connectionRows, error: connectionError } = await client
       .from('connections')
       .select('from_denizen_id, to_denizen_id')
       .or(`from_denizen_id.eq.${id},to_denizen_id.eq.${id}`);
@@ -447,7 +477,7 @@ export async function fetchDenizenById(id: string): Promise<Denizen | null> {
 
     // Fetch media for this denizen
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: mediaRows, error: mediaError } = await (supabase as any)
+    const { data: mediaRows, error: mediaError } = await (client as any)
       .from('denizen_media')
       .select('*')
       .eq('denizen_id', id)
@@ -499,7 +529,9 @@ export async function fetchConnectedDenizens(id: string): Promise<Denizen[]> {
  * Create a new denizen
  */
 export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Promise<Denizen | null> {
-  if (!isSupabaseConfigured() || !supabase) {
+  const client = getDataClient();
+  
+  if (!isSupabaseConfigured() || !client) {
     console.error('Supabase not configured - cannot create denizen');
     return null;
   }
@@ -547,7 +579,7 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (client as any)
       .from('denizens')
       .insert(insertData)
       .select()
@@ -572,7 +604,9 @@ export async function updateDenizen(
   id: string,
   updates: Partial<Omit<Denizen, 'id' | 'connections'>>
 ): Promise<Denizen | null> {
-  if (!isSupabaseConfigured() || !supabase) {
+  const client = getDataClient();
+  
+  if (!isSupabaseConfigured() || !client) {
     console.error('Supabase not configured - cannot update denizen');
     return null;
   }
@@ -606,7 +640,7 @@ export async function updateDenizen(
     if (updates.firstObserved !== undefined) updateData.first_observed = updates.firstObserved ?? null;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (client as any)
       .from('denizens')
       .update(updateData)
       .eq('id', id)
@@ -620,7 +654,7 @@ export async function updateDenizen(
 
     // Fetch connections for this denizen
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: connectionRows } = await (supabase as any)
+    const { data: connectionRows } = await (client as any)
       .from('connections')
       .select('from_denizen_id, to_denizen_id')
       .or(`from_denizen_id.eq.${id},to_denizen_id.eq.${id}`);
@@ -640,14 +674,16 @@ export async function updateDenizen(
  * Delete a denizen
  */
 export async function deleteDenizen(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) {
+  const client = getDataClient();
+  
+  if (!isSupabaseConfigured() || !client) {
     console.error('Supabase not configured - cannot delete denizen');
     return false;
   }
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await (client as any)
       .from('denizens')
       .delete()
       .eq('id', id);

@@ -1,4 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -12,7 +13,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create a singleton Supabase client for the browser/client-side
-// This client is safe for use in both browser and server contexts
+// Using @supabase/ssr for proper cookie-based auth sync
 let supabaseInstance: SupabaseClient<Database> | null = null;
 
 function createSupabaseClient(): SupabaseClient<Database> | null {
@@ -20,30 +21,19 @@ function createSupabaseClient(): SupabaseClient<Database> | null {
     return null;
   }
 
+  // Only create browser client on client-side
+  if (typeof window === 'undefined') {
+    // On server, return null - use createServerClient from supabase-server.ts instead
+    return null;
+  }
+
   try {
-    const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: typeof window !== 'undefined', // Only persist in browser
-        autoRefreshToken: typeof window !== 'undefined',
-        detectSessionInUrl: typeof window !== 'undefined',
-      },
-      db: {
-        schema: 'public',
-      },
-      global: {
-        headers: {
-          'x-client-info': 'atlas-eidolon',
-        },
-      },
-    });
+    // Use createBrowserClient from @supabase/ssr for cookie-based auth
+    const client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
 
     // Log client creation for debugging
     if (process.env.NODE_ENV === 'development') {
-      console.log('[supabase] Client created:', {
-        url: supabaseUrl,
-        hasKey: !!supabaseAnonKey,
-        context: typeof window !== 'undefined' ? 'browser' : 'server',
-      });
+      console.log('[supabase] Browser client created');
     }
 
     return client;
@@ -58,7 +48,7 @@ function createSupabaseClient(): SupabaseClient<Database> | null {
 
 // Lazy initialization - create client on first access
 export const supabase: SupabaseClient<Database> | null = (() => {
-  if (supabaseInstance === null) {
+  if (typeof window !== 'undefined' && supabaseInstance === null) {
     supabaseInstance = createSupabaseClient();
   }
   return supabaseInstance;
@@ -66,12 +56,16 @@ export const supabase: SupabaseClient<Database> | null = (() => {
 
 // Helper to check if Supabase is configured
 export const isSupabaseConfigured = (): boolean => {
-  return supabaseUrl !== undefined && supabaseAnonKey !== undefined && supabase !== null;
+  return supabaseUrl !== undefined && supabaseAnonKey !== undefined;
 };
 
-// Helper to get or create a fresh client (useful for server-side)
+// Helper to get or create a fresh browser client
 export function getSupabaseClient(): SupabaseClient<Database> | null {
   if (!isSupabaseConfigured()) {
+    return null;
+  }
+  
+  if (typeof window === 'undefined') {
     return null;
   }
   

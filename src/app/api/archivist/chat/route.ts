@@ -43,23 +43,25 @@ import { getAuthUser } from '@/lib/supabase-server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, message, userId: providedUserId, mediaAnalysis, imageUrl } = body;
+    const { sessionId, message, mediaAnalysis, imageUrl } = body;
 
-    // Get authenticated user if available, otherwise use provided userId
+    // Get authenticated user from cookies
     const authUser = await getAuthUser();
-    const userId = authUser?.id || providedUserId;
+    const userId = authUser?.id;
 
-    // Validate request
+    // Validate request - require authentication for new sessions
     if (!sessionId && !userId) {
+      console.log('[archivist/chat] No session and no authenticated user');
       return NextResponse.json(
-        { error: 'Authentication required or userId must be provided' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
     // Start new session
     if (!sessionId) {
-      const session = await archivist.startSession(userId, mediaAnalysis as MediaAnalysis);
+      console.log('[archivist/chat] Starting new session for user:', userId);
+      const session = await archivist.startSession(userId!, mediaAnalysis as MediaAnalysis);
 
       return NextResponse.json({
         sessionId: session.id,

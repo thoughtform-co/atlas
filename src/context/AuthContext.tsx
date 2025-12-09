@@ -152,15 +152,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[Auth] Starting sign out...');
     
     try {
-      // Sign out globally to clear all sessions
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      // Sign out - @supabase/ssr handles cookie cleanup
+      const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('[Auth] Sign out API error:', error);
-        // Continue with local cleanup even if API fails
       }
       
-      console.log('[Auth] Sign out API call complete, clearing local state...');
+      console.log('[Auth] Sign out complete, clearing local state...');
       
       // Reset state immediately
       setUser(null);
@@ -168,25 +167,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRole('user');
       setRoleLoading(false);
       
-      // Clear any persisted auth data from localStorage
+      // Clear any persisted auth data from localStorage as backup
       if (typeof window !== 'undefined') {
-        // Clear Supabase auth storage keys
         const storageKeys = Object.keys(localStorage).filter(
           key => key.startsWith('sb-') || key.includes('supabase')
         );
         storageKeys.forEach(key => {
-          console.log('[Auth] Clearing localStorage key:', key);
           localStorage.removeItem(key);
         });
         
-        console.log('[Auth] Redirecting to home...');
-        // Small delay to ensure state updates propagate
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Full page reload to clear all state and cookies
         window.location.href = '/';
       }
     } catch (error) {
       console.error('[Auth] Sign out error:', error);
-      // Still try to clear local state and redirect on error
+      // Still redirect on error
       setUser(null);
       setSession(null);
       setRole('user');

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { EntityFormData } from '@/app/admin/new-entity/page';
+import { useAuth } from '@/context/AuthContext';
 import styles from './ArchivistChat.module.css';
 
 interface ToolUsage {
@@ -31,6 +32,7 @@ interface ArchivistChatProps {
 }
 
 export function ArchivistChat({ formData, onApplyField, analysisNotes }: ArchivistChatProps) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,12 +59,11 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
   const initializeSession = async () => {
     try {
       setStatus('Connecting to Archivist...');
+      // Server will get user ID from cookie-based auth
       const response = await fetch('/api/archivist/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 'anonymous', // TODO: Use actual user ID from auth
-        }),
+        body: JSON.stringify({}),
       });
 
       if (response.ok) {
