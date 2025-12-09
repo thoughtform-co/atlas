@@ -29,13 +29,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>('user');
 
   // Fetch user role from database
-  const fetchUserRole = useCallback(async (userId: string) => {
+  const fetchUserRole = useCallback(async (userId: string, userObj?: User | null) => {
     // Prefer role from JWT metadata when available to avoid RLS issues
-    if (user?.app_metadata?.role && (user.app_metadata.role === 'admin' || user.app_metadata.role === 'archivist')) {
-      return user.app_metadata.role as UserRole;
+    // Use passed userObj first, then fall back to state user
+    const userToCheck = userObj || user;
+    
+    if (userToCheck?.app_metadata?.role && (userToCheck.app_metadata.role === 'admin' || userToCheck.app_metadata.role === 'archivist')) {
+      return userToCheck.app_metadata.role as UserRole;
     }
-    if (user?.user_metadata?.role && (user.user_metadata.role === 'admin' || user.user_metadata.role === 'archivist')) {
-      return user.user_metadata.role as UserRole;
+    if (userToCheck?.user_metadata?.role && (userToCheck.user_metadata.role === 'admin' || userToCheck.user_metadata.role === 'archivist')) {
+      return userToCheck.user_metadata.role as UserRole;
     }
 
     if (!supabase) return 'user' as UserRole;
@@ -55,19 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return 'user' as UserRole;
     }
-  }, []);
+  }, [user]);
 
   const refreshRole = useCallback(async () => {
     if (user?.id) {
       setRoleLoading(true);
       try {
-        const userRole = await fetchUserRole(user.id);
+        // Pass current user object so metadata can be checked
+        const userRole = await fetchUserRole(user.id, user);
         setRole(userRole);
       } finally {
         setRoleLoading(false);
       }
     }
-  }, [user?.id, fetchUserRole]);
+  }, [user, fetchUserRole]);
 
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) {
@@ -83,11 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user?.id) {
         try {
-          const userRole = await fetchUserRole(session.user.id);
+          // Pass session.user so metadata can be checked immediately
+          const userRole = await fetchUserRole(session.user.id, session.user);
           setRole(userRole);
         } catch (error) {
           console.error('[Auth] Failed to fetch initial role:', error);
         }
+      } else {
+        setRole('user');
       }
       
       setRoleLoading(false);
@@ -103,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user?.id) {
           setRoleLoading(true);
           try {
-            const userRole = await fetchUserRole(session.user.id);
+            // Pass session.user so metadata can be checked immediately
+            const userRole = await fetchUserRole(session.user.id, session.user);
             setRole(userRole);
           } catch (error) {
             console.error('[Auth] Failed to fetch role on auth change:', error);
