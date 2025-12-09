@@ -379,6 +379,8 @@ export function EntityCardPreview({ formData }: EntityCardPreviewProps) {
     'Unknown': '? UNKNOWN',
   };
 
+  const isVideo = formData.mediaMimeType?.startsWith('video');
+
   return (
     <div className={styles.card}>
       <div className={styles.scanline} />
@@ -419,11 +421,23 @@ export function EntityCardPreview({ formData }: EntityCardPreviewProps) {
           <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
         </div>
         {formData.mediaUrl ? (
-          <img 
-            src={formData.mediaUrl} 
-            alt={formData.name} 
-            className={styles.entityImage}
-          />
+          isVideo ? (
+            <video
+              src={formData.mediaUrl}
+              className={styles.entityVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls={false}
+            />
+          ) : (
+            <img 
+              src={formData.mediaUrl} 
+              alt={formData.name} 
+              className={styles.entityImage}
+            />
+          )
         ) : (
           <div className={styles.entityPlaceholder}>
             <div className={styles.placeholderBox}>◇</div>

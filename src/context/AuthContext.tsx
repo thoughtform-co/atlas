@@ -30,6 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Fetch user role from database
   const fetchUserRole = useCallback(async (userId: string) => {
+    // Prefer role from JWT metadata when available to avoid RLS issues
+    if (user?.app_metadata?.role && (user.app_metadata.role === 'admin' || user.app_metadata.role === 'archivist')) {
+      return user.app_metadata.role as UserRole;
+    }
+    if (user?.user_metadata?.role && (user.user_metadata.role === 'admin' || user.user_metadata.role === 'archivist')) {
+      return user.user_metadata.role as UserRole;
+    }
+
     if (!supabase) return 'user' as UserRole;
     
     try {
