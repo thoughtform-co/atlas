@@ -33,7 +33,7 @@ function setupIcon(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: n
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, isAdmin, signOut, user, refreshRole, roleLoading } = useAuth();
+  const { isAuthenticated, isAdmin, signOut, user, roleLoading } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,12 +46,8 @@ export function Navigation() {
   const adminIconRef = useRef<HTMLCanvasElement>(null);
   const logoutIconRef = useRef<HTMLCanvasElement>(null);
 
-  // Refresh role on mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      refreshRole();
-    }
-  }, [isAuthenticated, refreshRole]);
+  // Note: Role is already fetched in AuthContext on mount and auth state changes
+  // No need to refresh here as it causes flashing
 
   // Dropdown hover handlers with delay to prevent flicker
   const handleDropdownEnter = useCallback(() => {
