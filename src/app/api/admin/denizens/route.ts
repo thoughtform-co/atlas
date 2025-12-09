@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, requireAuth } from '@/lib/supabase-server';
+import { requireAuth } from '@/lib/supabase-server';
 import { fetchDenizens, createDenizen } from '@/lib/data';
-import type { Denizen } from '@/lib/types';
+import type { Denizen, DenizenType, Allegiance, ThreatLevel, PhaseState } from '@/lib/types';
+
+/**
+ * Generate a URL-friendly ID from a name
+ */
+function generateEntityId(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  const timestamp = Date.now().toString(36);
+  return `${slug}-${timestamp}`;
+}
 
 /**
  * GET /api/admin/denizens
@@ -44,8 +56,38 @@ export async function GET(request: NextRequest) {
 }
 
 /**
+ * Input format from frontend (snake_case, flat structure)
+ */
+interface CreateEntityInput {
+  name: string;
+  subtitle?: string | null;
+  type: DenizenType;
+  allegiance: Allegiance;
+  threat_level: ThreatLevel;
+  domain: string;
+  description: string;
+  lore?: string | null;
+  features?: string[] | null;
+  glyphs: string;
+  image?: string | null;
+  // Position fields (flat)
+  position_x: number;
+  position_y: number;
+  // Coordinate fields (flat)
+  coord_geometry: number;
+  coord_alterity: number;
+  coord_dynamics: number;
+  // Metaphysical fields
+  phase_state?: PhaseState;
+  hallucination_index?: number;
+  manifold_curvature?: number;
+}
+
+/**
  * POST /api/admin/denizens
  * Create a new denizen (requires authentication)
+ * 
+ * Accepts snake_case fields from frontend and transforms to Denizen type
  */
 export async function POST(request: NextRequest) {
   try {
@@ -59,18 +101,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse request body
-    const body = await request.json();
+    const body: CreateEntityInput = await request.json();
 
-    // Validate required fields
-    const requiredFields = [
-      'id',
+    // Validate required fields (using snake_case names from frontend)
+    const requiredFields: (keyof CreateEntityInput)[] = [
       'name',
       'type',
       'glyphs',
-      'position',
-      'coordinates',
       'allegiance',
-      'threatLevel',
+      'threat_level',
       'domain',
       'description',
     ];
@@ -87,25 +126,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Prepare denizen data
+    // Generate ID from name
+    const entityId = generateEntityId(body.name);
+
+    // Transform flat snake_case input to nested Denizen structure
     const denizenData: Omit<Denizen, 'connections'> = {
-      id: body.id,
+      id: entityId,
       name: body.name,
-      subtitle: body.subtitle,
+      subtitle: body.subtitle ?? undefined,
       type: body.type,
-      image: body.image,
-      thumbnail: body.thumbnail,
-      videoUrl: body.videoUrl,
+      image: body.image ?? undefined,
       glyphs: body.glyphs,
-      position: body.position,
-      coordinates: body.coordinates,
+      position: {
+        x: body.position_x ?? 500,
+        y: body.position_y ?? 400,
+      },
+      coordinates: {
+        geometry: body.coord_geometry ?? 0,
+        alterity: body.coord_alterity ?? 0,
+        dynamics: body.coord_dynamics ?? 0,
+      },
       allegiance: body.allegiance,
-      threatLevel: body.threatLevel,
+      threatLevel: body.threat_level,
       domain: body.domain,
       description: body.description,
-      lore: body.lore,
-      features: body.features,
-      firstObserved: body.firstObserved,
+      lore: body.lore ?? undefined,
+      features: body.features ?? undefined,
+      // Add metaphysical properties if provided
+      metaphysical: (body.phase_state || body.hallucination_index !== undefined || body.manifold_curvature !== undefined) ? {
+        phaseState: body.phase_state,
+        hallucinationIndex: body.hallucination_index,
+        manifoldCurvature: body.manifold_curvature,
+      } : undefined,
     };
 
     // Create denizen

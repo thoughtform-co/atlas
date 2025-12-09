@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { Denizen, Connection, DenizenMedia } from './types';
+import { Denizen, Connection, DenizenMedia, PhaseState } from './types';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
 import type { Database } from './database.types';
 
@@ -29,6 +29,10 @@ interface DenizenRow {
   lore: string | null;
   features: string[] | null;
   first_observed: string | null;
+  // Metaphysical fields
+  phase_state: string | null;
+  hallucination_index: number | null;
+  manifold_curvature: number | null;
 }
 
 interface DenizenMediaRow {
@@ -84,6 +88,14 @@ function transformMediaRow(row: DenizenMediaRow): DenizenMedia {
  * Transform Supabase row to Denizen type
  */
 function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: DenizenMedia[] = []): Denizen {
+  // Build metaphysical properties if any are present
+  const hasMetaphysical = row.phase_state || row.hallucination_index !== null || row.manifold_curvature !== null;
+  const metaphysical = hasMetaphysical ? {
+    phaseState: (row.phase_state as PhaseState) ?? undefined,
+    hallucinationIndex: row.hallucination_index ?? undefined,
+    manifoldCurvature: row.manifold_curvature ?? undefined,
+  } : undefined;
+
   return {
     id: row.id,
     name: row.name,
@@ -108,6 +120,7 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: De
     firstObserved: row.first_observed ?? undefined,
     connections: connectionIds,
     media: media.length > 0 ? media : undefined,
+    metaphysical,
   };
 }
 
@@ -492,7 +505,12 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
   }
 
   try {
-    const insertData: DenizenInsert = {
+    // Build base insert data
+    const insertData: DenizenInsert & {
+      phase_state?: string;
+      hallucination_index?: number;
+      manifold_curvature?: number;
+    } = {
       id: denizen.id,
       name: denizen.name,
       subtitle: denizen.subtitle ?? null,
@@ -514,6 +532,19 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
       features: denizen.features ?? null,
       first_observed: denizen.firstObserved ?? null,
     };
+
+    // Add metaphysical fields if provided
+    if (denizen.metaphysical) {
+      if (denizen.metaphysical.phaseState) {
+        insertData.phase_state = denizen.metaphysical.phaseState;
+      }
+      if (denizen.metaphysical.hallucinationIndex !== undefined) {
+        insertData.hallucination_index = denizen.metaphysical.hallucinationIndex;
+      }
+      if (denizen.metaphysical.manifoldCurvature !== undefined) {
+        insertData.manifold_curvature = denizen.metaphysical.manifoldCurvature;
+      }
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
