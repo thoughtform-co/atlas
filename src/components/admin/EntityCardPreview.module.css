@@ -142,6 +142,20 @@
   overflow: hidden;
 }
 
+.mediaLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.entityMedia {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+
 .centerCanvas {
   position: absolute;
   inset: 0;
@@ -166,24 +180,6 @@
   text-transform: uppercase;
 }
 
-.entityImage {
-  position: relative;
-  z-index: 10;
-  max-width: 80%;
-  max-height: 88%;
-  object-fit: cover;
-}
-
-.entityVideo {
-  position: relative;
-  z-index: 10;
-  max-width: 80%;
-  max-height: 88%;
-  object-fit: cover;
-  mix-blend-mode: screen;
-  opacity: 0.9;
-}
-
 .entityPlaceholder {
   position: relative;
   z-index: 10;
@@ -206,6 +202,16 @@
   align-items: center;
   justify-content: center;
   font-size: 24px;
+}
+
+.uploadOverlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* Footer */

@@ -13,9 +13,19 @@ const VOLATILE = '193, 127, 89';
 
 interface EntityCardPreviewProps {
   formData: EntityFormData;
+  onMediaAnalyzed?: (data: Partial<EntityFormData> & { visualNotes?: string }) => void;
+  isAnalyzing?: boolean;
+  setIsAnalyzing?: (analyzing: boolean) => void;
+  onClearMedia?: () => void;
 }
 
-export function EntityCardPreview({ formData }: EntityCardPreviewProps) {
+export function EntityCardPreview({
+  formData,
+  onMediaAnalyzed,
+  isAnalyzing,
+  setIsAnalyzing,
+  onClearMedia,
+}: EntityCardPreviewProps) {
   const phaseCanvasRef = useRef<HTMLCanvasElement>(null);
   const superCanvasRef = useRef<HTMLCanvasElement>(null);
   const hallucCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -415,36 +425,57 @@ export function EntityCardPreview({ formData }: EntityCardPreviewProps) {
       </div>
 
       {/* Center */}
-      <div className={styles.center}>
-        <canvas ref={centerCanvasRef} className={styles.centerCanvas} />
-        <div className={styles.alignmentOverlay}>
-          <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
-        </div>
-        {formData.mediaUrl ? (
-          isVideo ? (
-            <video
-              src={formData.mediaUrl}
-              className={styles.entityVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              controls={false}
-            />
-          ) : (
-            <img 
-              src={formData.mediaUrl} 
-              alt={formData.name} 
-              className={styles.entityImage}
-            />
-          )
-        ) : (
-          <div className={styles.entityPlaceholder}>
-            <div className={styles.placeholderBox}>◇</div>
-            <span>[NO IMAGE]</span>
+        <div className={styles.center}>
+          {/* Media background layer */}
+          <div className={styles.mediaLayer}>
+            {formData.mediaUrl ? (
+              isVideo ? (
+                <video
+                  src={formData.mediaUrl}
+                  className={styles.entityMedia}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  controls={false}
+                />
+              ) : (
+                <img 
+                  src={formData.mediaUrl} 
+                  alt={formData.name} 
+                  className={styles.entityMedia}
+                />
+              )
+            ) : null}
           </div>
-        )}
-      </div>
+
+          <canvas ref={centerCanvasRef} className={styles.centerCanvas} />
+          <div className={styles.alignmentOverlay}>
+            <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
+          </div>
+
+          {/* Upload overlay (compact) */}
+          {onMediaAnalyzed && setIsAnalyzing && (
+            <div className={styles.uploadOverlay}>
+              <MediaUploadZone
+                compact
+                onMediaAnalyzed={onMediaAnalyzed}
+                isAnalyzing={!!isAnalyzing}
+                setIsAnalyzing={setIsAnalyzing}
+                existingMediaUrl={formData.mediaUrl}
+                existingMimeType={formData.mediaMimeType}
+                onClear={onClearMedia}
+              />
+            </div>
+          )}
+
+          {!formData.mediaUrl && (
+            <div className={styles.entityPlaceholder}>
+              <div className={styles.placeholderBox}>◇</div>
+              <span>[NO IMAGE]</span>
+            </div>
+          )}
+        </div>
 
       {/* Right Column */}
       <div className={styles.rightCol}>

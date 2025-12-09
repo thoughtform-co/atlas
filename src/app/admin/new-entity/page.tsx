@@ -180,9 +180,17 @@ export default function NewEntityPage() {
 
       {/* Three-column layout */}
       <div className={styles.threeCol}>
-        {/* Left: Card Preview */}
+        {/* Left: Card Preview with embedded upload */}
         <div className={styles.cardColumn}>
-          <EntityCardPreview formData={formData} />
+          <EntityCardPreview
+            formData={formData}
+            onMediaAnalyzed={handleMediaAnalyzed}
+            isAnalyzing={isAnalyzing}
+            setIsAnalyzing={setIsAnalyzing}
+            onClearMedia={() =>
+              setFormData(prev => ({ ...prev, mediaUrl: undefined, mediaMimeType: undefined }))
+            }
+          />
         </div>
 
         {/* Middle: Parameter Form */}
@@ -191,13 +199,6 @@ export default function NewEntityPage() {
             <div className={styles.panelHeader}>
               <span>// Parameter Configuration</span>
             </div>
-            
-            {/* Media Upload Zone */}
-            <MediaUploadZone
-              onMediaAnalyzed={handleMediaAnalyzed}
-              isAnalyzing={isAnalyzing}
-              setIsAnalyzing={setIsAnalyzing}
-            />
             
             {/* Parameter Form */}
             <ParameterForm

@@ -8,9 +8,21 @@ interface MediaUploadZoneProps {
   onMediaAnalyzed: (data: Partial<EntityFormData> & { visualNotes?: string }) => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
+  compact?: boolean;
+  existingMediaUrl?: string;
+  existingMimeType?: string;
+  onClear?: () => void;
 }
 
-export function MediaUploadZone({ onMediaAnalyzed, isAnalyzing, setIsAnalyzing }: MediaUploadZoneProps) {
+export function MediaUploadZone({
+  onMediaAnalyzed,
+  isAnalyzing,
+  setIsAnalyzing,
+  compact = false,
+  existingMediaUrl,
+  existingMimeType,
+  onClear,
+}: MediaUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{ name: string; url: string; type: string } | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -191,10 +203,45 @@ export function MediaUploadZone({ onMediaAnalyzed, isAnalyzing, setIsAnalyzing }
     setUploadedFile(null);
     setUploadProgress(0);
     setError(null);
+    onClear?.();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
+  // Determine if we have media from either internal upload or existing props
+  const activeMedia = uploadedFile || (existingMediaUrl && existingMimeType ? { url: existingMediaUrl, type: existingMimeType, name: '' } : null);
+
+  if (compact) {
+    return (
+      <div className={styles.compactContainer}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+          onChange={handleInputChange}
+          className={styles.hiddenInput}
+        />
+        <div className={styles.compactActions}>
+          <button className={styles.compactUpload} onClick={handleClick} disabled={isAnalyzing}>
+            {isAnalyzing ? 'Analyzing...' : 'Upload Media'}
+          </button>
+          {activeMedia && (
+            <button className={styles.compactRemove} onClick={handleClear}>
+              Remove
+            </button>
+          )}
+        </div>
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div className={styles.compactProgress}>
+            <div className={styles.progressFill} style={{ width: `${uploadProgress}%` }} />
+            <span>{uploadProgress}%</span>
+          </div>
+        )}
+        {error && <div className={styles.error}>⚠ {error}</div>}
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -206,24 +253,24 @@ export function MediaUploadZone({ onMediaAnalyzed, isAnalyzing, setIsAnalyzing }
         className={styles.hiddenInput}
       />
 
-      {uploadedFile ? (
+      {activeMedia ? (
         <div className={styles.preview}>
-          {uploadedFile.type.startsWith('video/') ? (
+          {activeMedia.type.startsWith('video/') ? (
             <video
-              src={uploadedFile.url}
+              src={activeMedia.url}
               className={styles.previewMedia}
               controls
               muted
             />
           ) : (
             <img
-              src={uploadedFile.url}
+              src={activeMedia.url}
               alt="Uploaded media"
               className={styles.previewMedia}
             />
           )}
           <div className={styles.previewInfo}>
-            <span className={styles.previewName}>{uploadedFile.name}</span>
+            <span className={styles.previewName}>{uploadedFile?.name || 'Uploaded media'}</span>
             <button className={styles.clearButton} onClick={handleClear}>
               ✕ Remove
             </button>
