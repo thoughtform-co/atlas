@@ -148,19 +148,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     if (!supabase) return;
+    
+    console.log('[Auth] Starting sign out...');
+    
     try {
-      await supabase.auth.signOut();
+      // Sign out globally to clear all sessions
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error('[Auth] Sign out API error:', error);
+        // Continue with local cleanup even if API fails
+      }
+      
+      console.log('[Auth] Sign out API call complete, clearing local state...');
+      
       // Reset state immediately
       setUser(null);
       setSession(null);
       setRole('user');
       setRoleLoading(false);
-      // Force a page reload to clear any cached state
+      
+      // Clear any persisted auth data from localStorage
       if (typeof window !== 'undefined') {
+        // Clear Supabase auth storage keys
+        const storageKeys = Object.keys(localStorage).filter(
+          key => key.startsWith('sb-') || key.includes('supabase')
+        );
+        storageKeys.forEach(key => {
+          console.log('[Auth] Clearing localStorage key:', key);
+          localStorage.removeItem(key);
+        });
+        
+        console.log('[Auth] Redirecting to home...');
+        // Small delay to ensure state updates propagate
+        await new Promise(resolve => setTimeout(resolve, 100));
         window.location.href = '/';
       }
     } catch (error) {
       console.error('[Auth] Sign out error:', error);
+      // Still try to clear local state and redirect on error
+      setUser(null);
+      setSession(null);
+      setRole('user');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     }
   };
 
