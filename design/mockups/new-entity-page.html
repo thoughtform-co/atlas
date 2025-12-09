@@ -3,16 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Atlas Admin - Catalog New Entity</title>
+  <title>Catalog New Entity - Atlas Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* ═══════════════════════════════════════════════════════════════
-       DESIGN TOKENS - Atlas Eidolon Design System
+       ATLAS DESIGN SYSTEM - New Entity Page Mockup
+       Astrolabe Theme: No border-radius, PT Mono, Dawn/Gold/Void colors
        ═══════════════════════════════════════════════════════════════ */
+    
     :root {
-      /* Colors */
+      /* Core Colors */
       --void: #050403;
       --surface-0: #0A0908;
       --surface-1: #0F0E0C;
@@ -25,34 +27,27 @@
       --dawn-04: rgba(236, 227, 214, 0.04);
       --gold: #CAA554;
       --gold-dim: rgba(202, 165, 84, 0.4);
-      --gold-30: rgba(202, 165, 84, 0.3);
-      --gold-15: rgba(202, 165, 84, 0.15);
       
-      /* Semantic Colors */
+      /* Threat Colors */
       --threat-benign: #5B8A7A;
       --threat-cautious: #7A7868;
       --threat-volatile: #C17F59;
       --threat-existential: #8B5A5A;
-      --dynamics: #5B8A7A;
+      
+      /* Cardinal Colors */
+      --cardinal-geometry: #CAA554;
+      --cardinal-alterity: #ECE3D6;
+      --cardinal-dynamics: #5B8A7A;
       
       /* Fonts */
       --font-mono: 'PT Mono', monospace;
       --font-sans: 'IBM Plex Sans', sans-serif;
-      
-      /* Spacing */
-      --space-xs: 8px;
-      --space-sm: 12px;
-      --space-md: 16px;
-      --space-lg: 20px;
-      --space-xl: 24px;
-      --space-2xl: 32px;
     }
     
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      border-radius: 0 !important;
     }
     
     body {
@@ -60,12 +55,147 @@
       background: var(--void);
       color: var(--dawn);
       min-height: 100vh;
-      overflow-x: hidden;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       NAVIGATION BAR
+       ═══════════════════════════════════════════════════════════════ */
+    
+    .nav-container {
+      position: fixed;
+      top: 20px;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+    
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: auto;
+    }
+    
+    .add-button {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--dawn-15);
+      cursor: pointer;
+      transition: all 150ms ease;
+      text-decoration: none;
+      font-size: 20px;
+      color: var(--dawn-50);
+    }
+    
+    .add-button:hover {
+      border-color: var(--gold-dim);
+      background: rgba(202, 165, 84, 0.15);
+      color: var(--dawn);
+    }
+    
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+      height: 44px;
+    }
+    
+    .nav-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 18px;
+      height: 100%;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+      text-decoration: none;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--dawn-08);
+      transition: all 150ms ease;
+      cursor: pointer;
+    }
+    
+    .nav-link:hover {
+      color: var(--dawn);
+      background: var(--dawn-04);
+    }
+    
+    .nav-link.active {
+      color: var(--dawn);
+      background: var(--dawn-08);
+    }
+    
+    .nav-icon {
+      font-size: 14px;
+    }
+    
+    .user-dropdown {
+      position: relative;
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      padding-top: 4px;
+      display: none;
+    }
+    
+    .user-dropdown:hover .dropdown-menu {
+      display: block;
+    }
+    
+    .dropdown-content {
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+      min-width: 120px;
+    }
+    
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      transition: all 150ms ease;
+    }
+    
+    .dropdown-item:hover {
+      color: var(--dawn);
+      background: var(--dawn-08);
+    }
+    
+    .dropdown-divider {
+      height: 1px;
+      background: var(--dawn-08);
     }
     
     /* ═══════════════════════════════════════════════════════════════
        MAIN LAYOUT
        ═══════════════════════════════════════════════════════════════ */
+    
     .main {
       padding: 6rem 2rem 2rem;
       max-width: 1600px;
@@ -73,17 +203,15 @@
       min-height: 100vh;
     }
     
-    /* ═══════════════════════════════════════════════════════════════
-       HEADER
-       ═══════════════════════════════════════════════════════════════ */
-    .header {
+    /* Header */
+    .page-header {
       display: flex;
       align-items: center;
       gap: 0.5rem;
       margin-bottom: 1.5rem;
     }
     
-    .headerPrefix {
+    .header-prefix {
       font-family: var(--font-mono);
       font-size: 0.625rem;
       letter-spacing: 0.08em;
@@ -91,7 +219,7 @@
       color: var(--gold-dim);
     }
     
-    .headerTitle {
+    .header-title {
       font-family: var(--font-mono);
       font-size: 0.625rem;
       letter-spacing: 0.08em;
@@ -99,13 +227,13 @@
       color: var(--dawn-50);
     }
     
-    .headerLine {
+    .header-line {
       flex: 1;
       height: 1px;
       background: linear-gradient(90deg, var(--dawn-15) 0%, transparent 100%);
     }
     
-    .saveButton {
+    .save-button {
       padding: 0.5rem 1rem;
       background: var(--gold);
       border: 1px solid var(--gold);
@@ -118,41 +246,40 @@
       transition: all 150ms ease;
     }
     
-    .saveButton:hover:not(:disabled) {
+    .save-button:hover {
       background: #D4B76A;
     }
     
-    .saveButton:disabled {
+    .save-button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
     
-    /* ═══════════════════════════════════════════════════════════════
-       THREE COLUMN LAYOUT
-       ═══════════════════════════════════════════════════════════════ */
-    .threeCol {
+    /* Three Column Layout */
+    .three-col {
       display: grid;
-      grid-template-columns: auto 1fr 380px;
+      grid-template-columns: 620px 1fr 380px;
       gap: 1.5rem;
       align-items: start;
     }
     
-    .cardColumn {
-      width: 620px;
-    }
-    
-    .formColumn {
-      min-width: 0;
-    }
-    
-    .chatColumn {
-      width: 380px;
+    @media (max-width: 1400px) {
+      .three-col {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .card-column,
+      .chat-column {
+        max-width: 620px;
+      }
     }
     
     /* ═══════════════════════════════════════════════════════════════
-       ENTITY CARD PREVIEW - 4:5 Aspect Ratio
+       ENTITY CARD PREVIEW (4:5 Aspect Ratio)
        ═══════════════════════════════════════════════════════════════ */
-    .card {
+    
+    .entity-card {
       width: 620px;
       aspect-ratio: 4/5;
       background: var(--void);
@@ -165,13 +292,13 @@
       border: 1px solid var(--dawn-08);
     }
     
-    .scanline {
+    .card-scanline {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       height: 2px;
-      background: linear-gradient(to bottom, var(--gold-dim), transparent);
+      background: linear-gradient(to bottom, rgba(202, 165, 84, 0.4), transparent);
       z-index: 100;
       animation: scan 12s linear infinite;
       pointer-events: none;
@@ -185,7 +312,7 @@
     }
     
     /* Card Header */
-    .cardHeader {
+    .card-header {
       grid-column: 1 / -1;
       background: var(--surface-0);
       display: flex;
@@ -198,34 +325,35 @@
       border-bottom: 1px solid var(--dawn-08);
     }
     
-    .cardHeaderTitle {
+    .card-header-title {
       color: var(--gold);
       text-transform: uppercase;
     }
     
-    .cardHeaderData {
+    .card-header-data {
       color: var(--dawn-30);
     }
     
-    .cardHeaderData span {
+    .card-header-data span {
       color: var(--dawn-50);
     }
     
-    .cardHeaderRight {
+    .card-header-right {
       margin-left: auto;
       display: flex;
       gap: 12px;
     }
     
-    /* Left/Right Columns */
-    .leftCol,
-    .rightCol {
+    /* Columns */
+    .card-left-col,
+    .card-right-col {
       display: flex;
       flex-direction: column;
       gap: 1px;
       background: var(--dawn-04);
     }
     
+    /* Readout Panels */
     .readout {
       background: var(--void);
       padding: 8px;
@@ -235,7 +363,7 @@
       min-height: 0;
     }
     
-    .readoutLabel {
+    .readout-label {
       font-family: var(--font-mono);
       font-size: 9px;
       letter-spacing: 0.1em;
@@ -244,20 +372,31 @@
       margin-bottom: 6px;
     }
     
-    .readoutCanvas {
+    .readout-canvas {
       flex: 1;
-      min-height: 0;
+      min-height: 60px;
+      background: linear-gradient(180deg, var(--surface-1) 0%, var(--void) 100%);
       position: relative;
+      overflow: hidden;
     }
     
-    .readoutCanvas canvas {
+    /* Animated particle visualization placeholder */
+    .readout-canvas::before {
+      content: '';
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
+      background: 
+        radial-gradient(circle at 30% 50%, rgba(202, 165, 84, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(202, 165, 84, 0.08) 0%, transparent 40%);
+      animation: pulse-glow 4s ease-in-out infinite;
     }
     
-    .readoutValue {
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    
+    .readout-value {
       font-family: var(--font-mono);
       font-size: 10px;
       color: var(--gold);
@@ -266,7 +405,7 @@
       letter-spacing: 0.05em;
     }
     
-    .readoutValueAlert {
+    .readout-value-alert {
       font-family: var(--font-mono);
       font-size: 10px;
       color: var(--threat-volatile);
@@ -275,17 +414,18 @@
       letter-spacing: 0.05em;
     }
     
-    .readoutValueSmall {
+    .readout-value-small {
       font-family: var(--font-mono);
       font-size: 9px;
       color: var(--gold);
       margin-top: 6px;
       text-align: center;
       letter-spacing: 0.05em;
+      line-height: 1.4;
     }
     
     /* Center Zone */
-    .center {
+    .card-center {
       background: var(--void);
       position: relative;
       display: flex;
@@ -294,14 +434,45 @@
       overflow: hidden;
     }
     
-    .centerCanvas {
+    .center-canvas-bg {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
+      background: 
+        radial-gradient(circle at center, transparent 20%, var(--void) 70%),
+        radial-gradient(circle at center, rgba(202, 165, 84, 0.03) 0%, transparent 60%);
     }
     
-    .alignmentOverlay {
+    /* Concentric circles animation */
+    .center-canvas-bg::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 200px;
+      height: 200px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(202, 165, 84, 0.08);
+      animation: ripple 8s ease-in-out infinite;
+    }
+    
+    .center-canvas-bg::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140px;
+      height: 140px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(202, 165, 84, 0.06);
+      animation: ripple 8s ease-in-out infinite 2s;
+    }
+    
+    @keyframes ripple {
+      0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.05); }
+    }
+    
+    .alignment-overlay {
       position: absolute;
       top: 8%;
       left: 50%;
@@ -309,7 +480,7 @@
       z-index: 20;
     }
     
-    .alignmentLabel {
+    .alignment-label {
       text-align: center;
       font-family: var(--font-mono);
       font-size: 8px;
@@ -318,15 +489,7 @@
       text-transform: uppercase;
     }
     
-    .entityImage {
-      position: relative;
-      z-index: 10;
-      max-width: 70%;
-      max-height: 85%;
-      object-fit: contain;
-    }
-    
-    .entityPlaceholder {
+    .entity-placeholder {
       position: relative;
       z-index: 10;
       display: flex;
@@ -340,7 +503,7 @@
       text-transform: uppercase;
     }
     
-    .placeholderBox {
+    .placeholder-box {
       width: 100px;
       height: 100px;
       border: 1px dashed var(--dawn-15);
@@ -351,7 +514,7 @@
     }
     
     /* Card Footer */
-    .cardFooter {
+    .card-footer {
       grid-column: 1 / -1;
       background: var(--surface-0);
       border-top: 1px solid var(--dawn-08);
@@ -361,13 +524,13 @@
       gap: 24px;
     }
     
-    .footerLeft {
+    .footer-left {
       display: flex;
       flex-direction: column;
       justify-content: center;
     }
     
-    .footerName {
+    .footer-name {
       font-family: var(--font-mono);
       font-size: 22px;
       color: var(--gold);
@@ -377,7 +540,7 @@
       white-space: pre-line;
     }
     
-    .footerMeta {
+    .footer-meta {
       margin-top: 10px;
       font-family: var(--font-mono);
       font-size: 9px;
@@ -386,30 +549,34 @@
       gap: 5px;
     }
     
-    .footerMetaLine {
+    .footer-meta-line {
       color: var(--dawn-30);
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
     
-    .footerMetaLine span {
+    .footer-meta-line span {
       color: var(--dawn-50);
     }
     
-    .footerCardinals {
+    .footer-cardinals {
       margin-top: 8px;
       color: var(--dawn-30);
       line-height: 1.4;
     }
     
-    .footerRight {
+    .coord-geometry { color: var(--cardinal-geometry); }
+    .coord-alterity { color: var(--cardinal-alterity); }
+    .coord-dynamics { color: var(--cardinal-dynamics); }
+    
+    .footer-right {
       display: flex;
       align-items: center;
       border-left: 1px solid var(--dawn-08);
       padding-left: 28px;
     }
     
-    .footerBio {
+    .footer-bio {
       font-family: var(--font-sans);
       font-size: 12px;
       color: var(--dawn-50);
@@ -419,6 +586,7 @@
     /* ═══════════════════════════════════════════════════════════════
        PARAMETER FORM PANEL
        ═══════════════════════════════════════════════════════════════ */
+    
     .panel {
       background: var(--surface-0);
       border: 1px solid var(--dawn-08);
@@ -428,7 +596,7 @@
       overflow: hidden;
     }
     
-    .panelHeader {
+    .panel-header {
       padding: 0.75rem 1rem;
       border-bottom: 1px solid var(--dawn-08);
       font-family: var(--font-mono);
@@ -440,135 +608,48 @@
     }
     
     /* Media Upload Zone */
-    .mediaContainer {
+    .upload-zone {
       padding: 1rem;
       border-bottom: 1px solid var(--dawn-08);
     }
     
     .dropzone {
+      border: 1px dashed var(--dawn-15);
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 2rem 1rem;
-      border: 1px dashed var(--dawn-15);
-      background: var(--surface-1);
+      gap: 8px;
       cursor: pointer;
       transition: all 150ms ease;
-      min-height: 120px;
     }
     
     .dropzone:hover {
       border-color: var(--gold-dim);
-      background: var(--gold-15);
+      background: rgba(202, 165, 84, 0.05);
     }
     
-    .dropzone.dragging {
-      border-color: var(--gold);
-      background: rgba(202, 165, 84, 0.1);
-    }
-    
-    .dropzone.analyzing {
-      cursor: wait;
-      border-color: var(--gold-30);
-    }
-    
-    .dropzoneIcon {
+    .dropzone-icon {
       font-size: 24px;
       color: var(--dawn-30);
-      margin-bottom: 0.5rem;
     }
     
-    .dropzoneText {
+    .dropzone-text {
       font-family: var(--font-mono);
-      font-size: 0.6875rem;
+      font-size: 11px;
       color: var(--dawn-50);
       letter-spacing: 0.05em;
     }
     
-    .dropzoneSubtext {
+    .dropzone-subtext {
       font-family: var(--font-mono);
-      font-size: 0.5625rem;
+      font-size: 9px;
       color: var(--dawn-30);
-      margin-top: 0.25rem;
+      letter-spacing: 0.05em;
     }
     
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 2px solid var(--dawn-15);
-      border-top-color: var(--gold);
-      animation: spin 1s linear infinite;
-      margin-bottom: 0.5rem;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .progressBar {
-      width: 100%;
-      max-width: 200px;
-      height: 4px;
-      background: rgba(236, 227, 214, 0.1);
-      margin-bottom: 0.5rem;
-      overflow: hidden;
-    }
-    
-    .progressFill {
-      height: 100%;
-      background: var(--gold);
-      transition: width 200ms ease;
-    }
-    
-    .preview {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    
-    .previewMedia {
-      width: 100%;
-      max-height: 200px;
-      object-fit: contain;
-      background: var(--void);
-      border: 1px solid var(--dawn-08);
-    }
-    
-    .previewInfo {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .previewName {
-      font-family: var(--font-mono);
-      font-size: 0.625rem;
-      color: var(--dawn-50);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 200px;
-    }
-    
-    .clearButton {
-      padding: 0.25rem 0.5rem;
-      background: transparent;
-      border: 1px solid rgba(139, 90, 90, 0.3);
-      color: rgba(139, 90, 90, 0.8);
-      font-family: var(--font-mono);
-      font-size: 0.5625rem;
-      cursor: pointer;
-      transition: all 150ms ease;
-    }
-    
-    .clearButton:hover {
-      border-color: var(--threat-existential);
-      color: var(--threat-existential);
-      background: rgba(139, 90, 90, 0.1);
-    }
-    
-    /* Form Fields */
+    /* Form */
     .form {
       padding: 1rem;
       overflow-y: auto;
@@ -577,13 +658,13 @@
       gap: 1rem;
     }
     
-    .fieldGroup {
+    .field-group {
       display: flex;
       flex-direction: column;
       gap: 0.375rem;
     }
     
-    .fieldLabel {
+    .field-label {
       font-family: var(--font-mono);
       font-size: 0.5625rem;
       color: var(--dawn-30);
@@ -594,11 +675,11 @@
       gap: 0.25rem;
     }
     
-    .fieldPrefix {
+    .field-prefix {
       color: var(--gold-dim);
     }
     
-    .fieldInput {
+    .field-input {
       padding: 0.5rem 0.625rem;
       background: var(--surface-1);
       border: 1px solid var(--dawn-08);
@@ -609,22 +690,22 @@
       transition: border-color 150ms ease;
     }
     
-    .fieldInput:focus {
+    .field-input:focus {
       border-color: var(--gold-dim);
     }
     
-    .fieldInput::placeholder {
+    .field-input::placeholder {
       color: var(--dawn-30);
     }
     
-    .fieldTextarea {
+    .field-textarea {
       font-family: var(--font-sans);
       line-height: 1.5;
       resize: vertical;
       min-height: 4.5rem;
     }
     
-    .fieldSelect {
+    .field-select {
       padding: 0.5rem 0.625rem;
       background: var(--surface-1);
       border: 1px solid var(--dawn-08);
@@ -640,17 +721,17 @@
       padding-right: 1.5rem;
     }
     
-    .fieldSelect:focus {
+    .field-select:focus {
       border-color: var(--gold-dim);
     }
     
-    .fieldRow {
+    .field-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 0.5rem;
     }
     
-    .fieldRow2 {
+    .field-row-2 {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 0.5rem;
@@ -662,7 +743,7 @@
       margin: 0.25rem 0;
     }
     
-    .sliderWrap {
+    .slider-wrap {
       display: flex;
       align-items: center;
       gap: 0.75rem;
@@ -685,15 +766,7 @@
       cursor: pointer;
     }
     
-    .slider::-moz-range-thumb {
-      width: 12px;
-      height: 12px;
-      background: var(--gold);
-      border: none;
-      cursor: pointer;
-    }
-    
-    .sliderValue {
+    .slider-value {
       font-family: var(--font-mono);
       font-size: 0.6875rem;
       color: var(--gold);
@@ -701,25 +774,25 @@
       text-align: right;
     }
     
-    .coordsRow {
+    .coords-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 0.5rem;
     }
     
-    .coordInput {
+    .coord-input {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
     }
     
-    .coordLabel {
+    .coord-label {
       font-family: var(--font-mono);
       font-size: 0.5rem;
       letter-spacing: 0.08em;
     }
     
-    .addButton {
+    .add-feature-btn {
       margin-top: 0.5rem;
       padding: 0.375rem 0.5rem;
       background: transparent;
@@ -732,7 +805,7 @@
       transition: all 150ms ease;
     }
     
-    .addButton:hover {
+    .add-feature-btn:hover {
       border-color: var(--gold-dim);
       color: var(--gold);
     }
@@ -740,1148 +813,633 @@
     /* ═══════════════════════════════════════════════════════════════
        ARCHIVIST CHAT PANEL
        ═══════════════════════════════════════════════════════════════ */
-    .chatPanel {
+    
+    .chat-panel {
       background: var(--surface-0);
       border: 1px solid var(--dawn-08);
       display: flex;
       flex-direction: column;
       height: calc(620px * 5 / 4);
-      overflow: hidden;
     }
     
-    .chatHeader {
-      padding: 0.75rem 1rem;
+    .chat-header {
+      padding: 1rem;
       border-bottom: 1px solid var(--dawn-08);
-      flex-shrink: 0;
-    }
-    
-    .chatTitle {
       display: flex;
       align-items: center;
-      gap: 0.625rem;
-      margin-bottom: 0.375rem;
+      justify-content: space-between;
     }
     
-    .chatAvatar {
-      width: 28px;
-      height: 28px;
+    .chat-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .chat-avatar {
+      width: 32px;
+      height: 32px;
       background: var(--surface-1);
-      border: 1px solid var(--gold-dim);
+      border: 1px solid var(--dawn-08);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 16px;
       color: var(--gold);
     }
     
-    .chatName {
+    .chat-name {
       font-family: var(--font-mono);
-      font-size: 0.75rem;
+      font-size: 12px;
       color: var(--dawn);
       letter-spacing: 0.05em;
     }
     
-    .chatRole {
+    .chat-role {
       font-family: var(--font-mono);
-      font-size: 0.5rem;
+      font-size: 9px;
       color: var(--dawn-30);
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
     
-    .chatStatus {
+    .chat-status {
       font-family: var(--font-mono);
-      font-size: 0.5rem;
-      color: var(--dawn-30);
-      letter-spacing: 0.05em;
+      font-size: 9px;
+      color: var(--gold);
+      letter-spacing: 0.08em;
     }
     
-    .messages {
+    .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 0.75rem;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.625rem;
+      gap: 1rem;
     }
     
     .message {
-      max-width: 95%;
+      max-width: 90%;
     }
     
-    .messageArchivist {
+    .message.archivist {
       align-self: flex-start;
     }
     
-    .messageUser {
+    .message.user {
       align-self: flex-end;
     }
     
-    .messageContent {
-      padding: 0.5rem 0.625rem;
+    .message-content {
+      padding: 0.75rem 1rem;
       font-family: var(--font-sans);
-      font-size: 0.75rem;
-      line-height: 1.5;
+      font-size: 13px;
+      line-height: 1.6;
     }
     
-    .messageArchivist .messageContent {
+    .message.archivist .message-content {
       background: var(--surface-1);
-      border: 1px solid var(--dawn-08);
-      color: var(--dawn-70);
-    }
-    
-    .messageUser .messageContent {
-      background: var(--surface-1);
-      border: 1px solid var(--gold-dim);
       color: var(--dawn);
+      border-left: 2px solid var(--gold);
     }
     
-    .messageContent strong {
-      color: var(--gold);
-      font-weight: 500;
+    .message.user .message-content {
+      background: rgba(202, 165, 84, 0.1);
+      color: var(--dawn);
+      border-right: 2px solid var(--gold-dim);
     }
     
-    .messageContent em {
-      font-style: italic;
-      color: var(--dawn-50);
-    }
-    
-    .messageTime {
+    .message-time {
       font-family: var(--font-mono);
-      font-size: 0.5rem;
+      font-size: 9px;
       color: var(--dawn-30);
-      margin-top: 0.1875rem;
-      padding: 0 0.25rem;
+      margin-top: 4px;
+      letter-spacing: 0.05em;
     }
     
-    .messageUser .messageTime {
+    .message.user .message-time {
       text-align: right;
     }
     
-    /* Tool Usage Display */
-    .toolUsage {
-      margin-top: 0.5rem;
-      border-top: 1px solid rgba(236, 227, 214, 0.06);
-      padding-top: 0.375rem;
-    }
-    
-    .toolToggle {
-      display: flex;
-      align-items: center;
-      gap: 0.375rem;
-      background: none;
-      border: none;
-      padding: 0.25rem 0;
-      cursor: pointer;
-      font-family: var(--font-mono);
-      font-size: 0.5625rem;
-      color: var(--dawn-30);
-      letter-spacing: 0.05em;
-      transition: color 150ms ease;
-    }
-    
-    .toolToggle:hover {
-      color: var(--dawn-50);
-    }
-    
-    .toolIcon {
-      font-size: 0.625rem;
-    }
-    
-    .toolSummary {
-      flex: 1;
-      text-align: left;
-    }
-    
-    .toolFail {
-      color: var(--threat-existential);
-    }
-    
-    .toolChevron {
-      font-size: 0.5rem;
-      opacity: 0.5;
-    }
-    
-    .toolDetails {
-      margin-top: 0.375rem;
-      padding: 0.375rem;
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--dawn-04);
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    
-    .toolItem {
-      display: flex;
-      align-items: center;
-      gap: 0.375rem;
-      font-family: var(--font-mono);
-      font-size: 0.5625rem;
-      padding: 0.25rem 0.375rem;
-      background: rgba(236, 227, 214, 0.02);
-    }
-    
-    .toolItem.toolSuccess .toolStatus {
-      color: #5A8B5A;
-    }
-    
-    .toolItem.toolError .toolStatus {
-      color: var(--threat-existential);
-    }
-    
-    .toolName {
-      color: var(--dawn-50);
-      flex: 1;
-    }
-    
-    .toolStatus {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-    
-    .toolDuration {
-      color: var(--dawn-30);
-      font-size: 0.5rem;
-    }
-    
-    /* Warning Message */
-    .warning {
-      background: rgba(139, 90, 90, 0.1);
-      border: 1px solid rgba(139, 90, 90, 0.3);
-      padding: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    
-    .warningHeader {
-      display: flex;
-      align-items: center;
-      gap: 0.3125rem;
-      font-family: var(--font-mono);
-      font-size: 0.5rem;
-      color: var(--threat-existential);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 0.25rem;
-    }
-    
-    .warningText {
-      font-size: 0.6875rem;
-      color: var(--dawn-70);
-      line-height: 1.4;
-    }
-    
-    /* Apply Button */
-    .applyButton {
-      margin-top: 0.5rem;
-      padding: 0.375rem 0.5rem;
-      background: var(--gold-15);
-      border: 1px solid var(--gold-30);
-      color: var(--gold);
-      font-family: var(--font-mono);
-      font-size: 0.5625rem;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: all 150ms ease;
-    }
-    
-    .applyButton:hover {
-      background: rgba(202, 165, 84, 0.25);
-      border-color: var(--gold-dim);
-    }
-    
-    /* Typing Indicator */
-    .typing {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-    }
-    
-    .typingDot {
-      display: inline-block;
-      animation: typingBounce 1.4s infinite ease-in-out both;
-      color: var(--gold);
-    }
-    
-    .typingDot:nth-child(1) { animation-delay: -0.32s; }
-    .typingDot:nth-child(2) { animation-delay: -0.16s; }
-    .typingDot:nth-child(3) { animation-delay: 0s; }
-    
-    @keyframes typingBounce {
-      0%, 80%, 100% { opacity: 0.3; }
-      40% { opacity: 1; }
-    }
-    
-    .typingStatus {
-      margin-left: 0.5rem;
-      font-size: 0.625rem;
-      color: var(--dawn-30);
-      font-style: italic;
-    }
-    
-    .inputArea {
-      padding: 0.75rem;
+    .chat-input-area {
+      padding: 1rem;
       border-top: 1px solid var(--dawn-08);
-      flex-shrink: 0;
     }
     
-    .inputWrap {
+    .chat-input-wrap {
       display: flex;
-      gap: 0.375rem;
+      gap: 8px;
     }
     
-    .chatInput {
+    .chat-input {
       flex: 1;
-      padding: 0.5rem 0.625rem;
+      padding: 0.75rem;
       background: var(--surface-1);
-      border: 1px solid var(--dawn-15);
+      border: 1px solid var(--dawn-08);
       color: var(--dawn);
       font-family: var(--font-sans);
-      font-size: 0.75rem;
+      font-size: 13px;
       outline: none;
       transition: border-color 150ms ease;
     }
     
-    .chatInput:focus {
+    .chat-input:focus {
       border-color: var(--gold-dim);
     }
     
-    .chatInput::placeholder {
+    .chat-input::placeholder {
       color: var(--dawn-30);
     }
     
-    .sendButton {
-      padding: 0.5rem 0.75rem;
+    .chat-send {
+      padding: 0 1rem;
       background: var(--gold);
       border: none;
       color: var(--void);
       font-family: var(--font-mono);
-      font-size: 0.5625rem;
+      font-size: 11px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       cursor: pointer;
-      transition: all 150ms ease;
+      transition: background 150ms ease;
     }
     
-    .sendButton:hover {
+    .chat-send:hover {
       background: #D4B76A;
     }
     
-    .sendButton:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    /* Warning Box */
+    .warning-box {
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: rgba(193, 127, 89, 0.1);
+      border: 1px solid rgba(193, 127, 89, 0.2);
+    }
+    
+    .warning-header {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--threat-volatile);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    
+    .warning-text {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--dawn-50);
+      line-height: 1.5;
     }
     
     /* ═══════════════════════════════════════════════════════════════
-       RESPONSIVE
+       LOADING STATE
        ═══════════════════════════════════════════════════════════════ */
-    @media (max-width: 1400px) {
-      .threeCol {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-      
-      .cardColumn,
-      .chatColumn {
-        width: 100%;
-        max-width: 620px;
-      }
+    
+    .loading-state {
+      display: none; /* Change to flex to show */
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--void);
+    }
+    
+    .loading-text {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <main class="main">
-    <!-- Header -->
-    <div class="header">
-      <span class="headerPrefix">//</span>
-      <span class="headerTitle">Catalog New Entity</span>
-      <div class="headerLine"></div>
-      <button class="saveButton">SAVE TO ARCHIVE</button>
+  <!-- Navigation -->
+  <div class="nav-container">
+    <div class="nav-inner">
+      <!-- Add Entity Button (Admin only) -->
+      <a href="#" class="add-button" title="New Entity">+</a>
+      
+      <!-- Main Nav -->
+      <nav class="nav-bar">
+        <a href="#" class="nav-link">
+          <span class="nav-icon">◇</span>
+          <span>Atlas</span>
+        </a>
+        <a href="#" class="nav-link">
+          <span class="nav-icon">⬚</span>
+          <span>Lore</span>
+        </a>
+        
+        <!-- User Dropdown -->
+        <div class="user-dropdown">
+          <button class="nav-link">
+            <span class="nav-icon">◯</span>
+            <span>Navigator</span>
+            <span style="font-size: 10px; color: var(--dawn-30); margin-left: 4px;">▼</span>
+          </button>
+          <div class="dropdown-menu">
+            <div class="dropdown-content">
+              <button class="dropdown-item">
+                <span>⚙</span>
+                <span>Admin</span>
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item">
+                <span>→</span>
+                <span>Log out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
     </div>
-
+  </div>
+  
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Page Header -->
+    <div class="page-header">
+      <span class="header-prefix">//</span>
+      <span class="header-title">Catalog New Entity</span>
+      <div class="header-line"></div>
+      <button class="save-button">Save to Archive</button>
+    </div>
+    
     <!-- Three Column Layout -->
-    <div class="threeCol">
-      <!-- Left: Entity Card Preview -->
-      <div class="cardColumn">
-        <div class="card">
-          <div class="scanline"></div>
+    <div class="three-col">
+      <!-- LEFT: Entity Card Preview -->
+      <div class="card-column">
+        <article class="entity-card">
+          <div class="card-scanline"></div>
           
           <!-- Card Header -->
-          <div class="cardHeader">
-            <span class="cardHeaderTitle">Atlas Research</span>
-            <span class="cardHeaderData">MODE: <span>Active Scan</span></span>
-            <span class="cardHeaderData">SIG: <span>0.946</span></span>
-            <div class="cardHeaderRight">
-              <span class="cardHeaderData">EPOCH: <span>4.2847</span></span>
-              <span class="cardHeaderData">[00:00:00]</span>
+          <div class="card-header">
+            <span class="card-header-title">Atlas Research</span>
+            <span class="card-header-data">MODE: <span>Active Scan</span></span>
+            <span class="card-header-data">SIG: <span>0.946</span></span>
+            <div class="card-header-right">
+              <span class="card-header-data">EPOCH: <span>4.2847</span></span>
+              <span class="card-header-data">[00:00:00]</span>
             </div>
           </div>
-
+          
           <!-- Left Column -->
-          <div class="leftCol">
-            <!-- Phase State -->
+          <div class="card-left-col">
             <div class="readout">
-              <div class="readoutLabel">▸ Phase State</div>
-              <div class="readoutCanvas">
-                <canvas id="phaseCanvas"></canvas>
-              </div>
-              <div class="readoutValue">TEMP: 0.50</div>
+              <div class="readout-label">▸ Phase State</div>
+              <div class="readout-canvas"></div>
+              <div class="readout-value">TEMP: 0.50</div>
             </div>
-            
-            <!-- Superposition -->
             <div class="readout">
-              <div class="readoutLabel">▸ Superposition</div>
-              <div class="readoutCanvas">
-                <canvas id="superCanvas"></canvas>
-              </div>
+              <div class="readout-label">▸ Superposition</div>
+              <div class="readout-canvas"></div>
             </div>
-            
-            <!-- Hallucination Index -->
             <div class="readout">
-              <div class="readoutLabel">▸ Hallucination Index</div>
-              <div class="readoutCanvas">
-                <canvas id="hallucCanvas"></canvas>
-              </div>
-              <div class="readoutValueAlert">HIGH [3/5]</div>
+              <div class="readout-label">▸ Hallucination Index</div>
+              <div class="readout-canvas"></div>
+              <div class="readout-value-alert">HIGH [3/5]</div>
             </div>
           </div>
-
-          <!-- Center Zone -->
-          <div class="center">
-            <canvas class="centerCanvas" id="centerCanvas"></canvas>
-            <div class="alignmentOverlay">
-              <div class="alignmentLabel">◎ UNALIGNED</div>
+          
+          <!-- Center -->
+          <div class="card-center">
+            <div class="center-canvas-bg"></div>
+            <div class="alignment-overlay">
+              <div class="alignment-label">◎ UNALIGNED</div>
             </div>
-            <div class="entityPlaceholder">
-              <div class="placeholderBox">◇</div>
+            <div class="entity-placeholder">
+              <div class="placeholder-box">◇</div>
               <span>[NO IMAGE]</span>
             </div>
           </div>
-
+          
           <!-- Right Column -->
-          <div class="rightCol">
-            <!-- Latent Position -->
+          <div class="card-right-col">
             <div class="readout">
-              <div class="readoutLabel">▸ Latent Position</div>
-              <div class="readoutCanvas">
-                <canvas id="coordsCanvas"></canvas>
-              </div>
-              <div class="readoutValueSmall">X:0.000 Y:0.000<br>Z:0.000</div>
+              <div class="readout-label">▸ Latent Position</div>
+              <div class="readout-canvas"></div>
+              <div class="readout-value-small">X:0.000 Y:0.000<br>Z:0.000</div>
             </div>
-            
-            <!-- Manifold Curvature -->
             <div class="readout">
-              <div class="readoutLabel">▸ Manifold Curvature</div>
-              <div class="readoutCanvas">
-                <canvas id="manifoldCanvas"></canvas>
-              </div>
-              <div class="readoutValueAlert">MODERATE</div>
+              <div class="readout-label">▸ Manifold Curvature</div>
+              <div class="readout-canvas"></div>
+              <div class="readout-value-alert">MODERATE</div>
             </div>
-            
-            <!-- Embedding Signature -->
             <div class="readout">
-              <div class="readoutLabel">▸ Embedding Signature</div>
-              <div class="readoutCanvas">
-                <canvas id="spectralCanvas"></canvas>
-              </div>
+              <div class="readout-label">▸ Embedding Signature</div>
+              <div class="readout-canvas"></div>
             </div>
           </div>
-
-          <!-- Card Footer -->
-          <div class="cardFooter">
-            <div class="footerLeft">
-              <div class="footerName">UNNAMED
+          
+          <!-- Footer -->
+          <div class="card-footer">
+            <div class="footer-left">
+              <div class="footer-name">UNNAMED
 ENTITY</div>
-              <div class="footerMeta">
-                <div class="footerMetaLine">CLASS <span>GUARDIAN</span></div>
-                <div class="footerMetaLine">THREAT <span style="color: var(--threat-cautious);">CAUTIOUS</span></div>
-                <div class="footerCardinals">
-                  <span style="color: var(--gold);">◆</span> 0.000
-                  <span style="margin-left: 6px; color: var(--dawn);">○</span> 0.000
-                  <span style="margin-left: 6px; color: var(--dynamics);">◇</span> 0.000
+              <div class="footer-meta">
+                <div class="footer-meta-line">CLASS <span>GUARDIAN</span></div>
+                <div class="footer-meta-line">THREAT <span style="color: var(--threat-cautious);">CAUTIOUS</span></div>
+                <div class="footer-cardinals">
+                  <span class="coord-geometry">◆</span> 0.000
+                  <span style="margin-left: 6px;" class="coord-alterity">○</span> 0.000
+                  <span style="margin-left: 6px;" class="coord-dynamics">◇</span> 0.000
                 </div>
               </div>
             </div>
-            <div class="footerRight">
-              <div class="footerBio">No description provided.</div>
+            <div class="footer-right">
+              <div class="footer-bio">No description provided.</div>
             </div>
           </div>
-        </div>
+        </article>
       </div>
-
-      <!-- Middle: Parameter Form -->
-      <div class="formColumn">
+      
+      <!-- MIDDLE: Parameter Form -->
+      <div class="form-column">
         <div class="panel">
-          <div class="panelHeader">// Parameter Configuration</div>
+          <div class="panel-header">
+            <span>// Parameter Configuration</span>
+          </div>
           
           <!-- Media Upload Zone -->
-          <div class="mediaContainer">
+          <div class="upload-zone">
             <div class="dropzone">
-              <span class="dropzoneIcon">↑</span>
-              <span class="dropzoneText">Drop image or video, or click to upload</span>
-              <span class="dropzoneSubtext">jpg, png, webp, gif, mp4, webm, mov</span>
+              <span class="dropzone-icon">↑</span>
+              <span class="dropzone-text">Drop image or video, or click to upload</span>
+              <span class="dropzone-subtext">jpg, png, webp, gif, mp4, webm, mov</span>
             </div>
           </div>
           
-          <!-- Parameter Form -->
+          <!-- Form Fields -->
           <div class="form">
             <!-- Entity Name -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Entity Name
               </label>
-              <input type="text" class="fieldInput" placeholder="Enter designation...">
+              <input type="text" class="field-input" placeholder="Enter designation...">
             </div>
-
+            
             <!-- Subtitle -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Subtitle
               </label>
-              <input type="text" class="fieldInput" placeholder="Optional epithet...">
+              <input type="text" class="field-input" placeholder="Optional epithet...">
             </div>
-
+            
             <!-- Description -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Description
               </label>
-              <textarea class="fieldInput fieldTextarea" placeholder="Describe the entity..." rows="3"></textarea>
+              <textarea class="field-input field-textarea" placeholder="Describe the entity..." rows="3"></textarea>
             </div>
-
-            <!-- Class / Threat / Allegiance Row -->
-            <div class="fieldRow">
-              <div class="fieldGroup">
-                <label class="fieldLabel">
-                  <span class="fieldPrefix">▸</span>
+            
+            <!-- Class / Threat / Allegiance -->
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">
+                  <span class="field-prefix">▸</span>
                   Class
                 </label>
-                <select class="fieldSelect">
-                  <option>Guardian</option>
-                  <option>Wanderer</option>
-                  <option>Architect</option>
-                  <option>Void-Born</option>
-                  <option>Hybrid</option>
+                <select class="field-select">
+                  <option value="Guardian">Guardian</option>
+                  <option value="Wanderer">Wanderer</option>
+                  <option value="Architect">Architect</option>
+                  <option value="Void-Born">Void-Born</option>
+                  <option value="Hybrid">Hybrid</option>
                 </select>
               </div>
-
-              <div class="fieldGroup">
-                <label class="fieldLabel">
-                  <span class="fieldPrefix">▸</span>
+              
+              <div class="field-group">
+                <label class="field-label">
+                  <span class="field-prefix">▸</span>
                   Threat
                 </label>
-                <select class="fieldSelect">
-                  <option>Benign</option>
-                  <option selected>Cautious</option>
-                  <option>Volatile</option>
-                  <option>Existential</option>
+                <select class="field-select">
+                  <option value="Benign">Benign</option>
+                  <option value="Cautious" selected>Cautious</option>
+                  <option value="Volatile">Volatile</option>
+                  <option value="Existential">Existential</option>
                 </select>
               </div>
-
-              <div class="fieldGroup">
-                <label class="fieldLabel">
-                  <span class="fieldPrefix">▸</span>
+              
+              <div class="field-group">
+                <label class="field-label">
+                  <span class="field-prefix">▸</span>
                   Allegiance
                 </label>
-                <select class="fieldSelect">
-                  <option>Liminal Covenant</option>
-                  <option>Nomenclate</option>
-                  <option selected>Unaligned</option>
-                  <option>Unknown</option>
+                <select class="field-select">
+                  <option value="Liminal Covenant">Liminal Covenant</option>
+                  <option value="Nomenclate">Nomenclate</option>
+                  <option value="Unaligned" selected>Unaligned</option>
+                  <option value="Unknown">Unknown</option>
                 </select>
               </div>
             </div>
-
+            
             <div class="divider"></div>
-
+            
             <!-- Domain -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Domain
               </label>
-              <input type="text" class="fieldInput" placeholder="Conceptual territory...">
+              <input type="text" class="field-input" placeholder="Conceptual territory...">
             </div>
-
-            <!-- Phase State & Manifold Curvature Row -->
-            <div class="fieldRow2">
-              <div class="fieldGroup">
-                <label class="fieldLabel">
-                  <span class="fieldPrefix">▸</span>
+            
+            <!-- Phase State & Manifold Curvature -->
+            <div class="field-row-2">
+              <div class="field-group">
+                <label class="field-label">
+                  <span class="field-prefix">▸</span>
                   Phase State
                 </label>
-                <select class="fieldSelect">
-                  <option>Solid</option>
-                  <option selected>Liminal</option>
-                  <option>Spectral</option>
-                  <option>Fluctuating</option>
-                  <option>Crystallized</option>
+                <select class="field-select">
+                  <option value="Solid">Solid</option>
+                  <option value="Liminal" selected>Liminal</option>
+                  <option value="Spectral">Spectral</option>
+                  <option value="Fluctuating">Fluctuating</option>
+                  <option value="Crystallized">Crystallized</option>
                 </select>
               </div>
-
-              <div class="fieldGroup">
-                <label class="fieldLabel">
-                  <span class="fieldPrefix">▸</span>
+              
+              <div class="field-group">
+                <label class="field-label">
+                  <span class="field-prefix">▸</span>
                   Manifold Curvature
                 </label>
-                <select class="fieldSelect">
-                  <option>Stable</option>
-                  <option selected>Moderate</option>
-                  <option>Severe</option>
-                  <option>Critical</option>
+                <select class="field-select">
+                  <option value="Stable">Stable</option>
+                  <option value="Moderate" selected>Moderate</option>
+                  <option value="Severe">Severe</option>
+                  <option value="Critical">Critical</option>
                 </select>
               </div>
             </div>
-
+            
             <!-- Hallucination Index -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Hallucination Index
               </label>
-              <div class="sliderWrap">
-                <input type="range" class="slider" min="0" max="1" step="0.01" value="0.50">
-                <span class="sliderValue">0.50</span>
+              <div class="slider-wrap">
+                <input type="range" class="slider" min="0" max="1" step="0.01" value="0.5">
+                <span class="slider-value">0.50</span>
               </div>
             </div>
-
+            
             <div class="divider"></div>
-
-            <!-- Latent Position Coordinates -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            
+            <!-- Latent Position -->
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Latent Position
               </label>
-              <div class="coordsRow">
-                <div class="coordInput">
-                  <span class="coordLabel" style="color: var(--gold);">◆ Geometry</span>
-                  <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
+              <div class="coords-row">
+                <div class="coord-input">
+                  <span class="coord-label" style="color: var(--cardinal-geometry);">◆ Geometry</span>
+                  <input type="number" class="field-input" value="0" step="0.001" min="-1" max="1">
                 </div>
-                <div class="coordInput">
-                  <span class="coordLabel" style="color: var(--dawn);">○ Alterity</span>
-                  <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
+                <div class="coord-input">
+                  <span class="coord-label" style="color: var(--cardinal-alterity);">○ Alterity</span>
+                  <input type="number" class="field-input" value="0" step="0.001" min="-1" max="1">
                 </div>
-                <div class="coordInput">
-                  <span class="coordLabel" style="color: var(--dynamics);">◇ Dynamics</span>
-                  <input type="number" class="fieldInput" step="0.001" value="0.000" min="-1" max="1">
+                <div class="coord-input">
+                  <span class="coord-label" style="color: var(--cardinal-dynamics);">◇ Dynamics</span>
+                  <input type="number" class="field-input" value="0" step="0.001" min="-1" max="1">
                 </div>
               </div>
             </div>
-
+            
             <div class="divider"></div>
-
+            
             <!-- Glyphs -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Glyphs (4 symbols)
               </label>
-              <input type="text" class="fieldInput" value="◆●∇⊗" maxlength="8">
+              <input type="text" class="field-input" value="◆●∇⊗" placeholder="◆●∇⊗" maxlength="8">
             </div>
-
+            
             <!-- Features -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Features (up to 5)
               </label>
-              <input type="text" class="fieldInput" placeholder="Feature 1...">
-              <button type="button" class="addButton">+ Add Feature</button>
+              <input type="text" class="field-input" placeholder="Feature 1...">
+              <button class="add-feature-btn">+ Add Feature</button>
             </div>
-
+            
             <!-- Lore -->
-            <div class="fieldGroup">
-              <label class="fieldLabel">
-                <span class="fieldPrefix">▸</span>
+            <div class="field-group">
+              <label class="field-label">
+                <span class="field-prefix">▸</span>
                 Lore
               </label>
-              <textarea class="fieldInput fieldTextarea" placeholder="Historical context, theories..." rows="4"></textarea>
+              <textarea class="field-input field-textarea" placeholder="Historical context, theories..." rows="4"></textarea>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Right: Archivist Chat -->
-      <div class="chatColumn">
-        <div class="chatPanel">
-          <div class="chatHeader">
-            <div class="chatTitle">
-              <div class="chatAvatar">◇</div>
+      
+      <!-- RIGHT: Archivist Chat -->
+      <div class="chat-column">
+        <div class="chat-panel">
+          <!-- Chat Header -->
+          <div class="chat-header">
+            <div class="chat-title">
+              <div class="chat-avatar">◇</div>
               <div>
-                <div class="chatName">The Archivist</div>
-                <div class="chatRole">Semantic Cartographer</div>
+                <div class="chat-name">The Archivist</div>
+                <div class="chat-role">Semantic Cartographer</div>
               </div>
             </div>
-            <div class="chatStatus">Ready</div>
+            <div class="chat-status">Ready</div>
           </div>
-
-          <div class="messages">
-            <!-- Greeting Message -->
-            <div class="message messageArchivist">
-              <div class="messageContent">
-                <em>*awaits*</em><br><br>
+          
+          <!-- Messages -->
+          <div class="chat-messages">
+            <div class="message archivist">
+              <div class="message-content">
+                <em>*awaits*</em>
+                <br><br>
                 Welcome, Navigator. What entity shall we explore today? You can share an image, describe what you've witnessed, or ask about patterns in the archive.
               </div>
-              <div class="messageTime">10:56 AM</div>
+              <div class="message-time">12:34 PM</div>
             </div>
-
-            <!-- User Message Example -->
-            <div class="message messageUser">
-              <div class="messageContent">
-                I've uploaded an image of a crystalline being I encountered. What can you tell me about it?
+            
+            <div class="message user">
+              <div class="message-content">
+                I encountered something at the threshold between dreams and waking. It seemed to guard the passage.
               </div>
-              <div class="messageTime">10:57 AM</div>
+              <div class="message-time">12:35 PM</div>
             </div>
-
-            <!-- Archivist Response with Tool Usage -->
-            <div class="message messageArchivist">
-              <div class="messageContent">
-                <em>*studies the visual signature*</em><br><br>
-                I see a being of <strong>crystalline</strong> form, emanating a warm gold-umber gradient. The structure suggests kinship with entities in the <strong>Starhaven Reaches</strong> domain.<br><br>
-                Let me search for similar patterns in the archive...
+            
+            <div class="message archivist">
+              <div class="message-content">
+                <em>*considers*</em>
+                <br><br>
+                A <strong>threshold guardian</strong>—liminal by nature. The archive holds several such entities. The position between states suggests it may be of the <strong>Guardian</strong> class.
+                <br><br>
+                What form did it take? Did it speak, or communicate through other means?
                 
-                <!-- Tool Usage Display -->
-                <div class="toolUsage">
-                  <button class="toolToggle">
-                    <span class="toolIcon">⚙</span>
-                    <span class="toolSummary">2 tools used</span>
-                    <span class="toolChevron">▼</span>
-                  </button>
-                  <div class="toolDetails">
-                    <div class="toolItem toolSuccess">
-                      <span class="toolName">analyze_image</span>
-                      <span class="toolStatus">✓ <span class="toolDuration">1247ms</span></span>
-                    </div>
-                    <div class="toolItem toolSuccess">
-                      <span class="toolName">find_similar</span>
-                      <span class="toolStatus">✓ <span class="toolDuration">342ms</span></span>
-                    </div>
-                  </div>
+                <div class="warning-box">
+                  <div class="warning-header">⚠ Observation</div>
+                  <div class="warning-text">Similar entities have been reported near the Nomenclate boundary. Exercise interpretive caution.</div>
                 </div>
               </div>
-              <div class="messageTime">10:57 AM</div>
+              <div class="message-time">12:35 PM</div>
             </div>
-
-            <!-- Archivist with Warning -->
-            <div class="message messageArchivist">
-              <div class="messageContent">
-                This entity clusters near <strong>Eonprism</strong> and <strong>Fatebinder</strong> in semantic space. They share crystalline materiality and cosmic purpose.<br><br>
-                I suggest classifying it as a <strong>Guardian</strong> class with <strong>Cautious</strong> threat level.
-                
-                <div class="warning">
-                  <div class="warningHeader">⚠ Observation</div>
-                  <div class="warningText">High hallucination index detected. Verify visual details with source material.</div>
-                </div>
-                
-                <button class="applyButton">Apply Suggestion</button>
-              </div>
-              <div class="messageTime">10:58 AM</div>
-            </div>
-
-            <!-- Typing Indicator (shown when loading) -->
-            <!--
-            <div class="message messageArchivist">
-              <div class="messageContent">
-                <span class="typing">
-                  <span class="typingDot">.</span>
-                  <span class="typingDot">.</span>
-                  <span class="typingDot">.</span>
-                </span>
-                <span class="typingStatus">consulting the archive</span>
-              </div>
-            </div>
-            -->
           </div>
-
-          <div class="inputArea">
-            <div class="inputWrap">
-              <input type="text" class="chatInput" placeholder="Ask about patterns, connections, or describe the entity...">
-              <button class="sendButton">Send</button>
+          
+          <!-- Input -->
+          <div class="chat-input-area">
+            <div class="chat-input-wrap">
+              <input type="text" class="chat-input" placeholder="Ask about patterns, connections, or describe the entity...">
+              <button class="chat-send">Send</button>
             </div>
           </div>
         </div>
       </div>
     </div>
   </main>
-
+  
   <script>
-    // ═══════════════════════════════════════════════════════════════
-    // CANVAS VISUALIZATIONS - Matching EntityCardPreview.tsx
-    // ═══════════════════════════════════════════════════════════════
-    
-    const GRID = 3;
-    const GOLD = '202, 165, 84';
-    const DAWN = '236, 227, 214';
-    const DYNAMICS = '91, 138, 122';
-    const VOLATILE = '193, 127, 89';
-    
-    // State for animations
-    const state = {
-      phasePoints: [],
-      superStates: [],
-      hallucHistory: [],
-      manifoldParticles: [],
-      signature: [],
-      fieldParticles: [],
-      time: 0
-    };
-    
-    function drawPixel(ctx, x, y, color, alpha, size = GRID) {
-      const px = Math.floor(x / GRID) * GRID;
-      const py = Math.floor(y / GRID) * GRID;
-      ctx.fillStyle = `rgba(${color}, ${alpha})`;
-      ctx.fillRect(px, py, size - 1, size - 1);
-    }
-    
-    function drawParticleCircle(ctx, cx, cy, r, color, alpha, density = 0.15) {
-      const circumference = 2 * Math.PI * r;
-      const steps = Math.floor(circumference * density);
-      for (let i = 0; i < steps; i++) {
-        const angle = (i / steps) * Math.PI * 2;
-        drawPixel(ctx, cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, color, alpha);
-      }
-    }
-    
-    function setupCanvas(canvasId) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return null;
-      const parent = canvas.parentElement;
-      if (!parent) return null;
-      const rect = parent.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.scale(dpr, dpr);
-      return { ctx, width: rect.width, height: rect.height };
-    }
-    
-    // Initialize visualization states
-    function initStates() {
-      // Phase points
-      state.phasePoints = [];
-      for (let i = 0; i < 20; i++) {
-        state.phasePoints.push({
-          phase: Math.random() * Math.PI * 2,
-          amp: 0.2 + Math.random() * 0.5,
-          freq: 0.5 + Math.random() * 1.5,
-        });
-      }
-
-      // Super states (12 indicators in 4x3 grid)
-      state.superStates = [];
-      for (let i = 0; i < 12; i++) {
-        state.superStates.push({
-          active: Math.random() > 0.6,
-          phase: Math.random() * Math.PI * 2,
-        });
-      }
-
-      // Hallucination history
-      state.hallucHistory = [];
-      for (let i = 0; i < 25; i++) {
-        state.hallucHistory.push(0.6 + Math.sin(i * 0.2) * 0.2 + Math.random() * 0.1);
-      }
-
-      // Manifold particles (7x7 grid)
-      state.manifoldParticles = [];
-      for (let x = 0; x < 7; x++) {
-        for (let y = 0; y < 7; y++) {
-          state.manifoldParticles.push({ baseX: x / 6, baseY: y / 6 });
-        }
-      }
-
-      // Spectral signature (16 bands)
-      state.signature = [];
-      for (let i = 0; i < 16; i++) {
-        state.signature.push({
-          base: Math.sin(i * 0.3) * 0.3 + Math.sin(i * 0.7) * 0.2 + 0.5,
-          variance: Math.random() * 0.1,
-        });
-      }
-    }
-    
-    // Initialize center field particles
-    function initCenterParticles(width, height) {
-      state.fieldParticles = [];
-      for (let i = 0; i < 30; i++) {
-        state.fieldParticles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.06,
-          vy: (Math.random() - 0.5) * 0.06,
-          alpha: 0.06 + Math.random() * 0.08,
-        });
-      }
-    }
-    
-    // Phase State Canvas - Wave visualization
-    function drawPhaseState() {
-      const setup = setupCanvas('phaseCanvas');
-      if (!setup) return;
-      const { ctx, width, height } = setup;
-      
-      ctx.fillStyle = 'rgba(5, 4, 3, 0.15)';
-      ctx.fillRect(0, 0, width, height);
-      
-      const baseline = height * 0.85;
-      for (let x = 0; x < width; x += GRID * 2) {
-        drawPixel(ctx, x, baseline, DAWN, 0.1);
-      }
-      
-      const tempMod = 0.5 + 0.5; // hallucinationIndex = 0.5
-      state.phasePoints.forEach((p, i) => {
-        const x = (i / state.phasePoints.length) * width;
-        const wave = Math.sin(state.time * p.freq * tempMod + p.phase) * p.amp;
-        const y = baseline - (wave + 0.5) * height * 0.6;
-        drawPixel(ctx, x, y, GOLD, 0.5 + wave * 0.3);
-        for (let ty = y; ty < baseline; ty += GRID * 2) {
-          drawPixel(ctx, x, ty, GOLD, 0.06 * (1 - (ty - y) / (baseline - y)));
-        }
-      });
-    }
-    
-    // Superposition Canvas - Grid of blinking indicators
-    function drawSuperposition() {
-      const setup = setupCanvas('superCanvas');
-      if (!setup) return;
-      const { ctx, width, height } = setup;
-      
-      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
-      ctx.fillRect(0, 0, width, height);
-      
-      const cols = 4, rows = 3;
-      state.superStates.forEach((s, i) => {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const x = (col + 0.5) * (width / cols);
-        const y = (row + 0.5) * (height / rows);
-        const isOn = s.active ? Math.sin(state.time + s.phase) > 0.3 : Math.random() > 0.97;
-        if (isOn) {
-          drawPixel(ctx, x, y, GOLD, 0.8, 4);
-          drawPixel(ctx, x - GRID, y, GOLD, 0.15);
-          drawPixel(ctx, x + GRID, y, GOLD, 0.15);
-        } else {
-          drawPixel(ctx, x, y, DAWN, 0.1, 4);
-        }
-      });
-    }
-    
-    // Hallucination Index Canvas - Rolling wave graph
-    function drawHallucinationIndex() {
-      const setup = setupCanvas('hallucCanvas');
-      if (!setup) return;
-      const { ctx, width, height } = setup;
-      
-      ctx.fillStyle = 'rgba(5, 4, 3, 0.1)';
-      ctx.fillRect(0, 0, width, height);
-      
-      state.hallucHistory.shift();
-      const level = Math.round(0.5 * 5); // hallucinationIndex = 0.5
-      const baseValue = level / 5;
-      state.hallucHistory.push(
-        baseValue * 0.8 + Math.sin(state.time) * 0.1 + Math.sin(state.time * 2.3) * 0.05 + (Math.random() - 0.5) * 0.05
-      );
-      
-      state.hallucHistory.forEach((v, i) => {
-        const x = (i / state.hallucHistory.length) * width;
-        const y = height - v * height * 0.85;
-        drawPixel(ctx, x, y, VOLATILE, 0.7);
-        for (let fy = y; fy < height; fy += GRID * 2) {
-          drawPixel(ctx, x, fy, VOLATILE, 0.05);
-        }
-      });
-    }
-    
-    // Latent Position Canvas - Grid with position dot
-    function drawLatentPosition() {
-      const setup = setupCanvas('coordsCanvas');
-      if (!setup) return;
-      const { ctx, width, height } = setup;
-      
-      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
-      ctx.fillRect(0, 0, width, height);
-      
-      // Draw grid
-      for (let x = 0; x < width; x += GRID * 3) {
-        for (let y = 0; y < height; y += GRID * 3) {
-          drawPixel(ctx, x, y, DAWN, 0.06);
-        }
-      }
-      
-      const cx = width / 2;
-      const cy = height / 2;
-      const entityX = cx + 0 * width * 0.35; // geometry = 0
-      const entityY = cy - 0 * height * 0.35; // alterity = 0
-      const pulse = 0.7 + Math.sin(state.time * 2) * 0.3;
-      
-      // Draw particle glow around entity position
-      for (let i = 0; i < 4; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * 6;
-        drawPixel(ctx, entityX + Math.cos(angle) * dist, entityY + Math.sin(angle) * dist, GOLD, 0.1 * pulse);
-      }
-      drawPixel(ctx, entityX, entityY, GOLD, 0.85 * pulse, 4);
-    }
-    
-    // Manifold Curvature Canvas - Particles being pulled toward center
-    function drawManifoldCurvature() {
-      const setup = setupCanvas('manifoldCanvas');
-      if (!setup) return;
-      const { ctx, width, height } = setup;
-      
-      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
-      ctx.fillRect(0, 0, width, height);
-      
-      const cx = width / 2;
-      const cy = height / 2;
-      const severityMap = { Stable: 8, Moderate: 15, Severe: 22, Critical: 30 };
-      const baseStrength = severityMap['Moderate'] || 15;
-      const strength = baseStrength + Math.sin(state.time * 0.5) * 4;
-      
-      state.manifoldParticles.forEach(p => {
-        const x = p.baseX * width;
-        const y = p.baseY * height;
-        const dx = x - cx;
-        const dy = y - cy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const pull = Math.max(0, 1 - dist / 45) * strength;
-        drawPixel(ctx, x - (dx / (dist || 1)) * pull, y - (dy / (dist || 1)) * pull, GOLD, 0.2 + (dist / 50) * 0.3);
-      });
-      
-      // Center glow
-      for (let i = 0; i < 4; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * 10;
-        drawPixel(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, VOLATILE, 0.2 * (1 - dist / 10));
-      }
-      drawPixel(ctx, cx, cy, VOLATILE, 0.9, 4);
-    }
-    
-    // Embedding Signature Canvas - Vertical bars with scan line
-    function drawEmbeddingSignature() {
-      const setup = setupCanvas('spectralCanvas');
-      if (!setup) return;
-      const { ctx, width, height } = setup;
-      
-      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
-      ctx.fillRect(0, 0, width, height);
-      
-      state.signature.forEach((band, i) => {
-        const animate = Math.sin(state.time + i * 0.2) * band.variance;
-        const h = (band.base + animate) * height * 0.8;
-        const color = i / state.signature.length < 0.5 ? DYNAMICS : GOLD;
-        for (let y = height; y > height - h; y -= GRID) {
-          drawPixel(ctx, i * (width / state.signature.length) + (width / state.signature.length) / 2, y, color, 0.2 + (1 - y / height) * 0.35);
-        }
-      });
-      
-      // Scan line
-      const scanX = (state.time * 4) % width;
-      for (let y = 0; y < height; y += GRID * 2) {
-        drawPixel(ctx, scanX, y, DAWN, 0.2);
-      }
-    }
-    
-    // Center Field Canvas - Floating particles with concentric rings
-    function drawCenterField() {
-      const setup = setupCanvas('centerCanvas');
-      if (!setup) return;
-      const { ctx, width, height } = setup;
-      
-      if (state.fieldParticles.length === 0) {
-        initCenterParticles(width, height);
-      }
-      
-      ctx.fillStyle = 'rgba(5, 4, 3, 0.05)';
-      ctx.fillRect(0, 0, width, height);
-      
-      const cx = width / 2;
-      const cy = height / 2;
-      
-      // Draw concentric rings
-      [0.3, 0.45, 0.6].forEach(r => {
-        drawParticleCircle(ctx, cx, cy, Math.min(width, height) * r * 0.45, GOLD, 0.08, 0.05);
-      });
-      
-      // Update and draw floating particles
-      state.fieldParticles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
-        drawPixel(ctx, p.x, p.y, GOLD, p.alpha);
-      });
-    }
-    
-    // Animation loop
-    function animate() {
-      state.time += 0.015;
-      
-      drawPhaseState();
-      drawSuperposition();
-      drawHallucinationIndex();
-      drawLatentPosition();
-      drawManifoldCurvature();
-      drawEmbeddingSignature();
-      drawCenterField();
-      
-      requestAnimationFrame(animate);
-    }
-    
-    // Initialize all canvases
-    function initCanvases() {
-      initStates();
-      animate();
-    }
-    
-    // Wait for DOM
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initCanvases);
-    } else {
-      initCanvases();
-    }
-    
-    // Handle window resize
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        // Re-initialize center particles on resize
-        const setup = setupCanvas('centerCanvas');
-        if (setup) {
-          initCenterParticles(setup.width, setup.height);
-        }
-      }, 100);
+    // Simple interactivity for mockup
+    document.querySelector('.slider').addEventListener('input', function(e) {
+      document.querySelector('.slider-value').textContent = parseFloat(e.target.value).toFixed(2);
     });
     
-    // Slider value update
-    document.querySelector('.slider').addEventListener('input', (e) => {
-      document.querySelector('.sliderValue').textContent = parseFloat(e.target.value).toFixed(2);
-    });
-    
-    // Tool toggle interaction
-    document.querySelectorAll('.toolToggle').forEach(toggle => {
-      toggle.addEventListener('click', () => {
-        const details = toggle.nextElementSibling;
-        const chevron = toggle.querySelector('.toolChevron');
-        if (details.style.display === 'none' || !details.style.display) {
-          details.style.display = 'flex';
-          chevron.textContent = '▼';
-        } else {
-          details.style.display = 'none';
-          chevron.textContent = '▶';
+    // Hover effects on nav
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('mouseenter', function() {
+        this.style.color = 'var(--dawn)';
+        this.style.background = 'var(--dawn-04)';
+      });
+      link.addEventListener('mouseleave', function() {
+        if (!this.classList.contains('active')) {
+          this.style.color = 'var(--dawn-50)';
+          this.style.background = 'transparent';
         }
       });
     });
   </script>
 </body>
 </html>
+
