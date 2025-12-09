@@ -375,25 +375,16 @@
     .readout-canvas {
       flex: 1;
       min-height: 60px;
-      background: linear-gradient(180deg, var(--surface-1) 0%, var(--void) 100%);
+      background: var(--void);
       position: relative;
       overflow: hidden;
     }
     
-    /* Animated particle visualization placeholder */
-    .readout-canvas::before {
-      content: '';
+    .readout-canvas canvas {
       position: absolute;
       inset: 0;
-      background: 
-        radial-gradient(circle at 30% 50%, rgba(202, 165, 84, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 70% 30%, rgba(202, 165, 84, 0.08) 0%, transparent 40%);
-      animation: pulse-glow 4s ease-in-out infinite;
-    }
-    
-    @keyframes pulse-glow {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
+      width: 100%;
+      height: 100%;
     }
     
     .readout-value {
@@ -437,39 +428,13 @@
     .center-canvas-bg {
       position: absolute;
       inset: 0;
-      background: 
-        radial-gradient(circle at center, transparent 20%, var(--void) 70%),
-        radial-gradient(circle at center, rgba(202, 165, 84, 0.03) 0%, transparent 60%);
     }
     
-    /* Concentric circles animation */
-    .center-canvas-bg::before {
-      content: '';
+    .center-canvas-bg canvas {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 200px;
-      height: 200px;
-      transform: translate(-50%, -50%);
-      border: 1px solid rgba(202, 165, 84, 0.08);
-      animation: ripple 8s ease-in-out infinite;
-    }
-    
-    .center-canvas-bg::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 140px;
-      height: 140px;
-      transform: translate(-50%, -50%);
-      border: 1px solid rgba(202, 165, 84, 0.06);
-      animation: ripple 8s ease-in-out infinite 2s;
-    }
-    
-    @keyframes ripple {
-      0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-      50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.05); }
+      inset: 0;
+      width: 100%;
+      height: 100%;
     }
     
     .alignment-overlay {
@@ -1094,23 +1059,23 @@
           <div class="card-left-col">
             <div class="readout">
               <div class="readout-label">▸ Phase State</div>
-              <div class="readout-canvas"></div>
+              <div class="readout-canvas"><canvas id="phaseCanvas"></canvas></div>
               <div class="readout-value">TEMP: 0.50</div>
             </div>
             <div class="readout">
               <div class="readout-label">▸ Superposition</div>
-              <div class="readout-canvas"></div>
+              <div class="readout-canvas"><canvas id="superCanvas"></canvas></div>
             </div>
             <div class="readout">
               <div class="readout-label">▸ Hallucination Index</div>
-              <div class="readout-canvas"></div>
+              <div class="readout-canvas"><canvas id="hallucCanvas"></canvas></div>
               <div class="readout-value-alert">HIGH [3/5]</div>
             </div>
           </div>
           
           <!-- Center -->
           <div class="card-center">
-            <div class="center-canvas-bg"></div>
+            <div class="center-canvas-bg"><canvas id="centerCanvas"></canvas></div>
             <div class="alignment-overlay">
               <div class="alignment-label">◎ UNALIGNED</div>
             </div>
@@ -1124,17 +1089,17 @@
           <div class="card-right-col">
             <div class="readout">
               <div class="readout-label">▸ Latent Position</div>
-              <div class="readout-canvas"></div>
+              <div class="readout-canvas"><canvas id="coordsCanvas"></canvas></div>
               <div class="readout-value-small">X:0.000 Y:0.000<br>Z:0.000</div>
             </div>
             <div class="readout">
               <div class="readout-label">▸ Manifold Curvature</div>
-              <div class="readout-canvas"></div>
+              <div class="readout-canvas"><canvas id="manifoldCanvas"></canvas></div>
               <div class="readout-value-alert">MODERATE</div>
             </div>
             <div class="readout">
               <div class="readout-label">▸ Embedding Signature</div>
-              <div class="readout-canvas"></div>
+              <div class="readout-canvas"><canvas id="spectralCanvas"></canvas></div>
             </div>
           </div>
           
@@ -1421,22 +1386,365 @@ ENTITY</div>
   </main>
   
   <script>
-    // Simple interactivity for mockup
-    document.querySelector('.slider').addEventListener('input', function(e) {
-      document.querySelector('.slider-value').textContent = parseFloat(e.target.value).toFixed(2);
-    });
+    // ═══════════════════════════════════════════════════════════════
+    // ATLAS PARTICLE SYSTEM - Canvas-based visualizations
+    // Grid-snapped pixel rendering with additive trails
+    // ═══════════════════════════════════════════════════════════════
     
-    // Hover effects on nav
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('mouseenter', function() {
-        this.style.color = 'var(--dawn)';
-        this.style.background = 'var(--dawn-04)';
-      });
-      link.addEventListener('mouseleave', function() {
-        if (!this.classList.contains('active')) {
-          this.style.color = 'var(--dawn-50)';
-          this.style.background = 'transparent';
+    const GRID = 3;
+    const GOLD = '202, 165, 84';
+    const DAWN = '236, 227, 214';
+    const DYNAMICS = '91, 138, 122';
+    const VOLATILE = '193, 127, 89';
+    
+    // Animation state
+    const state = {
+      time: 0,
+      phasePoints: [],
+      superStates: [],
+      hallucHistory: [],
+      manifoldParticles: [],
+      signature: [],
+      fieldParticles: [],
+      hallucinationIndex: 0.5,
+      coordinates: { geometry: 0, alterity: 0, dynamics: 0 },
+      manifoldCurvature: 'Moderate'
+    };
+    
+    // Core pixel drawing - snaps to grid for sharp rendering
+    function drawPixel(ctx, x, y, color, alpha, size = GRID) {
+      const px = Math.floor(x / GRID) * GRID;
+      const py = Math.floor(y / GRID) * GRID;
+      ctx.fillStyle = `rgba(${color}, ${alpha})`;
+      ctx.fillRect(px, py, size - 1, size - 1);
+    }
+    
+    // Draw particle circle for rings
+    function drawParticleCircle(ctx, cx, cy, radius, color, alpha, density = 0.15) {
+      const circumference = 2 * Math.PI * radius;
+      const steps = Math.floor(circumference * density);
+      for (let i = 0; i < steps; i++) {
+        const angle = (i / steps) * Math.PI * 2;
+        drawPixel(ctx, cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius, color, alpha);
+      }
+    }
+    
+    // Setup canvas with DPR scaling
+    function setupCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return null;
+      const parent = canvas.parentElement;
+      if (!parent) return null;
+      const rect = parent.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.scale(dpr, dpr);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+    
+    // Initialize particle states
+    function initStates() {
+      // Phase wave points
+      state.phasePoints = Array.from({ length: 20 }, () => ({
+        phase: Math.random() * Math.PI * 2,
+        amp: 0.2 + Math.random() * 0.5,
+        freq: 0.5 + Math.random() * 1.5,
+      }));
+      
+      // Superposition grid states
+      state.superStates = Array.from({ length: 12 }, () => ({
+        active: Math.random() > 0.6,
+        phase: Math.random() * Math.PI * 2,
+      }));
+      
+      // Hallucination history
+      state.hallucHistory = Array.from({ length: 25 }, (_, i) => 
+        0.6 + Math.sin(i * 0.2) * 0.2 + Math.random() * 0.1
+      );
+      
+      // Manifold curvature particles
+      state.manifoldParticles = [];
+      for (let x = 0; x < 7; x++) {
+        for (let y = 0; y < 7; y++) {
+          state.manifoldParticles.push({ baseX: x / 6, baseY: y / 6 });
         }
+      }
+      
+      // Embedding signature bands
+      state.signature = Array.from({ length: 16 }, (_, i) => ({
+        base: Math.sin(i * 0.3) * 0.3 + Math.sin(i * 0.7) * 0.2 + 0.5,
+        variance: Math.random() * 0.1,
+      }));
+    }
+    
+    // Initialize center field particles
+    function initCenterParticles(width, height) {
+      state.fieldParticles = [];
+      for (let i = 0; i < 30; i++) {
+        state.fieldParticles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.06,
+          vy: (Math.random() - 0.5) * 0.06,
+          alpha: 0.06 + Math.random() * 0.08,
+        });
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // VISUALIZATION RENDERERS
+    // ═══════════════════════════════════════════════════════════════
+    
+    function drawPhaseState() {
+      const setup = setupCanvas('phaseCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      // Additive trail clear
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.15)';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Baseline
+      const baseline = height * 0.85;
+      for (let x = 0; x < width; x += GRID * 2) {
+        drawPixel(ctx, x, baseline, DAWN, 0.1);
+      }
+      
+      // Wave points
+      const tempMod = 0.5 + state.hallucinationIndex;
+      state.phasePoints.forEach((p, i) => {
+        const x = (i / state.phasePoints.length) * width;
+        const wave = Math.sin(state.time * p.freq * tempMod + p.phase) * p.amp;
+        const y = baseline - (wave + 0.5) * height * 0.6;
+        drawPixel(ctx, x, y, GOLD, 0.5 + wave * 0.3);
+        // Vertical fill trail
+        for (let ty = y; ty < baseline; ty += GRID * 2) {
+          drawPixel(ctx, x, ty, GOLD, 0.06 * (1 - (ty - y) / (baseline - y)));
+        }
+      });
+    }
+    
+    function drawSuperposition() {
+      const setup = setupCanvas('superCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+      ctx.fillRect(0, 0, width, height);
+      
+      const cols = 4, rows = 3;
+      state.superStates.forEach((s, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = (col + 0.5) * (width / cols);
+        const y = (row + 0.5) * (height / rows);
+        const isOn = s.active ? Math.sin(state.time + s.phase) > 0.3 : Math.random() > 0.97;
+        if (isOn) {
+          drawPixel(ctx, x, y, GOLD, 0.8, 4);
+          drawPixel(ctx, x - GRID, y, GOLD, 0.15);
+          drawPixel(ctx, x + GRID, y, GOLD, 0.15);
+        } else {
+          drawPixel(ctx, x, y, DAWN, 0.1, 4);
+        }
+      });
+    }
+    
+    function drawHallucinationIndex() {
+      const setup = setupCanvas('hallucCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.1)';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Rolling update
+      state.hallucHistory.shift();
+      const level = Math.round(state.hallucinationIndex * 5);
+      const baseValue = level / 5;
+      state.hallucHistory.push(
+        baseValue * 0.8 + Math.sin(state.time) * 0.1 + Math.sin(state.time * 2.3) * 0.05 + (Math.random() - 0.5) * 0.05
+      );
+      
+      state.hallucHistory.forEach((v, i) => {
+        const x = (i / state.hallucHistory.length) * width;
+        const y = height - v * height * 0.85;
+        drawPixel(ctx, x, y, VOLATILE, 0.7);
+        for (let fy = y; fy < height; fy += GRID * 2) {
+          drawPixel(ctx, x, fy, VOLATILE, 0.05);
+        }
+      });
+    }
+    
+    function drawLatentPosition() {
+      const setup = setupCanvas('coordsCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Dot grid
+      for (let x = 0; x < width; x += GRID * 3) {
+        for (let y = 0; y < height; y += GRID * 3) {
+          drawPixel(ctx, x, y, DAWN, 0.06);
+        }
+      }
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      const entityX = cx + state.coordinates.geometry * width * 0.35;
+      const entityY = cy - state.coordinates.alterity * height * 0.35;
+      const pulse = 0.7 + Math.sin(state.time * 2) * 0.3;
+      
+      // Glow particles
+      for (let i = 0; i < 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 6;
+        drawPixel(ctx, entityX + Math.cos(angle) * dist, entityY + Math.sin(angle) * dist, GOLD, 0.1 * pulse);
+      }
+      drawPixel(ctx, entityX, entityY, GOLD, 0.85 * pulse, 4);
+    }
+    
+    function drawManifoldCurvature() {
+      const setup = setupCanvas('manifoldCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+      ctx.fillRect(0, 0, width, height);
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      const severityMap = { Stable: 8, Moderate: 15, Severe: 22, Critical: 30 };
+      const baseStrength = severityMap[state.manifoldCurvature] || 15;
+      const strength = baseStrength + Math.sin(state.time * 0.5) * 4;
+      
+      state.manifoldParticles.forEach(p => {
+        const x = p.baseX * width;
+        const y = p.baseY * height;
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const pull = Math.max(0, 1 - dist / 45) * strength;
+        drawPixel(ctx, x - (dx / (dist || 1)) * pull, y - (dy / (dist || 1)) * pull, GOLD, 0.2 + (dist / 50) * 0.3);
+      });
+      
+      // Center glow
+      for (let i = 0; i < 4; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 10;
+        drawPixel(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, VOLATILE, 0.2 * (1 - dist / 10));
+      }
+      drawPixel(ctx, cx, cy, VOLATILE, 0.9, 4);
+    }
+    
+    function drawEmbeddingSignature() {
+      const setup = setupCanvas('spectralCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+      ctx.fillRect(0, 0, width, height);
+      
+      state.signature.forEach((band, i) => {
+        const animate = Math.sin(state.time + i * 0.2) * band.variance;
+        const h = (band.base + animate) * height * 0.8;
+        const color = i / state.signature.length < 0.5 ? DYNAMICS : GOLD;
+        for (let y = height; y > height - h; y -= GRID) {
+          drawPixel(ctx, i * (width / state.signature.length) + (width / state.signature.length) / 2, y, color, 0.2 + (1 - y / height) * 0.35);
+        }
+      });
+      
+      // Scanning line
+      const scanX = (state.time * 4) % width;
+      for (let y = 0; y < height; y += GRID * 2) {
+        drawPixel(ctx, scanX, y, DAWN, 0.2);
+      }
+    }
+    
+    function drawCenterField() {
+      const setup = setupCanvas('centerCanvas');
+      if (!setup) return;
+      const { ctx, width, height } = setup;
+      
+      if (state.fieldParticles.length === 0) {
+        initCenterParticles(width, height);
+      }
+      
+      ctx.fillStyle = 'rgba(5, 4, 3, 0.05)';
+      ctx.fillRect(0, 0, width, height);
+      
+      const cx = width / 2;
+      const cy = height / 2;
+      
+      // Concentric circles
+      [0.3, 0.45, 0.6].forEach(r => {
+        drawParticleCircle(ctx, cx, cy, Math.min(width, height) * r * 0.45, GOLD, 0.08, 0.05);
+      });
+      
+      // Drifting particles
+      state.fieldParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+        drawPixel(ctx, p.x, p.y, GOLD, p.alpha);
+      });
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // ANIMATION LOOP
+    // ═══════════════════════════════════════════════════════════════
+    
+    function animate() {
+      state.time += 0.015;
+      
+      drawPhaseState();
+      drawSuperposition();
+      drawHallucinationIndex();
+      drawLatentPosition();
+      drawManifoldCurvature();
+      drawEmbeddingSignature();
+      drawCenterField();
+      
+      requestAnimationFrame(animate);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // UI INTERACTIVITY
+    // ═══════════════════════════════════════════════════════════════
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      initStates();
+      animate();
+      
+      // Slider updates
+      const slider = document.querySelector('.slider');
+      if (slider) {
+        slider.addEventListener('input', function(e) {
+          const value = parseFloat(e.target.value);
+          document.querySelector('.slider-value').textContent = value.toFixed(2);
+          state.hallucinationIndex = value;
+        });
+      }
+      
+      // Nav hover effects
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('mouseenter', function() {
+          this.style.color = 'var(--dawn)';
+          this.style.background = 'var(--dawn-04)';
+        });
+        link.addEventListener('mouseleave', function() {
+          if (!this.classList.contains('active')) {
+            this.style.color = 'var(--dawn-50)';
+            this.style.background = 'transparent';
+          }
+        });
       });
     });
   </script>
