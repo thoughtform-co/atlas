@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('user');
+  const fetchingRoleRef = useRef(false); // Prevent duplicate role fetches
 
   // Fetch user role from database
   const fetchUserRole = useCallback(async (userId: string, userObj?: User | null) => {
@@ -86,18 +87,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user?.id) {
-        try {
-          // Pass session.user so metadata can be checked immediately
-          const userRole = await fetchUserRole(session.user.id, session.user);
-          setRole(userRole);
-        } catch (error) {
-          console.error('[Auth] Failed to fetch initial role:', error);
+        // Check metadata first - if role is in metadata, no need to fetch
+        const metadataRole = session.user.app_metadata?.role || session.user.user_metadata?.role;
+        if (metadataRole === 'admin' || metadataRole === 'archivist') {
+          setRole(metadataRole as UserRole);
+          setRoleLoading(false);
+        } else if (!fetchingRoleRef.current) {
+          // Only fetch if not already fetching and no metadata role
+          fetchingRoleRef.current = true;
+          try {
+            const userRole = await fetchUserRole(session.user.id, session.user);
+            setRole(userRole);
+          } catch (error) {
+            console.error('[Auth] Failed to fetch initial role:', error);
+          } finally {
+            fetchingRoleRef.current = false;
+            setRoleLoading(false);
+          }
+        } else {
+          setRoleLoading(false);
         }
       } else {
         setRole('user');
+        setRoleLoading(false);
       }
       
-      setRoleLoading(false);
       setLoading(false);
     });
 
@@ -108,19 +122,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user?.id) {
-          setRoleLoading(true);
-          try {
-            // Pass session.user so metadata can be checked immediately
-            const userRole = await fetchUserRole(session.user.id, session.user);
-            setRole(userRole);
-          } catch (error) {
-            console.error('[Auth] Failed to fetch role on auth change:', error);
-          } finally {
+          // Check metadata first - if role is in metadata, no need to fetch
+          const metadataRole = session.user.app_metadata?.role || session.user.user_metadata?.role;
+          if (metadataRole === 'admin' || metadataRole === 'archivist') {
+            setRole(metadataRole as UserRole);
             setRoleLoading(false);
+          } else if (!fetchingRoleRef.current) {
+            // Only fetch if not already fetching and no metadata role
+            fetchingRoleRef.current = true;
+            setRoleLoading(true);
+            try {
+              const userRole = await fetchUserRole(session.user.id, session.user);
+              setRole(userRole);
+            } catch (error) {
+              console.error('[Auth] Failed to fetch role on auth change:', error);
+            } finally {
+              fetchingRoleRef.current = false;
+              setRoleLoading(false);
+            }
+          } else {
+            // Already fetching, just wait for it to complete
+            setRoleLoading(true);
           }
         } else {
           setRole('user');
           setRoleLoading(false);
+          fetchingRoleRef.current = false;
         }
         
         setLoading(false);
