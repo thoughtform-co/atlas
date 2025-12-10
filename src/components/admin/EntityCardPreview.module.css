@@ -185,28 +185,6 @@
   height: 100%;
 }
 
-.alignmentOverlay {
-  position: absolute;
-  top: 8%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  padding: 8px 12px;
-  background: rgba(5, 4, 3, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(236, 227, 214, 0.1);
-}
-
-.alignmentLabel {
-  text-align: center;
-  font-family: var(--font-mono, 'PT Mono', monospace);
-  font-size: 8px;
-  color: var(--gold, #CAA554);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .entityPlaceholder {
   position: relative;
   z-index: 10;

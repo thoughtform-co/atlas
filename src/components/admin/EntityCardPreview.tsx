@@ -382,14 +382,6 @@ export function EntityCardPreview({
   };
   const threatColor = threatColors[formData.threatLevel] || '#7A7868';
 
-  // Get allegiance label
-  const allegianceLabels: Record<string, string> = {
-    'Liminal Covenant': '◎ LIMINAL COVENANT',
-    'Nomenclate': '◎ NOMENCLATE',
-    'Unaligned': '◎ UNALIGNED',
-    'Unknown': '? UNKNOWN',
-  };
-
   const isVideo = formData.mediaMimeType?.startsWith('video');
 
   return (
@@ -453,11 +445,6 @@ export function EntityCardPreview({
       <div className={styles.center}>
         {/* Only show particle canvas if no media */}
         {!formData.mediaUrl && <canvas ref={centerCanvasRef} className={styles.centerCanvas} />}
-
-        {/* Alignment Compass Overlay with glass effect */}
-        <div className={styles.alignmentOverlay}>
-          <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
-        </div>
 
         {/* Upload overlay (compact) with glass effect */}
         {onMediaAnalyzed && setIsAnalyzing && (

@@ -79,7 +79,7 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
         />
       </div>
 
-      {/* Class / Threat / Allegiance Row */}
+      {/* Class / Threat Row */}
       <div className={styles.fieldRow}>
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel}>
@@ -113,23 +113,6 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
             <option value="Cautious">Cautious</option>
             <option value="Volatile">Volatile</option>
             <option value="Existential">Existential</option>
-          </select>
-        </div>
-
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>
-            <span className={styles.fieldPrefix}>▸</span>
-            Allegiance
-          </label>
-          <select
-            className={styles.fieldSelect}
-            value={formData.allegiance}
-            onChange={(e) => onChange({ allegiance: e.target.value as EntityFormData['allegiance'] })}
-          >
-            <option value="Liminal Covenant">Liminal Covenant</option>
-            <option value="Nomenclate">Nomenclate</option>
-            <option value="Unaligned">Unaligned</option>
-            <option value="Unknown">Unknown</option>
           </select>
         </div>
       </div>

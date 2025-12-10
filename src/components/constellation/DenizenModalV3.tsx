@@ -288,14 +288,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           </div>
         </div>
 
-        {/* Left Column - glassmorphism */}
+        {/* Left Column - glassmorphism with minimal background */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '1px',
           position: 'relative',
           zIndex: 10,
-          background: 'rgba(5, 4, 3, 0.1)',
+          background: 'rgba(5, 4, 3, 0.03)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           borderRight: '1px solid rgba(236, 227, 214, 0.08)',
@@ -316,25 +316,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           {/* Only show particle canvas if no media */}
           {!mediaUrl && <CenterFieldCanvas />}
 
-          {/* Alignment Compass Overlay with glass effect */}
-          <div style={{
-            position: 'absolute',
-            top: '8%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 20,
-            padding: '8px 12px',
-            background: 'rgba(5, 4, 3, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            border: '1px solid rgba(236, 227, 214, 0.1)',
-          }}>
-            <AlignmentCompass />
-            <div style={{ textAlign: 'center', marginTop: '4px', fontSize: '8px', color: '#CAA554', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-              ◎ {displayDenizen.allegiance.toUpperCase()}
-            </div>
-          </div>
-
           {/* No image placeholder */}
           {!mediaUrl && (
             <div style={{ position: 'relative', zIndex: 10, fontSize: '12px', color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
@@ -346,14 +327,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           {/* TODO: Add isEditing prop to control visibility */}
         </div>
 
-        {/* Right Column - glassmorphism */}
+        {/* Right Column - glassmorphism with minimal background */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '1px',
           position: 'relative',
           zIndex: 10,
-          background: 'rgba(5, 4, 3, 0.1)',
+          background: 'rgba(5, 4, 3, 0.03)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           borderLeft: '1px solid rgba(236, 227, 214, 0.08)',
@@ -428,7 +409,7 @@ function Readout({ label, value, value2, valueColor = '#CAA554', valueSize = '10
 }) {
   return (
     <div style={{
-      background: 'rgba(5, 4, 3, 0.1)',
+      background: 'rgba(5, 4, 3, 0.03)',
       padding: '8px',
       display: 'flex',
       flexDirection: 'column',
@@ -1012,65 +993,3 @@ function CenterFieldCanvas() {
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   ALIGNMENT COMPASS
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-function AlignmentCompass() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const timeRef = useRef(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    let animationId: number;
-
-    function draw() {
-      const width = 100;
-      const height = 60;
-      const dpr = window.devicePixelRatio || 1;
-      canvas!.width = width * dpr;
-      canvas!.height = height * dpr;
-      const ctx = canvas!.getContext('2d')!;
-      ctx.scale(dpr, dpr);
-
-      ctx.clearRect(0, 0, width, height);
-
-      const cx = width / 2;
-      const cy = height / 2 + 5;
-      const r = Math.min(width, height) * 0.35;
-
-      drawParticleCircle(ctx, cx, cy, r, GOLD, 0.4, 0.15);
-
-      ctx.fillStyle = 'rgba(236, 227, 214, 0.4)';
-      ctx.font = '5px PT Mono';
-      ctx.textAlign = 'center';
-      ctx.fillText('N', cx, cy - r - 3);
-      ctx.fillText('S', cx, cy + r + 7);
-      ctx.fillText('E', cx + r + 5, cy + 2);
-      ctx.fillText('W', cx - r - 5, cy + 2);
-
-      const bearing = -Math.PI * 0.65 + Math.sin(timeRef.current) * 0.05;
-
-      for (let i = 0; i < 15; i++) {
-        const t = i / 15;
-        const x = cx + Math.cos(bearing) * r * 0.9 * t;
-        const y = cy + Math.sin(bearing) * r * 0.9 * t;
-        drawPixel(ctx, x, y, GOLD, 0.4 + t * 0.5);
-      }
-
-      const tipX = cx + Math.cos(bearing) * r * 0.9;
-      const tipY = cy + Math.sin(bearing) * r * 0.9;
-      drawPixel(ctx, tipX, tipY, GOLD, 1, 4);
-
-      timeRef.current += 0.005;
-      animationId = requestAnimationFrame(draw);
-    }
-
-    draw();
-    return () => cancelAnimationFrame(animationId);
-  }, []);
-
-  return <canvas ref={canvasRef} style={{ width: '100px', height: '60px' }} />;
-}
