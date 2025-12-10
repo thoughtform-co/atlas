@@ -22,12 +22,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false); // The "safe signal"
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('user');
-  const fetchingRoleRef = useRef(false); // Prevent duplicate role fetches
+  const fetchingRoleRef = useRef(false);
+
+  // First effect: Set mounted flag - this is our proof we're on the client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch user role from database
   const fetchUserRole = useCallback(async (userId: string, userObj?: User | null) => {
@@ -94,7 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, fetchUserRole]);
 
   useEffect(() => {
-    console.log('[Auth] useEffect running, checking supabase config...');
+    // Don't run until we're mounted (proof we're on the client)
+    if (!mounted) {
+      console.log('[Auth] Not mounted yet, waiting...');
+      return;
+    }
+
+    console.log('[Auth] Mounted and running auth setup...');
     console.log('[Auth] isSupabaseConfigured:', isSupabaseConfigured());
 
     if (!isSupabaseConfigured()) {
@@ -198,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, [fetchUserRole]);
+  }, [mounted, fetchUserRole]);
 
   const signIn = async (email: string, password: string) => {
     console.log('[Auth] signIn called, checking Supabase client...');
