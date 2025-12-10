@@ -7,6 +7,7 @@ import { EntityCardPreview } from '@/components/admin/EntityCardPreview';
 import { ParameterForm } from '@/components/admin/ParameterForm';
 import { ArchivistChat } from '@/components/admin/ArchivistChat';
 import { EntityFormData } from '@/app/admin/new-entity/page';
+import { getMediaPublicUrl } from '@/lib/media';
 import styles from '../../new-entity/page.module.css';
 
 // Default form values
@@ -72,6 +73,17 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
 
         const denizen = result.data;
         
+        // Helper to convert storage paths to public URLs
+        const resolveUrl = (path: string | undefined | null): string | undefined => {
+          if (!path) return undefined;
+          if (path.startsWith('http://') || path.startsWith('https://')) return path;
+          return getMediaPublicUrl(path) || undefined;
+        };
+        
+        // Get the primary media URL (prefer video/image from media array, then image field)
+        const primaryMedia = denizen.media?.[0];
+        const rawMediaUrl = primaryMedia?.storagePath || denizen.image;
+        
         // Map denizen data to form data
         setFormData({
           name: denizen.name || '',
@@ -92,9 +104,9 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
             dynamics: denizen.coordinates?.dynamics ?? 0,
           },
           glyphs: denizen.glyphs || '◆●∇⊗',
-          mediaUrl: denizen.image || denizen.media?.[0]?.storagePath,
-          mediaMimeType: denizen.media?.[0]?.mimeType,
-          thumbnailUrl: denizen.thumbnail,
+          mediaUrl: resolveUrl(rawMediaUrl),
+          mediaMimeType: primaryMedia?.mimeType || (rawMediaUrl?.match(/\.(mp4|webm|mov)$/i) ? 'video/mp4' : undefined),
+          thumbnailUrl: resolveUrl(denizen.thumbnail),
         });
       } catch (error) {
         console.error('Error loading entity:', error);

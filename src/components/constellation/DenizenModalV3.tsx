@@ -174,75 +174,62 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     
     setIsExporting(true);
     
+    // Elements to restore after capture
+    let videoElement: HTMLVideoElement | null = null;
+    let frameImg: HTMLImageElement | null = null;
+    let originalVideoDisplay = '';
+    
     try {
       const video = videoRef.current;
       
-      // For videos: capture current frame to a data URL first
-      let frameDataUrl: string | null = null;
+      // For videos: capture current frame and temporarily swap DOM
       if (isVideo && video) {
         video.pause();
+        videoElement = video;
+        originalVideoDisplay = video.style.display;
+        
         try {
-          // Create canvas from video frame (same-origin drawing)
+          // Create canvas from video frame
           const frameCanvas = document.createElement('canvas');
           frameCanvas.width = video.videoWidth || 1280;
           frameCanvas.height = video.videoHeight || 720;
           const ctx = frameCanvas.getContext('2d');
+          
           if (ctx) {
             ctx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-            frameDataUrl = frameCanvas.toDataURL('image/jpeg', 0.95);
+            const frameDataUrl = frameCanvas.toDataURL('image/jpeg', 0.95);
+            
+            // Create an img element with the frame
+            frameImg = document.createElement('img');
+            frameImg.src = frameDataUrl;
+            frameImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+            
+            // Hide video and insert frame image
+            video.style.display = 'none';
+            video.parentElement?.appendChild(frameImg);
+            
+            // Wait for image to load
+            await new Promise<void>((resolve) => {
+              if (frameImg) {
+                frameImg.onload = () => resolve();
+                setTimeout(() => resolve(), 200);
+              } else {
+                resolve();
+              }
+            });
           }
         } catch (e) {
           console.warn('Could not capture video frame:', e);
         }
       }
       
-      // Use html2canvas with onclone to replace cross-origin media
+      // Use html2canvas - media is now a local data URL image
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: '#050403',
         scale: 2,
         logging: false,
-        useCORS: false, // Disable CORS to avoid tainted canvas
-        allowTaint: false,
-        onclone: (clonedDoc, element) => {
-          // Find and replace video/image elements in the clone
-          const videos = element.querySelectorAll('video');
-          const images = element.querySelectorAll('img');
-          
-          videos.forEach((vid) => {
-            // Replace video with captured frame or gradient
-            const replacement = clonedDoc.createElement('div');
-            replacement.style.cssText = vid.style.cssText || 'position:absolute;inset:0;width:100%;height:100%;';
-            
-            if (frameDataUrl) {
-              // Use captured frame as background
-              replacement.style.backgroundImage = `url(${frameDataUrl})`;
-              replacement.style.backgroundSize = 'cover';
-              replacement.style.backgroundPosition = 'center';
-            } else {
-              // Fallback gradient
-              replacement.style.background = 'linear-gradient(135deg, #1a1918 0%, #0a0908 100%)';
-            }
-            
-            vid.parentElement?.replaceChild(replacement, vid);
-          });
-          
-          images.forEach((img) => {
-            // Skip if it's a data URL (already local)
-            if (img.src.startsWith('data:')) return;
-            
-            // Replace cross-origin images with gradient
-            const replacement = clonedDoc.createElement('div');
-            replacement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
-            replacement.style.background = 'linear-gradient(135deg, #1a1918 0%, #0a0908 100%)';
-            img.parentElement?.replaceChild(replacement, img);
-          });
-        },
+        useCORS: true,
       });
-      
-      // Resume video
-      if (video && isVideo) {
-        video.play();
-      }
       
       // Download
       const link = document.createElement('a');
@@ -254,6 +241,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       console.error('Failed to export PNG:', error);
       alert('Failed to export PNG. The media may be from an external source.');
     } finally {
+      // Restore DOM
+      if (frameImg) {
+        frameImg.remove();
+      }
+      if (videoElement) {
+        videoElement.style.display = originalVideoDisplay;
+        videoElement.play();
+      }
       setIsExporting(false);
     }
   };
