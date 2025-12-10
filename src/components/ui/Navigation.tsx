@@ -79,9 +79,11 @@ export function Navigation() {
     };
   }, []);
 
-  // Draw icons (redraw when auth state changes)
+  // Draw icons (redraw when auth state changes, but only after auth is resolved)
   useEffect(() => {
-    if (!mounted) return;
+    // Wait until mounted and auth state is fully resolved to prevent flicker
+    if (!mounted || loading || roleLoading) return;
+    
     // Add icon (+)
     const addSetup = setupIcon(addIconRef, 22);
     if (addSetup) {
@@ -188,7 +190,7 @@ export function Navigation() {
       drawPixel(ctx, 8, arrowY - 2, DAWN, 0.4);
       drawPixel(ctx, 8, arrowY + 2, DAWN, 0.4);
     }
-  }, [mounted, isAdmin, isAuthenticated, loading, roleLoading]);
+  }, [mounted, isAdmin, isAuthenticated, loading, roleLoading, showUserDropdown]);
 
   const isLoreActive = pathname === '/lore';
   const isAtlasActive = pathname === '/';
