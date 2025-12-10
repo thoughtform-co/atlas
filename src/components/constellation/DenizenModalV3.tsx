@@ -175,113 +175,84 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     setIsExporting(true);
     
     try {
-      // For videos, we need to capture from thumbnail or video frame
       const video = videoRef.current;
       
+      // For videos: capture current frame to a data URL first
+      let frameDataUrl: string | null = null;
       if (isVideo && video) {
-        // Pause video first
         video.pause();
-        
-        // If we have a thumbnail, swap video for thumbnail during capture
-        if (thumbnailUrl) {
-          // Hide video, show thumbnail
-          video.style.display = 'none';
-          
-          // Create temporary thumbnail image
-          const thumbImg = document.createElement('img');
-          thumbImg.src = thumbnailUrl;
-          thumbImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
-          thumbImg.crossOrigin = 'anonymous';
-          
-          // Wait for thumbnail to load
-          await new Promise<void>((resolve, reject) => {
-            thumbImg.onload = () => resolve();
-            thumbImg.onerror = () => reject(new Error('Thumbnail failed to load'));
-            setTimeout(() => resolve(), 2000); // Timeout fallback
-          });
-          
-          // Insert thumbnail
-          video.parentElement?.appendChild(thumbImg);
-          
-          // Capture
-          const canvas = await html2canvas(cardRef.current, {
-            backgroundColor: '#050403',
-            scale: 2,
-            useCORS: true,
-            logging: false,
-          });
-          
-          // Cleanup
-          thumbImg.remove();
-          video.style.display = '';
-          video.play();
-          
-          // Download
-          const link = document.createElement('a');
-          link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-        } else {
-          // No thumbnail - try to capture video frame directly
-          // Create a canvas from video frame
+        try {
+          // Create canvas from video frame (same-origin drawing)
           const frameCanvas = document.createElement('canvas');
-          frameCanvas.width = video.videoWidth || 1920;
-          frameCanvas.height = video.videoHeight || 1080;
+          frameCanvas.width = video.videoWidth || 1280;
+          frameCanvas.height = video.videoHeight || 720;
           const ctx = frameCanvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-            
-            // Create temp image from frame
-            const frameDataUrl = frameCanvas.toDataURL('image/jpeg', 0.95);
-            const frameImg = document.createElement('img');
-            frameImg.src = frameDataUrl;
-            frameImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
-            
-            await new Promise<void>((resolve) => {
-              frameImg.onload = () => resolve();
-              setTimeout(() => resolve(), 500);
-            });
-            
-            // Hide video, show frame
-            video.style.display = 'none';
-            video.parentElement?.appendChild(frameImg);
-            
-            // Capture
-            const canvas = await html2canvas(cardRef.current, {
-              backgroundColor: '#050403',
-              scale: 2,
-              logging: false,
-            });
-            
-            // Cleanup
-            frameImg.remove();
-            video.style.display = '';
-            video.play();
-            
-            // Download
-            const link = document.createElement('a');
-            link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+            frameDataUrl = frameCanvas.toDataURL('image/jpeg', 0.95);
           }
+        } catch (e) {
+          console.warn('Could not capture video frame:', e);
         }
-      } else {
-        // For images, just capture directly
-        const canvas = await html2canvas(cardRef.current, {
-          backgroundColor: '#050403',
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
-        
-        const link = document.createElement('a');
-        link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
       }
+      
+      // Use html2canvas with onclone to replace cross-origin media
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#050403',
+        scale: 2,
+        logging: false,
+        useCORS: false, // Disable CORS to avoid tainted canvas
+        allowTaint: false,
+        onclone: (clonedDoc, element) => {
+          // Find and replace video/image elements in the clone
+          const videos = element.querySelectorAll('video');
+          const images = element.querySelectorAll('img');
+          
+          videos.forEach((vid) => {
+            // Replace video with captured frame or gradient
+            const replacement = clonedDoc.createElement('div');
+            replacement.style.cssText = vid.style.cssText || 'position:absolute;inset:0;width:100%;height:100%;';
+            
+            if (frameDataUrl) {
+              // Use captured frame as background
+              replacement.style.backgroundImage = `url(${frameDataUrl})`;
+              replacement.style.backgroundSize = 'cover';
+              replacement.style.backgroundPosition = 'center';
+            } else {
+              // Fallback gradient
+              replacement.style.background = 'linear-gradient(135deg, #1a1918 0%, #0a0908 100%)';
+            }
+            
+            vid.parentElement?.replaceChild(replacement, vid);
+          });
+          
+          images.forEach((img) => {
+            // Skip if it's a data URL (already local)
+            if (img.src.startsWith('data:')) return;
+            
+            // Replace cross-origin images with gradient
+            const replacement = clonedDoc.createElement('div');
+            replacement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
+            replacement.style.background = 'linear-gradient(135deg, #1a1918 0%, #0a0908 100%)';
+            img.parentElement?.replaceChild(replacement, img);
+          });
+        },
+      });
+      
+      // Resume video
+      if (video && isVideo) {
+        video.play();
+      }
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
     } catch (error) {
       console.error('Failed to export PNG:', error);
-      alert('Failed to export PNG. Try refreshing the page.');
+      alert('Failed to export PNG. The media may be from an external source.');
     } finally {
       setIsExporting(false);
     }
@@ -388,7 +359,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             SIG: <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{signalStrength}</span>
           </span>
           
-          {/* Right side: Epoch, Time, Edit, Save, Close */}
+          {/* Right side: Epoch, Time, then action buttons */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
               EPOCH: <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{epoch}</span>
@@ -397,15 +368,74 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               [<span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formatTime(elapsedTime)}</span>]
             </span>
             
-            {/* Edit button - just icon, no frame (admin only) */}
-            {isAdmin && (
+            {/* Action buttons - consistent sizing, tighter spacing */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '4px' }}>
+              {/* Edit button (admin only) */}
+              {isAdmin && (
+                <button
+                  onClick={handleEdit}
+                  title="Edit entity"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    width: '24px',
+                    height: '24px',
+                    padding: 0,
+                    cursor: 'pointer',
+                    color: 'rgba(236, 227, 214, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 150ms ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#CAA554'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              )}
+              
+              {/* Download button */}
               <button
-                onClick={handleEdit}
-                title="Edit entity"
+                onClick={handleExportPNG}
+                disabled={isExporting}
+                title="Save as PNG"
                 style={{
                   background: 'none',
                   border: 'none',
-                  padding: '4px',
+                  width: '24px',
+                  height: '24px',
+                  padding: 0,
+                  cursor: isExporting ? 'wait' : 'pointer',
+                  color: 'rgba(236, 227, 214, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 150ms ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+              
+              {/* Close button */}
+              <button
+                onClick={onClose}
+                title="Close"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  width: '24px',
+                  height: '24px',
+                  padding: 0,
                   cursor: 'pointer',
                   color: 'rgba(236, 227, 214, 0.5)',
                   display: 'flex',
@@ -413,65 +443,15 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                   justifyContent: 'center',
                   transition: 'color 150ms ease',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#CAA554'}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
-            )}
-            
-            {/* Save as PNG button - just icon, no frame */}
-            <button
-              onClick={handleExportPNG}
-              disabled={isExporting}
-              title="Save as PNG"
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '4px',
-                cursor: isExporting ? 'wait' : 'pointer',
-                color: 'rgba(236, 227, 214, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'color 150ms ease',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </button>
-            
-            {/* Close button - just X icon, no frame */}
-            <button
-              onClick={onClose}
-              title="Close"
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '4px',
-                cursor: 'pointer',
-                color: 'rgba(236, 227, 214, 0.5)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'color 150ms ease',
-                lineHeight: 1,
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
-            >
-              ×
-            </button>
+            </div>
           </div>
         </div>
 
