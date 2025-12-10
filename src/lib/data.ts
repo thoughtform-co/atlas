@@ -25,6 +25,23 @@ function getDataClient() {
   return createClient<Database>(supabaseUrl, supabaseAnonKey);
 }
 
+/**
+ * Get an admin Supabase client for write operations
+ * Uses the service role key which bypasses RLS
+ * Only use this on the server-side for admin operations
+ */
+function getAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('[getAdminClient] Missing SUPABASE_SERVICE_ROLE_KEY');
+    return null;
+  }
+  
+  return createClient<Database>(supabaseUrl, supabaseServiceKey);
+}
+
 // Type aliases for Supabase table operations
 type DenizenInsert = Database['public']['Tables']['denizens']['Insert'];
 type DenizenUpdate = Database['public']['Tables']['denizens']['Update'];
@@ -527,12 +544,14 @@ export async function fetchConnectedDenizens(id: string): Promise<Denizen[]> {
 
 /**
  * Create a new denizen
+ * Uses admin client with service role key to bypass RLS
  */
 export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Promise<Denizen | null> {
-  const client = getDataClient();
+  // Use admin client for write operations (bypasses RLS)
+  const client = getAdminClient();
   
-  if (!isSupabaseConfigured() || !client) {
-    console.error('Supabase not configured - cannot create denizen');
+  if (!client) {
+    console.error('[createDenizen] Admin client not available - check SUPABASE_SERVICE_ROLE_KEY');
     return null;
   }
 
@@ -599,15 +618,17 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
 
 /**
  * Update an existing denizen
+ * Uses admin client with service role key to bypass RLS
  */
 export async function updateDenizen(
   id: string,
   updates: Partial<Omit<Denizen, 'id' | 'connections'>>
 ): Promise<Denizen | null> {
-  const client = getDataClient();
+  // Use admin client for write operations (bypasses RLS)
+  const client = getAdminClient();
   
-  if (!isSupabaseConfigured() || !client) {
-    console.error('Supabase not configured - cannot update denizen');
+  if (!client) {
+    console.error('[updateDenizen] Admin client not available - check SUPABASE_SERVICE_ROLE_KEY');
     return null;
   }
 
@@ -672,12 +693,14 @@ export async function updateDenizen(
 
 /**
  * Delete a denizen
+ * Uses admin client with service role key to bypass RLS
  */
 export async function deleteDenizen(id: string): Promise<boolean> {
-  const client = getDataClient();
+  // Use admin client for write operations (bypasses RLS)
+  const client = getAdminClient();
   
-  if (!isSupabaseConfigured() || !client) {
-    console.error('Supabase not configured - cannot delete denizen');
+  if (!client) {
+    console.error('[deleteDenizen] Admin client not available - check SUPABASE_SERVICE_ROLE_KEY');
     return false;
   }
 
