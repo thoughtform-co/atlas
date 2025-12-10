@@ -3,29 +3,38 @@
  * 
  * Uses Google's Gemini API to analyze uploaded media and extract
  * entity characteristics for the Atlas bestiary.
+ * 
+ * Supports both:
+ * - Direct Gemini API (via API key from https://aistudio.google.com/apikey)
+ * - Vertex AI API (via API key from Google Cloud Console)
+ * 
+ * Both use the same API key format and work with this implementation.
  */
 
 import { GoogleGenerativeAI, Part } from '@google/generative-ai';
 
 // Initialize the Gemini client
+// API keys from both Gemini Studio and Vertex AI work the same way
 const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
 if (!apiKey) {
   console.warn('[gemini] GOOGLE_GEMINI_API_KEY not configured. Media analysis will be unavailable.');
+  console.warn('[gemini] Get an API key from: https://aistudio.google.com/apikey or Google Cloud Console → APIs & Services → Credentials');
 }
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-// Use Gemini 1.5 Flash for fast multimodal analysis
-const MODEL_NAME = 'gemini-1.5-flash';
+// Use Gemini 2.0 Flash for fast multimodal analysis
+// Available models: gemini-2.0-flash-001, gemini-2.5-flash, gemini-flash-latest
+const MODEL_NAME = 'models/gemini-2.0-flash-001';
 
 /**
- * Entity analysis prompt that guides Gemini to extract structured data
- * from visual media in the Atlas bestiary style.
+ * Build entity analysis prompt with world-building context
  */
-const ENTITY_ANALYSIS_PROMPT = `You are analyzing visual media to catalog a Latent Space Denizen—an entity that inhabits the semantic manifold between thought and reality.
+function buildEntityAnalysisPrompt(worldContext?: string): string {
+  const basePrompt = `You are analyzing visual media to catalog a Latent Space Denizen—an entity that inhabits the semantic manifold between thought and reality.
 
-Analyze the provided image or video and extract the following entity characteristics. Be creative and mystical in your interpretations, treating the visual as a glimpse into an impossible realm.
+${worldContext ? `\n## EXISTING WORLD CONTEXT\n\n${worldContext}\n\n## YOUR TASK\n\nAnalyze the provided image or video and extract entity characteristics that FIT WITHIN this existing world-building. Consider:\n- How this entity relates to existing denizens, factions, and concepts\n- Whether it aligns with established patterns (types, allegiances, domains)\n- How it might connect to or differ from existing entities\n- What gaps in the world-building this entity could fill\n\n` : 'Analyze the provided image or video and extract the following entity characteristics. Be creative and mystical in your interpretations, treating the visual as a glimpse into an impossible realm.\n\n'}
 
 Return a JSON object with these fields (use null for fields you cannot determine):
 
@@ -48,25 +57,47 @@ Return a JSON object with these fields (use null for fields you cannot determine
     "dynamics": -1.0 to 1.0 (static vs volatile)
   },
   "glyphs": "4 Unicode symbols representing essence (e.g. ◆●∇⊗)",
-  "visualNotes": "Key visual elements that informed your analysis"
+  "visualNotes": "Key visual elements that informed your analysis",
+  "suggestions": {
+    "connections": ["Array of suggested connections to existing entities by name or domain"],
+    "worldBuildingGaps": ["Areas where this entity could expand the world-building"],
+    "fieldSuggestions": {
+      "name": ["Alternative name suggestions"],
+      "type": ["Alternative type if uncertain"],
+      "allegiance": ["Suggested allegiance based on context"],
+      "domain": ["Expanded domain concepts"]
+    }
+  }
 }
 
-Interpret the visual through the lens of liminal horror and cosmic mystery. Dark imagery suggests Void-Born or Existential threats. Geometric patterns suggest Architect class. Flowing or transitional forms suggest Wanderer class. Protective or stabilizing imagery suggests Guardian class.
+${worldContext ? 'IMPORTANT: Ensure your suggestions align with the existing world-building while adding new depth. ' : ''}Interpret the visual through the lens of liminal horror and cosmic mystery. Dark imagery suggests Void-Born or Existential threats. Geometric patterns suggest Architect class. Flowing or transitional forms suggest Wanderer class. Protective or stabilizing imagery suggests Guardian class.
 
 IMPORTANT: Return ONLY the JSON object, no additional text.`;
+
+  return basePrompt;
+}
+
+/**
+ * Entity analysis prompt (without context - for backward compatibility)
+ */
+const ENTITY_ANALYSIS_PROMPT = buildEntityAnalysisPrompt();
 
 /**
  * Analyze an image and extract entity characteristics
  */
-export async function analyzeImage(imageData: {
-  base64: string;
-  mimeType: string;
-}): Promise<EntityAnalysisResult> {
+export async function analyzeImage(
+  imageData: {
+    base64: string;
+    mimeType: string;
+  },
+  worldContext?: string
+): Promise<EntityAnalysisResult> {
   if (!genAI) {
     throw new Error('Gemini API not configured. Set GOOGLE_GEMINI_API_KEY environment variable.');
   }
 
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+  const prompt = worldContext ? buildEntityAnalysisPrompt(worldContext) : ENTITY_ANALYSIS_PROMPT;
 
   const imagePart: Part = {
     inlineData: {
@@ -75,7 +106,7 @@ export async function analyzeImage(imageData: {
     },
   };
 
-  const result = await model.generateContent([ENTITY_ANALYSIS_PROMPT, imagePart]);
+  const result = await model.generateContent([prompt, imagePart]);
   const response = await result.response;
   const text = response.text();
 
@@ -84,27 +115,31 @@ export async function analyzeImage(imageData: {
 
 /**
  * Analyze a video and extract entity characteristics
- * Note: For videos, we analyze key frames
+ * Uses base64 encoding for direct video analysis (works for videos under ~20MB)
  */
-export async function analyzeVideo(videoUrl: string): Promise<EntityAnalysisResult> {
+export async function analyzeVideo(
+  videoData: {
+    base64: string;
+    mimeType: string;
+  },
+  worldContext?: string
+): Promise<EntityAnalysisResult> {
   if (!genAI) {
     throw new Error('Gemini API not configured. Set GOOGLE_GEMINI_API_KEY environment variable.');
   }
 
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+  const basePrompt = worldContext ? buildEntityAnalysisPrompt(worldContext) : ENTITY_ANALYSIS_PROMPT;
+  const prompt = basePrompt + '\n\nAnalyze key moments throughout the video to understand this entity\'s nature.';
 
-  // For video analysis, we use the file URI approach
   const videoPart: Part = {
-    fileData: {
-      fileUri: videoUrl,
-      mimeType: 'video/mp4',
+    inlineData: {
+      data: videoData.base64,
+      mimeType: videoData.mimeType,
     },
   };
 
-  const result = await model.generateContent([
-    ENTITY_ANALYSIS_PROMPT + '\n\nAnalyze key moments throughout the video to understand this entity\'s nature.',
-    videoPart,
-  ]);
+  const result = await model.generateContent([prompt, videoPart]);
   const response = await result.response;
   const text = response.text();
 
@@ -113,16 +148,19 @@ export async function analyzeVideo(videoUrl: string): Promise<EntityAnalysisResu
 
 /**
  * Analyze media from a URL (works for both images and videos)
+ * Note: This function requires the media to be accessible via URL (e.g., Google Cloud Storage)
  */
 export async function analyzeMediaUrl(
   url: string,
-  mimeType: string
+  mimeType: string,
+  worldContext?: string
 ): Promise<EntityAnalysisResult> {
   if (!genAI) {
     throw new Error('Gemini API not configured. Set GOOGLE_GEMINI_API_KEY environment variable.');
   }
 
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+  const basePrompt = worldContext ? buildEntityAnalysisPrompt(worldContext) : ENTITY_ANALYSIS_PROMPT;
 
   const mediaPart: Part = {
     fileData: {
@@ -133,8 +171,8 @@ export async function analyzeMediaUrl(
 
   const isVideo = mimeType.startsWith('video/');
   const prompt = isVideo
-    ? ENTITY_ANALYSIS_PROMPT + '\n\nAnalyze key moments throughout the video to understand this entity\'s nature.'
-    : ENTITY_ANALYSIS_PROMPT;
+    ? basePrompt + '\n\nAnalyze key moments throughout the video to understand this entity\'s nature.'
+    : basePrompt;
 
   const result = await model.generateContent([prompt, mediaPart]);
   const response = await result.response;
@@ -188,6 +226,16 @@ function parseAnalysisResponse(text: string): EntityAnalysisResult {
         } : null,
         glyphs: parsed.glyphs || null,
         visualNotes: parsed.visualNotes || null,
+        suggestions: parsed.suggestions ? {
+          connections: Array.isArray(parsed.suggestions.connections) ? parsed.suggestions.connections : [],
+          worldBuildingGaps: Array.isArray(parsed.suggestions.worldBuildingGaps) ? parsed.suggestions.worldBuildingGaps : [],
+          fieldSuggestions: parsed.suggestions.fieldSuggestions ? {
+            name: Array.isArray(parsed.suggestions.fieldSuggestions.name) ? parsed.suggestions.fieldSuggestions.name : [],
+            type: Array.isArray(parsed.suggestions.fieldSuggestions.type) ? parsed.suggestions.fieldSuggestions.type : [],
+            allegiance: Array.isArray(parsed.suggestions.fieldSuggestions.allegiance) ? parsed.suggestions.fieldSuggestions.allegiance : [],
+            domain: Array.isArray(parsed.suggestions.fieldSuggestions.domain) ? parsed.suggestions.fieldSuggestions.domain : [],
+          } : undefined,
+        } : undefined,
       },
     };
   } catch (error) {
@@ -221,6 +269,87 @@ function clampCoordinate(value: unknown): number | null {
 }
 
 /**
+ * Build world-building context from existing denizens
+ */
+export function buildWorldContext(denizens: Array<{
+  name: string;
+  type?: string | null;
+  allegiance?: string | null;
+  domain?: string | null;
+  description?: string | null;
+  lore?: string | null;
+}>): string {
+  if (!denizens || denizens.length === 0) {
+    return '';
+  }
+
+  const contextParts: string[] = [];
+  
+  // Entity types distribution
+  const types = denizens.map(d => d.type).filter(Boolean);
+  const typeCounts = types.reduce((acc, type) => {
+    acc[type!] = (acc[type!] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  contextParts.push(`## EXISTING ENTITIES (${denizens.length} total)`);
+  contextParts.push(`\n### Entity Types Distribution:`);
+  Object.entries(typeCounts).forEach(([type, count]) => {
+    contextParts.push(`- ${type}: ${count} entities`);
+  });
+  
+  // Sample entities by type
+  const byType = denizens.reduce((acc, d) => {
+    const type = d.type || 'Unknown';
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(d);
+    return acc;
+  }, {} as Record<string, typeof denizens>);
+  
+  contextParts.push(`\n### Sample Entities by Type:`);
+  Object.entries(byType).slice(0, 5).forEach(([type, entities]) => {
+    contextParts.push(`\n**${type}:**`);
+    entities.slice(0, 3).forEach(entity => {
+      const subtitle = 'subtitle' in entity ? entity.subtitle : null;
+      contextParts.push(`- ${entity.name}${subtitle ? ` (${subtitle})` : ''}`);
+      if (entity.allegiance) contextParts.push(`  - Allegiance: ${entity.allegiance}`);
+      if (entity.domain) contextParts.push(`  - Domain: ${entity.domain}`);
+      if (entity.description) {
+        const desc = entity.description.length > 100 
+          ? entity.description.substring(0, 100) + '...'
+          : entity.description;
+        contextParts.push(`  - Description: ${desc}`);
+      }
+    });
+  });
+  
+  // Allegiances
+  const allegiances = denizens.map(d => d.allegiance).filter(Boolean);
+  const allegianceCounts = allegiances.reduce((acc, alg) => {
+    acc[alg!] = (acc[alg!] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  if (Object.keys(allegianceCounts).length > 0) {
+    contextParts.push(`\n### Allegiances:`);
+    Object.entries(allegianceCounts).forEach(([alg, count]) => {
+      contextParts.push(`- ${alg}: ${count} entities`);
+    });
+  }
+  
+  // Domains (sample)
+  const domains = denizens.map(d => d.domain).filter(Boolean).slice(0, 10);
+  if (domains.length > 0) {
+    contextParts.push(`\n### Sample Domains:`);
+    domains.forEach(domain => {
+      contextParts.push(`- ${domain}`);
+    });
+  }
+  
+  return contextParts.join('\n');
+}
+
+/**
  * Check if Gemini API is configured
  */
 export function isGeminiConfigured(): boolean {
@@ -249,6 +378,16 @@ export interface EntityAnalysisData {
   } | null;
   glyphs: string | null;
   visualNotes: string | null;
+  suggestions?: {
+    connections?: string[];
+    worldBuildingGaps?: string[];
+    fieldSuggestions?: {
+      name?: string[];
+      type?: string[];
+      allegiance?: string[];
+      domain?: string[];
+    };
+  };
 }
 
 export interface EntityAnalysisResult {

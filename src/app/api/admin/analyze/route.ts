@@ -7,7 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest, isUserAdmin } from '@/lib/auth/admin-check';
-import { analyzeImage, isGeminiConfigured, EntityAnalysisData } from '@/lib/ai/gemini';
+import { analyzeImage, analyzeVideo, isGeminiConfigured, buildWorldContext, EntityAnalysisData } from '@/lib/ai/gemini';
+import { fetchDenizens } from '@/lib/data';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,25 +57,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch existing denizens for world-building context
+    let worldContext = '';
+    try {
+      const existingDenizens = await fetchDenizens();
+      if (existingDenizens && existingDenizens.length > 0) {
+        worldContext = buildWorldContext(existingDenizens);
+        console.log(`[analyze] Using world context from ${existingDenizens.length} existing denizens`);
+      }
+    } catch (error) {
+      console.warn('[analyze] Failed to fetch world context, proceeding without it:', error);
+      // Continue without context - not critical
+    }
+
+    const isVideo = mimeType.startsWith('video/');
     let result;
 
-    // Use base64 for image analysis (more reliable for uploaded files)
+    // Use base64 for both image and video analysis
     if (base64) {
-      result = await analyzeImage({
-        base64,
-        mimeType,
-      });
+      if (isVideo) {
+        result = await analyzeVideo({
+          base64,
+          mimeType,
+        }, worldContext || undefined);
+      } else {
+        result = await analyzeImage({
+          base64,
+          mimeType,
+        }, worldContext || undefined);
+      }
     } else {
-      // For URL-based analysis, we'd need to fetch and convert to base64
-      // This is a fallback for external URLs
+      // For URL-based analysis, fetch and convert to base64
       const response = await fetch(mediaUrl);
       const arrayBuffer = await response.arrayBuffer();
       const base64Data = Buffer.from(arrayBuffer).toString('base64');
       
-      result = await analyzeImage({
-        base64: base64Data,
-        mimeType,
-      });
+      if (isVideo) {
+        result = await analyzeVideo({
+          base64: base64Data,
+          mimeType,
+        }, worldContext || undefined);
+      } else {
+        result = await analyzeImage({
+          base64: base64Data,
+          mimeType,
+        }, worldContext || undefined);
+      }
     }
 
     if (!result.success) {
@@ -94,6 +122,7 @@ export async function POST(request: NextRequest) {
       success: true,
       analysis: result.data,
       formData: entityData,
+      suggestions: result.data?.suggestions || undefined,
     });
 
   } catch (error) {
