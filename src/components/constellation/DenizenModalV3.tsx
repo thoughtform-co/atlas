@@ -8,6 +8,7 @@ import { getMediaPublicUrl } from '@/lib/media';
 import { fetchDenizenById } from '@/lib/data';
 import { Database } from '@/lib/database.types';
 import Image from 'next/image';
+import html2canvas from 'html2canvas';
 
 type DenizenMediaInsert = Database['public']['Tables']['denizen_media']['Insert'];
 
@@ -34,7 +35,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [uploadedMedia, setUploadedMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentDenizen, setCurrentDenizen] = useState<Denizen | null>(denizen);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Update currentDenizen when denizen prop changes
   useEffect(() => {
@@ -154,6 +158,46 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const isVideoFromExtension = mediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
   const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
 
+  // Export card as PNG
+  const handleExportPNG = async () => {
+    if (!cardRef.current) return;
+    
+    setIsExporting(true);
+    
+    try {
+      // If there's a video, we need to capture the current frame
+      const video = videoRef.current;
+      if (video && isVideo) {
+        // Pause video at current frame for capture
+        video.pause();
+      }
+      
+      // Use html2canvas to capture the card
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#050403',
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+      });
+      
+      // Convert to PNG and download
+      const link = document.createElement('a');
+      link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      // Resume video if it was playing
+      if (video && isVideo) {
+        video.play();
+      }
+    } catch (error) {
+      console.error('Failed to export PNG:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
@@ -162,6 +206,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     >
       {/* Card — 4:5 Aspect */}
       <div
+        ref={cardRef}
         className="relative w-full overflow-hidden"
         style={{
           maxWidth: '720px',
@@ -179,6 +224,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             {isVideo ? (
               <video
+                ref={videoRef}
                 src={displayDenizen.videoUrl || mediaUrl}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 autoPlay
@@ -225,32 +271,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           }
         `}</style>
 
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            width: '24px',
-            height: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 150,
-            background: 'rgba(5, 4, 3, 0.7)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            border: '1px solid rgba(236, 227, 214, 0.2)',
-            color: 'rgba(236, 227, 214, 0.6)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '14px',
-            cursor: 'pointer',
-          }}
-        >
-          ×
-        </button>
-
         {/* Header - glassmorphism */}
         <div
           style={{
@@ -278,13 +298,65 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
             SIG: <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{signalStrength}</span>
           </span>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '16px' }}>
+          
+          {/* Right side: Epoch, Time, Save, Close */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
               EPOCH: <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{epoch}</span>
             </span>
             <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
               [<span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formatTime(elapsedTime)}</span>]
             </span>
+            
+            {/* Save as PNG button - just icon, no frame */}
+            <button
+              onClick={handleExportPNG}
+              disabled={isExporting}
+              title="Save as PNG"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: isExporting ? 'wait' : 'pointer',
+                color: 'rgba(236, 227, 214, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 150ms ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+            
+            {/* Close button - just X icon, no frame */}
+            <button
+              onClick={onClose}
+              title="Close"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                color: 'rgba(236, 227, 214, 0.5)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 150ms ease',
+                lineHeight: 1,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+            >
+              ×
+            </button>
           </div>
         </div>
 
