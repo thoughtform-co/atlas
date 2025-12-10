@@ -158,6 +158,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const primaryMedia = displayDenizen.media?.find(m => m.isPrimary) || displayDenizen.media?.[0];
   const mediaUrl = uploadedMedia?.url || resolveMediaUrl(primaryMedia?.storagePath) || displayDenizen.image;
   
+  // Get thumbnail URL (for video entities)
+  const thumbnailUrl = displayDenizen.thumbnail ? resolveMediaUrl(displayDenizen.thumbnail) : undefined;
+  
   // Check if media is video based on multiple sources
   const isVideoFromMedia = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video';
   const isVideoFromUrl = displayDenizen.videoUrl != null;
@@ -172,34 +175,113 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     setIsExporting(true);
     
     try {
-      // If there's a video, we need to capture the current frame
+      // For videos, we need to capture from thumbnail or video frame
       const video = videoRef.current;
-      if (video && isVideo) {
-        // Pause video at current frame for capture
+      
+      if (isVideo && video) {
+        // Pause video first
         video.pause();
-      }
-      
-      // Use html2canvas to capture the card
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#050403',
-        scale: 2, // Higher quality
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-      });
-      
-      // Convert to PNG and download
-      const link = document.createElement('a');
-      link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      
-      // Resume video if it was playing
-      if (video && isVideo) {
-        video.play();
+        
+        // If we have a thumbnail, swap video for thumbnail during capture
+        if (thumbnailUrl) {
+          // Hide video, show thumbnail
+          video.style.display = 'none';
+          
+          // Create temporary thumbnail image
+          const thumbImg = document.createElement('img');
+          thumbImg.src = thumbnailUrl;
+          thumbImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+          thumbImg.crossOrigin = 'anonymous';
+          
+          // Wait for thumbnail to load
+          await new Promise<void>((resolve, reject) => {
+            thumbImg.onload = () => resolve();
+            thumbImg.onerror = () => reject(new Error('Thumbnail failed to load'));
+            setTimeout(() => resolve(), 2000); // Timeout fallback
+          });
+          
+          // Insert thumbnail
+          video.parentElement?.appendChild(thumbImg);
+          
+          // Capture
+          const canvas = await html2canvas(cardRef.current, {
+            backgroundColor: '#050403',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+          
+          // Cleanup
+          thumbImg.remove();
+          video.style.display = '';
+          video.play();
+          
+          // Download
+          const link = document.createElement('a');
+          link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        } else {
+          // No thumbnail - try to capture video frame directly
+          // Create a canvas from video frame
+          const frameCanvas = document.createElement('canvas');
+          frameCanvas.width = video.videoWidth || 1920;
+          frameCanvas.height = video.videoHeight || 1080;
+          const ctx = frameCanvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+            
+            // Create temp image from frame
+            const frameDataUrl = frameCanvas.toDataURL('image/jpeg', 0.95);
+            const frameImg = document.createElement('img');
+            frameImg.src = frameDataUrl;
+            frameImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+            
+            await new Promise<void>((resolve) => {
+              frameImg.onload = () => resolve();
+              setTimeout(() => resolve(), 500);
+            });
+            
+            // Hide video, show frame
+            video.style.display = 'none';
+            video.parentElement?.appendChild(frameImg);
+            
+            // Capture
+            const canvas = await html2canvas(cardRef.current, {
+              backgroundColor: '#050403',
+              scale: 2,
+              logging: false,
+            });
+            
+            // Cleanup
+            frameImg.remove();
+            video.style.display = '';
+            video.play();
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+          }
+        }
+      } else {
+        // For images, just capture directly
+        const canvas = await html2canvas(cardRef.current, {
+          backgroundColor: '#050403',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        
+        const link = document.createElement('a');
+        link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
       }
     } catch (error) {
       console.error('Failed to export PNG:', error);
+      alert('Failed to export PNG. Try refreshing the page.');
     } finally {
       setIsExporting(false);
     }

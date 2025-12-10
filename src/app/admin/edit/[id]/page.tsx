@@ -94,6 +94,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           glyphs: denizen.glyphs || '◆●∇⊗',
           mediaUrl: denizen.image || denizen.media?.[0]?.storagePath,
           mediaMimeType: denizen.media?.[0]?.mimeType,
+          thumbnailUrl: denizen.thumbnail,
         });
       } catch (error) {
         console.error('Error loading entity:', error);
@@ -157,6 +158,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           },
           glyphs: formData.glyphs,
           image: formData.mediaUrl || null,
+          thumbnail: formData.thumbnailUrl || null,
         }),
       });
 

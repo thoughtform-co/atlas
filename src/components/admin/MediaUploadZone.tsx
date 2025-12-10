@@ -5,7 +5,7 @@ import { EntityFormData } from '@/app/admin/new-entity/page';
 import styles from './MediaUploadZone.module.css';
 
 interface MediaUploadZoneProps {
-  onMediaAnalyzed: (data: Partial<EntityFormData> & { visualNotes?: string }) => void;
+  onMediaAnalyzed: (data: Partial<EntityFormData> & { visualNotes?: string; thumbnailUrl?: string }) => void;
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
   compact?: boolean;
@@ -13,6 +13,51 @@ interface MediaUploadZoneProps {
   existingMimeType?: string;
   onClear?: () => void;
 }
+
+// Extract first frame from video as a thumbnail
+const extractVideoThumbnail = (file: File): Promise<Blob | null> => {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    
+    video.onloadeddata = () => {
+      // Seek to first frame
+      video.currentTime = 0;
+    };
+    
+    video.onseeked = () => {
+      // Create canvas and draw the frame
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(null);
+        return;
+      }
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convert to blob
+      canvas.toBlob((blob) => {
+        // Clean up
+        URL.revokeObjectURL(video.src);
+        resolve(blob);
+      }, 'image/jpeg', 0.9);
+    };
+    
+    video.onerror = () => {
+      console.error('Failed to load video for thumbnail extraction');
+      resolve(null);
+    };
+    
+    // Load the video file
+    video.src = URL.createObjectURL(file);
+  });
+};
 
 export function MediaUploadZone({
   onMediaAnalyzed,
@@ -62,7 +107,32 @@ export function MediaUploadZone({
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload to server
+      // For videos, extract thumbnail first
+      let thumbnailUrl: string | undefined;
+      if (isVideo) {
+        setUploadProgress(15);
+        const thumbnailBlob = await extractVideoThumbnail(file);
+        
+        if (thumbnailBlob) {
+          // Upload thumbnail
+          const thumbFormData = new FormData();
+          const thumbFile = new File([thumbnailBlob], `thumb_${file.name.replace(/\.[^.]+$/, '.jpg')}`, { type: 'image/jpeg' });
+          thumbFormData.append('file', thumbFile);
+          
+          const thumbResponse = await fetch('/api/admin/upload', {
+            method: 'POST',
+            body: thumbFormData,
+          });
+          
+          if (thumbResponse.ok) {
+            const thumbResult = await thumbResponse.json();
+            thumbnailUrl = thumbResult.publicUrl;
+            console.log('[MediaUpload] Thumbnail uploaded:', thumbnailUrl);
+          }
+        }
+      }
+
+      // Upload main file
       setUploadProgress(30);
       const uploadResponse = await fetch('/api/admin/upload', {
         method: 'POST',
@@ -108,10 +178,11 @@ export function MediaUploadZone({
         setIsAnalyzing(false);
         setUploadProgress(100);
         
-        // Still update with the media URL
+        // Still update with the media URL and thumbnail
         onMediaAnalyzed({
           mediaUrl: uploadResult.publicUrl,
           mediaMimeType: file.type,
+          thumbnailUrl,
         });
         return;
       }
@@ -129,12 +200,14 @@ export function MediaUploadZone({
           ...analysisResult.formData,
           mediaUrl: uploadResult.publicUrl,
           mediaMimeType: file.type,
+          thumbnailUrl,
         });
       } else {
         console.warn('[MediaUpload] No form data in result, only setting media URL');
         onMediaAnalyzed({
           mediaUrl: uploadResult.publicUrl,
           mediaMimeType: file.type,
+          thumbnailUrl,
         });
       }
 

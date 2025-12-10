@@ -70,6 +70,7 @@ interface CreateEntityInput {
   features?: string[] | null;
   glyphs: string;
   image?: string | null;
+  thumbnail?: string | null; // Video thumbnail
   // Position fields (flat)
   position_x: number;
   position_y: number;
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
       subtitle: body.subtitle ?? undefined,
       type: body.type,
       image: body.image ?? undefined,
+      thumbnail: body.thumbnail ?? undefined, // Video thumbnail
       glyphs: body.glyphs,
       position: {
         x: body.position_x ?? 0,

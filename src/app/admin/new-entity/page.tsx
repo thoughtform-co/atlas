@@ -31,6 +31,7 @@ export interface EntityFormData {
   glyphs: string;
   mediaUrl?: string;
   mediaMimeType?: string;
+  thumbnailUrl?: string; // For video thumbnails
 }
 
 // Default form values
@@ -112,6 +113,7 @@ export default function NewEntityPage() {
           coord_dynamics: formData.coordinates.dynamics,
           glyphs: formData.glyphs,
           image: formData.mediaUrl || null,
+          thumbnail: formData.thumbnailUrl || null, // Video thumbnail
           // Position centered at (0,0) and spread based on coordinates
           // Coordinates range from -1 to 1, map to pixel positions around center
           position_x: formData.coordinates.geometry * 250,
