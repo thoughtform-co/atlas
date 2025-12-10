@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Denizen } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -28,7 +29,8 @@ const DAWN = { r: 236, g: 227, b: 214 };
 const GRID = 3;
 
 export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenModalV3Props) {
-  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -132,6 +134,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   // Use currentDenizen (which may be updated after upload) or fallback to denizen prop
   const displayDenizen = currentDenizen || denizen;
   if (!displayDenizen) return null;
+
+  // Handle edit navigation
+  const handleEdit = () => {
+    router.push(`/admin/edit/${displayDenizen.id}`);
+  };
 
   const signalStrength = ((displayDenizen.coordinates.geometry + 1) / 2).toFixed(3);
   const epoch = displayDenizen.firstObserved || '4.2847';
@@ -299,7 +306,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             SIG: <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{signalStrength}</span>
           </span>
           
-          {/* Right side: Epoch, Time, Save, Close */}
+          {/* Right side: Epoch, Time, Edit, Save, Close */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
               EPOCH: <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{epoch}</span>
@@ -307,6 +314,32 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontFamily: 'var(--font-mono)' }}>
               [<span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formatTime(elapsedTime)}</span>]
             </span>
+            
+            {/* Edit button - just icon, no frame (admin only) */}
+            {isAdmin && (
+              <button
+                onClick={handleEdit}
+                title="Edit entity"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px',
+                  cursor: 'pointer',
+                  color: 'rgba(236, 227, 214, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 150ms ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#CAA554'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            )}
             
             {/* Save as PNG button - just icon, no frame */}
             <button
