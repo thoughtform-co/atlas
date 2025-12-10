@@ -110,12 +110,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // TypeScript can't narrow across async boundaries, so we capture the client
+    const client = supabase;
     let cancelled = false;
 
     const init = async () => {
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await client.auth.getSession();
       if (cancelled) return;
 
       console.log('[Auth] Initial session:', session ? 'found' : 'none');
@@ -128,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = client.auth.onAuthStateChange((_event, newSession) => {
       if (cancelled) return;
       console.log('[Auth] Auth state changed:', _event);
       setSession(newSession);
