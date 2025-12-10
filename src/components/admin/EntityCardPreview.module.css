@@ -63,8 +63,8 @@
 /* Header */
 .header {
   grid-column: 1 / -1;
-  background: rgba(10, 9, 8, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 9, 8, 0.7);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   padding: 0 12px;
@@ -108,14 +108,14 @@
 
 /* Readout Panels */
 .readout {
-  background: rgba(5, 4, 3, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(5, 4, 3, 0.5);
+  backdrop-filter: blur(3px);
   padding: 8px;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  border: 1px solid rgba(236, 227, 214, 0.04);
+  border: 1px solid rgba(236, 227, 214, 0.06);
 }
 
 .readoutLabel {
@@ -245,8 +245,8 @@
 /* Footer */
 .footer {
   grid-column: 1 / -1;
-  background: rgba(10, 9, 8, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 9, 8, 0.7);
+  backdrop-filter: blur(6px);
   border-top: 1px solid rgba(236, 227, 214, 0.08);
   padding: 18px 28px;
   display: grid;
