@@ -174,7 +174,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
                   muted
                   playsInline
                 />
-              ) : (
+              ) : mediaUrl ? (
                 <Image
                   src={mediaUrl}
                   alt={denizen.name}
@@ -182,7 +182,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
                   className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
                   style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
                 />
-              )}
+              ) : null}
               {/* Gradient overlay for readability */}
               <div 
                 className="absolute inset-0 pointer-events-none"
