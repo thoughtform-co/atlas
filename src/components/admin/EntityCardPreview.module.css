@@ -100,58 +100,44 @@
 .rightCol {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  padding: 8px;
+  gap: 12px;
   background: transparent;
   position: relative;
   z-index: 10;
+  border: 1px solid rgba(236, 227, 214, 0.06);
+}
+
+.leftCol {
+  border-right: 1px solid rgba(236, 227, 214, 0.08);
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.rightCol {
+  border-left: 1px solid rgba(236, 227, 214, 0.08);
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
 }
 
 /* Readout Panels */
 .readout {
   background: transparent;
-  padding: 6px 8px;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  border: 1px solid rgba(236, 227, 214, 0.08);
 }
 
-/* Size variants for visual variety */
-.readoutTall {
-  flex: 1.4;
+/* Subtle size variants for visual variety */
+.readoutSlightlyTaller {
+  flex: 1.15;
 }
 
-.readoutShort {
-  flex: 0.7;
-}
-
-.readoutMedium {
-  flex: 1;
-}
-
-/* Border variants */
-.borderSubtle {
-  border-color: rgba(236, 227, 214, 0.05);
-}
-
-.borderAccent {
-  border-color: rgba(202, 165, 84, 0.15);
-}
-
-.borderLeft {
-  border: none;
-  border-left: 1px solid rgba(236, 227, 214, 0.1);
-}
-
-.borderRight {
-  border: none;
-  border-right: 1px solid rgba(236, 227, 214, 0.1);
-}
-
-.borderTop {
-  border: none;
-  border-top: 1px solid rgba(236, 227, 214, 0.08);
+.readoutSlightlyShorter {
+  flex: 0.9;
 }
 
 .readoutLabel {
@@ -170,28 +156,6 @@
   position: relative;
 }
 
-/* Canvas size variants */
-.canvasCompact {
-  flex: 0 0 auto;
-  height: 50px;
-}
-
-.canvasSquare {
-  flex: 0 0 auto;
-  aspect-ratio: 1;
-  width: 100%;
-  max-height: 70px;
-}
-
-.canvasWide {
-  flex: 0 0 auto;
-  height: 45px;
-}
-
-.canvasTall {
-  flex: 1;
-  min-height: 60px;
-}
 
 .readoutCanvas canvas {
   position: absolute;
