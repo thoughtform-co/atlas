@@ -54,14 +54,18 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
     // Otherwise convert from storage path
     return getMediaPublicUrl(path) || undefined;
   };
-  const mediaUrl = getMediaUrl(primaryMedia?.storagePath) || denizen.image;
   
   // Check if media is video based on multiple sources
   const isVideoFromMedia = primaryMedia?.mediaType === 'video';
   const isVideoFromUrl = !!denizen.videoUrl;
-  // Also check file extension of image field (for entities created before denizen_media table)
-  const isVideoFromExtension = mediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
+  const rawMediaUrl = getMediaUrl(primaryMedia?.storagePath) || denizen.image;
+  const isVideoFromExtension = rawMediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
   const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
+  
+  // For card preview, prefer thumbnail for video entities (faster loading, no autoplay)
+  // Falls back to video URL if no thumbnail, then to image
+  const thumbnailUrl = denizen.thumbnail ? getMediaUrl(denizen.thumbnail) : undefined;
+  const mediaUrl = isVideo && thumbnailUrl ? thumbnailUrl : rawMediaUrl;
 
   return (
     <article
@@ -84,10 +88,10 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
         }}
       />
 
-      {/* Main frame */}
+      {/* Main frame - increased size */}
       <div
         className={`
-          relative w-[172px] overflow-hidden
+          relative w-[200px] overflow-hidden
           border transition-all duration-250
           group-hover:translate-y-[-2px]
           ${isSelected
@@ -167,33 +171,21 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
             background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%)',
           }}
         >
-          {/* Full-bleed Media Background */}
-          {(isVideo && (denizen.videoUrl || primaryMedia?.storagePath)) || mediaUrl ? (
+          {/* Full-bleed Media Background - always use image (thumbnail for videos) */}
+          {mediaUrl ? (
             <div className="absolute inset-0">
-              {isVideo && (denizen.videoUrl || primaryMedia?.storagePath) ? (
-                <video
-                  src={denizen.videoUrl || getMediaUrl(primaryMedia?.storagePath)}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                  style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                />
-              ) : mediaUrl ? (
-                <Image
-                  src={mediaUrl}
-                  alt={denizen.name}
-                  fill
-                  className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                  style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
-                />
-              ) : null}
-              {/* Gradient overlay for readability */}
+              <Image
+                src={mediaUrl}
+                alt={denizen.name}
+                fill
+                className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
+              />
+              {/* Subtle gradient overlay for readability */}
               <div 
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                  background: 'linear-gradient(to bottom, rgba(5, 4, 3, 0.2) 0%, rgba(5, 4, 3, 0.1) 40%, rgba(5, 4, 3, 0.6) 70%, rgba(5, 4, 3, 0.95) 100%)',
+                  background: 'linear-gradient(to bottom, rgba(5, 4, 3, 0.1) 0%, transparent 30%, transparent 50%, rgba(5, 4, 3, 0.4) 80%, rgba(5, 4, 3, 0.85) 100%)',
                 }}
               />
             </div>
@@ -202,7 +194,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
               className="absolute inset-0 flex items-center justify-center select-none group-hover:text-[var(--dawn-15)] transition-colors duration-300"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '3.5rem',
+                fontSize: '4rem',
                 color: 'var(--dawn-08)',
               }}
             >
@@ -262,18 +254,18 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
             </span>
           </div>
 
-      {/* Info overlay with glassmorphism */}
+      {/* Info overlay with glassmorphism - matching popup style */}
       <div
         className="absolute bottom-0 left-0 right-0"
         style={{
           paddingLeft: '14px',
           paddingRight: '14px',
-          paddingBottom: '16px',
-          paddingTop: '12px',
-          background: 'rgba(5, 4, 3, 0.65)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderTop: '1px solid rgba(236, 227, 214, 0.08)',
+          paddingBottom: '14px',
+          paddingTop: '10px',
+          background: 'rgba(10, 9, 8, 0.4)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderTop: '1px solid rgba(236, 227, 214, 0.1)',
         }}
       >
             {/* Name */}

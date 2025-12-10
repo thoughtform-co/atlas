@@ -15,7 +15,7 @@ interface ConstellationViewProps {
 
 export function ConstellationView({ denizens, connections }: ConstellationViewProps) {
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(1.3); // Start more zoomed in
   const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -136,12 +136,38 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     };
   }, [isDragging]);
 
-  // Handle wheel for zooming
+  // Handle wheel for zooming - zoom towards mouse position
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const zoomFactor = e.deltaY > 0 ? 0.95 : 1.05;
-    setScale((prev) => clamp(prev * zoomFactor, 0.4, 2.5));
-  }, []);
+    
+    const container = containerRef.current;
+    if (!container) return;
+    
+    // Get mouse position relative to container center
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // Calculate the world position under the mouse before zoom
+    // worldPos = (screenPos - center - offset) / scale
+    const worldX = (mouseX - centerX - offset.x) / scale;
+    const worldY = (mouseY - centerY - offset.y) / scale;
+    
+    // Apply zoom
+    const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08;
+    const newScale = clamp(scale * zoomFactor, 0.3, 3);
+    
+    // Calculate what offset is needed to keep worldPos under mouse after zoom
+    // screenPos = center + offset + worldPos * newScale
+    // offset = screenPos - center - worldPos * newScale
+    const newOffsetX = mouseX - centerX - worldX * newScale;
+    const newOffsetY = mouseY - centerY - worldY * newScale;
+    
+    setScale(newScale);
+    setOffset({ x: newOffsetX, y: newOffsetY });
+  }, [scale, offset]);
 
   return (
     <div
