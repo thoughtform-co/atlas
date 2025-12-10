@@ -194,7 +194,7 @@ export function Navigation() {
           top: '20px',
           left: 0,
           right: 0,
-          zIndex: 100,
+          zIndex: 1000,
           display: 'flex',
           justifyContent: 'center',
           pointerEvents: 'none',
@@ -216,6 +216,8 @@ export function Navigation() {
                 cursor: 'pointer',
                 transition: 'all 150ms ease',
                 textDecoration: 'none',
+                position: 'relative',
+                zIndex: 1001,
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = 'rgba(202, 165, 84, 0.5)';
@@ -224,6 +226,10 @@ export function Navigation() {
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.15)';
                 e.currentTarget.style.background = 'transparent';
+              }}
+              onClick={(e) => {
+                // Ensure click works
+                e.stopPropagation();
               }}
               title="New Entity"
             >
@@ -339,6 +345,7 @@ export function Navigation() {
                       top: '100%',
                       right: 0,
                       paddingTop: '4px', // Creates visual gap but keeps hover area connected
+                      zIndex: 1001, // Ensure dropdown is above everything
                     }}
                     onMouseEnter={handleDropdownEnter}
                     onMouseLeave={handleDropdownLeave}
@@ -390,9 +397,21 @@ export function Navigation() {
                         </>
                       )}
                       <button
-                        onClick={() => {
-                          signOut();
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // Clear any pending timeout
+                          if (dropdownTimeoutRef.current) {
+                            clearTimeout(dropdownTimeoutRef.current);
+                            dropdownTimeoutRef.current = null;
+                          }
                           setShowUserDropdown(false);
+                          signOut();
+                        }}
+                        onMouseDown={(e) => {
+                          // Prevent dropdown from closing on mousedown
+                          e.preventDefault();
+                          e.stopPropagation();
                         }}
                         style={{
                           display: 'flex',
