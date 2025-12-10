@@ -28,6 +28,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Auth state provider for the application.
+ *
+ * ARCHITECTURE: Single-source-of-truth pattern (see docs/decisions/001-auth-state-single-source.md)
+ * - Auth handlers (getSession, onAuthStateChange) only set user/session state
+ * - Role resolution happens in ONE dedicated useEffect watching `user`
+ * - This prevents API storms and race conditions
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);

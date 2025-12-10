@@ -1,0 +1,153 @@
+# Atlas Development Guidelines
+
+These are evergreen principles learned from real bugs. They're about preventing classes of issues, not prescribing specific solutions.
+
+---
+
+## State Management in SSR/Client Environments
+
+### The Hydration Problem
+Next.js renders on server first, then hydrates on client. State that exists server-side may not be immediately available client-side.
+
+**Pattern: Use a `mounted` guard for client-only state**
+```typescript
+const [mounted, setMounted] = useState(false);
+useEffect(() => setMounted(true), []);
+
+// Only trust client-side state after mounting
+if (!mounted) return <LoadingState />;
+```
+
+### Multiple Loading States
+When a feature depends on multiple async operations (e.g., session + role), gate on ALL of them:
+
+```typescript
+// BAD: Only checks one loading state
+if (loading) return null;
+if (isAdmin) showAdminUI();
+
+// GOOD: Waits for everything to resolve
+if (loading || roleLoading) return null;
+if (isAdmin) showAdminUI();
+```
+
+---
+
+## useEffect Dependencies
+
+### The Stale Closure Problem
+Effects with incomplete dependencies create stale closures. If an effect reads state, that state should be in deps.
+
+**Canvas/Animation components are especially vulnerable:**
+```typescript
+// BAD: Empty deps means this only runs once, even if isAdmin changes later
+useEffect(() => {
+  if (isAdmin) drawAdminIcon();
+}, []);
+
+// GOOD: Effect re-runs when relevant state changes
+useEffect(() => {
+  if (isAdmin) drawAdminIcon();
+}, [isAdmin]);
+```
+
+### API Call Storms
+Multiple effects calling the same API create race conditions and unnecessary load.
+
+**Pattern: Single-source-of-truth**
+- Identify ONE effect responsible for each API call
+- Other effects should read from state, not trigger new fetches
+- Use refs or flags if you need to prevent duplicate calls during initialization
+
+---
+
+## Async Operations
+
+### The Null Check Narrowing Issue
+TypeScript doesn't maintain null narrowing across await boundaries:
+
+```typescript
+// BAD: TypeScript can't guarantee client is still non-null after await
+const client = getClient();
+if (!client) return;
+const data = await client.getData(); // TS error possible
+
+// GOOD: Capture in const immediately after check
+const client = getClient();
+if (!client) return;
+const safeClient = client; // Now safely narrowed
+const data = await safeClient.getData();
+```
+
+---
+
+## Component Patterns
+
+### Conditional Rendering with Multiple Conditions
+When a component depends on multiple conditions, be explicit about the "not ready" states:
+
+```typescript
+// Pattern for auth-dependent admin UI
+{mounted && !loading && !roleLoading && isAdmin && (
+  <AdminButton />
+)}
+```
+
+### Event Handler Timing
+For dropdown menus and similar UI, be aware of event order (mousedown → blur → click):
+
+```typescript
+// If dropdown closes on blur, the click might not fire
+// Use onMouseDown for critical actions, or prevent blur
+onMouseDown={(e) => {
+  e.preventDefault(); // Prevents blur
+  handleAction();
+}}
+```
+
+---
+
+## CSS Considerations
+
+### Cross-Browser Support
+Always include vendor prefixes for newer CSS features:
+```css
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px); /* Safari */
+```
+
+### Z-Index Layering
+Document z-index values in comments when they matter:
+```css
+/* z-index layers:
+   0: content
+   1: overlays
+   1000+: navigation/modals */
+```
+
+---
+
+## Debugging Patterns
+
+### Console Logging for State Flows
+For complex state flows (auth, async operations), add tagged logs:
+
+```typescript
+console.log('[Auth] Session loaded:', session?.user?.email);
+console.log('[Auth] Role resolved:', role);
+```
+
+Remove or guard with `process.env.NODE_ENV === 'development'` before production.
+
+---
+
+## What NOT to Prescribe
+
+These guidelines are about **preventing bugs**, not about:
+- Specific visual designs (full-bleed, glassmorphism, etc.)
+- Component structure choices
+- Naming conventions beyond clarity
+- Any pattern that limits creative problem-solving
+
+When a specific design pattern is chosen for a component, document it in that component's comments or a nearby README, not here.
+
