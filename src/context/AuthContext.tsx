@@ -1,7 +1,14 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from 'react';
-import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+} from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export type UserRole = 'user' | 'admin' | 'archivist';
@@ -22,188 +29,178 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('user');
-  const [mounted, setMounted] = useState(false);
 
-  // Fetch user role from database
-  const fetchUserRole = useCallback(async (userId: string, userObj?: User | null) => {
-    // Prefer role from JWT metadata when available to avoid RLS issues
-    // Use passed userObj first, then fall back to state user
-    const userToCheck = userObj || user;
-    
-    if (userToCheck?.app_metadata?.role && (userToCheck.app_metadata.role === 'admin' || userToCheck.app_metadata.role === 'archivist')) {
-      return userToCheck.app_metadata.role as UserRole;
-    }
-    if (userToCheck?.user_metadata?.role && (userToCheck.user_metadata.role === 'admin' || userToCheck.user_metadata.role === 'archivist')) {
-      return userToCheck.user_metadata.role as UserRole;
-    }
-
-    if (!supabase) return 'user' as UserRole;
-    
-    try {
-      const { data, error } = await (supabase as any)
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
-      
-      if (error || !data) {
-        return 'user' as UserRole;
-      }
-      
-      return (data as { role: UserRole }).role;
-    } catch {
-      return 'user' as UserRole;
-    }
-  }, [user]);
-
-  const refreshRole = useCallback(async () => {
-    if (user?.id) {
-      setRoleLoading(true);
-      try {
-        const userRole = await fetchUserRole(user.id, user);
-        setRole(userRole);
-      } finally {
-        setRoleLoading(false);
-      }
-    } else {
-      setRole('user');
-      setRoleLoading(false);
-    }
-  }, [user, fetchUserRole]);
-
-  // Mark mounted for client-only guards
+  // We only use this to prove we're on the client
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured() || !supabase) {
-      setLoading(false);
-      setRoleLoading(false);
-      return;
-    }
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+  // --- Single role resolver -------------------------------------------------
+  const resolveRoleForUser = useCallback(
+    async (u: User | null) => {
+      if (!u) {
+        setRole('user');
+        setRoleLoading(false);
+        return;
       }
-    );
 
-    return () => subscription.unsubscribe();
-  }, [fetchUserRole]);
+      // 1) Prefer JWT metadata
+      const metaRole =
+        (u.app_metadata as Record<string, unknown>)?.role || 
+        (u.user_metadata as Record<string, unknown>)?.role;
 
-  // Resolve role whenever user changes
+      if (metaRole === 'admin' || metaRole === 'archivist') {
+        console.log('[Auth] Using metadata role:', metaRole);
+        setRole(metaRole as UserRole);
+        setRoleLoading(false);
+        return;
+      }
+
+      // 2) Otherwise read from user_roles table
+      if (!supabase) {
+        setRole('user');
+        setRoleLoading(false);
+        return;
+      }
+
+      setRoleLoading(true);
+      try {
+        console.log('[Auth] Fetching role from user_roles table for:', u.id);
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', u.id)
+          .single<{ role: UserRole }>();
+
+        if (error || !data?.role) {
+          console.error('[Auth] user_roles lookup failed or empty:', error);
+          setRole('user');
+        } else {
+          console.log('[Auth] Got role from DB:', data.role);
+          setRole(data.role);
+        }
+      } catch (err) {
+        console.error('[Auth] Exception resolving role:', err);
+        setRole('user');
+      } finally {
+        setRoleLoading(false);
+      }
+    },
+    [],
+  );
+
+  const refreshRole = useCallback(async () => {
+    await resolveRoleForUser(user);
+  }, [user, resolveRoleForUser]);
+
+  // --- Effect 1: wire up Supabase auth (session + user only) ----------------
   useEffect(() => {
     if (!mounted) return;
-    if (!user) {
+
+    if (!isSupabaseConfigured() || !supabase) {
+      setLoading(false);
       setRole('user');
       setRoleLoading(false);
       return;
     }
 
-    const metadataRole = user.app_metadata?.role || user.user_metadata?.role;
-    if (metadataRole === 'admin' || metadataRole === 'archivist') {
-      setRole(metadataRole as UserRole);
-      setRoleLoading(false);
-      return;
-    }
+    let cancelled = false;
 
-    setRoleLoading(true);
-    fetchUserRole(user.id, user)
-      .then((userRole) => setRole(userRole))
-      .catch((error) => {
-        console.error('[Auth] Failed to resolve role:', error);
-        setRole('user');
-      })
-      .finally(() => setRoleLoading(false));
-  }, [user, mounted, fetchUserRole]);
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
 
+      console.log('[Auth] Initial session:', session ? 'found' : 'none');
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    init();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (cancelled) return;
+      console.log('[Auth] Auth state changed:', _event);
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [mounted]);
+
+  // --- Effect 2: whenever `user` changes, resolve role exactly once ---------
+  useEffect(() => {
+    if (!mounted) return;
+    console.log('[Auth] User changed, resolving role...');
+    resolveRoleForUser(user);
+  }, [user, mounted, resolveRoleForUser]);
+
+  // --- Auth actions ---------------------------------------------------------
   const signIn = async (email: string, password: string) => {
-    console.log('[Auth] signIn called, checking Supabase client...');
-    
     if (!supabase) {
-      console.error('[Auth] Supabase client is null - credentials may not be configured');
-      return { error: new Error('Supabase not configured. Please check environment variables.') };
+      return {
+        error: new Error(
+          'Supabase not configured. Please check environment variables.',
+        ),
+      };
     }
 
-    console.log('[Auth] Calling supabase.auth.signInWithPassword...');
-    
     try {
+      console.log('[Auth] Signing in...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
-      console.log('[Auth] Sign in response received:', { data: !!data, error: error?.message });
 
       if (error) {
         console.error('[Auth] Sign in error:', error);
         return { error: new Error(error.message) };
       }
 
-      // Success - auth state change listener will update the user state
       console.log('[Auth] Sign in successful');
+      // onAuthStateChange will update `user` and trigger role resolution
       return { error: null };
     } catch (err) {
-      console.error('[Auth] Unexpected sign in error:', err);
-      return { error: new Error(err instanceof Error ? err.message : 'Authentication failed') };
+      return {
+        error: new Error(
+          err instanceof Error ? err.message : 'Authentication failed',
+        ),
+      };
     }
   };
 
   const signOut = async () => {
     if (!supabase) return;
-    
-    console.log('[Auth] Starting sign out...');
-    
+
+    console.log('[Auth] Signing out...');
     try {
-      // Sign out - @supabase/ssr handles cookie cleanup
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('[Auth] Sign out API error:', error);
-      }
-      
-      console.log('[Auth] Sign out complete, clearing local state...');
-      
-      // Reset state immediately
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('[Auth] Sign out error:', error);
+    } finally {
       setUser(null);
       setSession(null);
       setRole('user');
       setRoleLoading(false);
-      
-      // Clear any persisted auth data from localStorage as backup
+
       if (typeof window !== 'undefined') {
         const storageKeys = Object.keys(localStorage).filter(
-          key => key.startsWith('sb-') || key.includes('supabase')
+          (key) => key.startsWith('sb-') || key.includes('supabase'),
         );
-        storageKeys.forEach(key => {
-          localStorage.removeItem(key);
-        });
-        
-        // Full page reload to clear all state and cookies
-        window.location.href = '/';
-      }
-    } catch (error) {
-      console.error('[Auth] Sign out error:', error);
-      // Still redirect on error
-      setUser(null);
-      setSession(null);
-      setRole('user');
-      if (typeof window !== 'undefined') {
+        storageKeys.forEach((key) => localStorage.removeItem(key));
         window.location.href = '/';
       }
     }
