@@ -57,7 +57,9 @@ export {
   ARCHIVIST_SYSTEM_PROMPT,
   ARCHIVIST_OPENING_WITH_MEDIA,
   ARCHIVIST_OPENING_WITHOUT_MEDIA,
+  buildArchivistSystemPrompt,
 } from './system-prompt';
+export { buildArchivistWorldContext } from './utils';
 export {
   ARCHIVIST_TOOLS,
   executeToolCall,

@@ -15,7 +15,9 @@ import {
   ARCHIVIST_SYSTEM_PROMPT,
   ARCHIVIST_OPENING_WITH_MEDIA,
   ARCHIVIST_OPENING_WITHOUT_MEDIA,
+  buildArchivistSystemPrompt,
 } from './system-prompt';
+import { buildArchivistWorldContext } from './utils';
 import {
   extractFieldsFromResponse,
   mergeFields,
@@ -205,6 +207,39 @@ export class Archivist {
       throw new Error('Session is not active');
     }
 
+    // Fetch existing denizens for world context
+    let worldContext = '';
+    try {
+      const { data: denizens } = await supabase
+        .from('denizens')
+        .select('id, name, type, allegiance, domain, description, threat_level, lore, features');
+      
+      if (denizens && denizens.length > 0) {
+        // Map database rows to Denizen type
+        const mappedDenizens = denizens.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          type: d.type,
+          allegiance: d.allegiance,
+          domain: d.domain,
+          description: d.description,
+          threatLevel: d.threat_level,
+          lore: d.lore,
+          features: d.features,
+        })) as Denizen[];
+        
+        worldContext = buildArchivistWorldContext(mappedDenizens);
+        console.log(`[Archivist] Built world context from ${denizens.length} existing denizens`);
+      }
+    } catch (error) {
+      console.warn('[Archivist] Failed to fetch world context, proceeding without it:', error);
+    }
+
+    // Build system prompt with dynamic world context
+    const systemPrompt = worldContext 
+      ? buildArchivistSystemPrompt(worldContext)
+      : ARCHIVIST_SYSTEM_PROMPT;
+
     // Add user message to history
     const userMsg: ArchivistMessage = {
       role: 'user',
@@ -231,12 +266,12 @@ export class Archivist {
     const toolsUsed: ToolInvocation[] = [];
     let toolCallCount = 0;
 
-    // Initial Claude call with tools
+    // Initial Claude call with tools and dynamic world context
     let response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4000,
       temperature: 0.7,
-      system: ARCHIVIST_SYSTEM_PROMPT,
+      system: systemPrompt,
       tools: ARCHIVIST_TOOLS,
       messages: conversationHistory,
     });
@@ -281,7 +316,7 @@ export class Archivist {
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 4000,
         temperature: 0.7,
-        system: ARCHIVIST_SYSTEM_PROMPT,
+        system: systemPrompt,
         tools: ARCHIVIST_TOOLS,
         messages: conversationHistory,
       });

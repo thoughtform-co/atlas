@@ -322,3 +322,84 @@ export function formatConfidence(confidence: number): string {
   if (confidence >= 0.5) return `${percentage}% ⚠️`;
   return `${percentage}% ❌`;
 }
+
+/**
+ * Build dynamic world context for the Archivist from existing denizens
+ * This provides the Archivist with awareness of what's already been catalogued
+ */
+export function buildArchivistWorldContext(denizens: Denizen[]): string {
+  if (!denizens || denizens.length === 0) {
+    return 'The archive is empty. You are cataloguing the first entities.';
+  }
+
+  const parts: string[] = [];
+  parts.push(`The archive currently holds **${denizens.length}** catalogued entities.\n`);
+
+  // Entity types distribution
+  const typeCounts = denizens.reduce((acc, d) => {
+    acc[d.type] = (acc[d.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  parts.push('### Entity Types');
+  Object.entries(typeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([type, count]) => {
+      parts.push(`- **${type}**: ${count} entities`);
+    });
+
+  // Allegiance distribution
+  const allegianceCounts = denizens.reduce((acc, d) => {
+    if (d.allegiance) acc[d.allegiance] = (acc[d.allegiance] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  if (Object.keys(allegianceCounts).length > 0) {
+    parts.push('\n### Allegiances');
+    Object.entries(allegianceCounts)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([allegiance, count]) => {
+        parts.push(`- **${allegiance}**: ${count} entities`);
+      });
+  }
+
+  // Domains discovered (grouped and deduplicated)
+  const domains = [...new Set(denizens.map(d => d.domain).filter(Boolean))];
+  if (domains.length > 0) {
+    parts.push('\n### Domains Discovered');
+    // Group similar domains if possible
+    const domainSamples = domains.slice(0, 15);
+    domainSamples.forEach(domain => {
+      const count = denizens.filter(d => d.domain === domain).length;
+      parts.push(`- ${domain}${count > 1 ? ` (${count} entities)` : ''}`);
+    });
+    if (domains.length > 15) {
+      parts.push(`- ...and ${domains.length - 15} more unique domains`);
+    }
+  }
+
+  // Recent entities (most recent 5)
+  const sorted = [...denizens].sort((a, b) => {
+    // Sort by ID as proxy for creation order if no timestamp
+    return b.id.localeCompare(a.id);
+  });
+  
+  parts.push('\n### Recent Additions');
+  sorted.slice(0, 5).forEach(d => {
+    parts.push(`- **${d.name}** (${d.type}) — ${d.domain || 'Domain unknown'}`);
+    if (d.description) {
+      const shortDesc = d.description.length > 100 
+        ? d.description.substring(0, 100) + '...'
+        : d.description;
+      parts.push(`  _${shortDesc}_`);
+    }
+  });
+
+  // Entity names for connection suggestions
+  parts.push('\n### All Catalogued Entities');
+  parts.push('Use these names when suggesting connections:');
+  const entityList = denizens.map(d => d.name).join(', ');
+  parts.push(entityList);
+
+  return parts.join('\n');
+}
