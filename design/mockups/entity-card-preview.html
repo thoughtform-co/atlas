@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entity Card Preview - Mockup</title>
+  <style>
+    :root {
+      --void: #050403;
+      --gold: #CAA554;
+      --dawn: #ECE3D6;
+      --dynamics: #5B8A7A;
+      --volatile: #C17F59;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0908;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      font-family: 'PT Mono', 'Courier New', monospace;
+    }
+
+    .card {
+      width: 620px;
+      aspect-ratio: 4/5;
+      background: var(--void);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 130px 1fr 130px;
+      grid-template-rows: 32px 1fr 140px;
+      gap: 1px;
+      border: 1px solid rgba(236, 227, 214, 0.08);
+    }
+
+    /* Full-bleed media background */
+    .media-background {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .media-bg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .media-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(5, 4, 3, 0.5) 0%,
+        rgba(5, 4, 3, 0.3) 30%,
+        rgba(5, 4, 3, 0.3) 70%,
+        rgba(5, 4, 3, 0.6) 100%
+      );
+      pointer-events: none;
+    }
+
+    .scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to bottom, rgba(202, 165, 84, 0.4), transparent);
+      z-index: 100;
+      animation: scan 12s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes scan {
+      0% { top: 0; opacity: 0; }
+      5% { opacity: 0.6; }
+      95% { opacity: 0.6; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* Header */
+    .header {
+      grid-column: 1 / -1;
+      background: rgba(5, 4, 3, 0.35);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      gap: 12px;
+      border-bottom: 1px solid rgba(236, 227, 214, 0.1);
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-title {
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    .header-data {
+      color: rgba(236, 227, 214, 0.3);
+    }
+
+    .header-data span {
+      color: rgba(236, 227, 214, 0.5);
+    }
+
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      gap: 12px;
+    }
+
+    /* Columns */
+    .left-col,
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 12px;
+      background: transparent;
+      position: relative;
+      z-index: 10;
+    }
+
+    .left-col {
+      border-right: 1px solid rgba(236, 227, 214, 0.08);
+    }
+
+    .right-col {
+      border-left: 1px solid rgba(236, 227, 214, 0.08);
+    }
+
+    /* Readout Panels */
+    .readout {
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .readout-taller { flex: 1.15; }
+    .readout-shorter { flex: 0.9; }
+
+    .readout-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(236, 227, 214, 0.4);
+      margin-bottom: 4px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .readout-canvas {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+
+    .readout-canvas canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .readout-value {
+      font-size: 10px;
+      color: var(--gold);
+      margin-top: 4px;
+      text-align: center;
+      letter-spacing: 0.05em;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .readout-value-alert {
+      font-size: 10px;
+      color: var(--volatile);
+      margin-top: 4px;
+      text-align: center;
+      letter-spacing: 0.05em;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .readout-value-small {
+      font-size: 9px;
+      color: var(--gold);
+      margin-top: 4px;
+      text-align: center;
+      letter-spacing: 0.05em;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Center Zone */
+    .center {
+      background: transparent;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 5;
+    }
+
+    .center-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.4;
+    }
+
+    .alignment-overlay {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+
+    .alignment-label {
+      text-align: center;
+      font-size: 8px;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Footer */
+    .footer {
+      grid-column: 1 / -1;
+      background: rgba(5, 4, 3, 0.4);
+      backdrop-filter: blur(4px);
+      border-top: 1px solid rgba(236, 227, 214, 0.1);
+      padding: 18px 28px;
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 24px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .footer-name {
+      font-size: 22px;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      line-height: 1.1;
+      text-transform: uppercase;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      white-space: pre-line;
+    }
+
+    .footer-meta {
+      margin-top: 10px;
+      font-size: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .footer-meta-line {
+      color: rgba(236, 227, 214, 0.4);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .footer-meta-line span {
+      color: rgba(236, 227, 214, 0.6);
+    }
+
+    .footer-cardinals {
+      margin-top: 8px;
+      color: rgba(236, 227, 214, 0.4);
+      line-height: 1.4;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      border-left: 1px solid rgba(236, 227, 214, 0.08);
+      padding-left: 28px;
+    }
+
+    .footer-bio {
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      font-size: 12px;
+      color: rgba(236, 227, 214, 0.6);
+      line-height: 1.7;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- Full-bleed media background -->
+    <div class="media-background">
+      <img
+        src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80"
+        alt="Entity"
+        class="media-bg"
+      />
+      <div class="media-overlay"></div>
+    </div>
+
+    <div class="scanline"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <span class="header-title">Atlas Research</span>
+      <span class="header-data">MODE: <span>Active Scan</span></span>
+      <span class="header-data">SIG: <span>0.946</span></span>
+      <div class="header-right">
+        <span class="header-data">EPOCH: <span>4.2847</span></span>
+        <span class="header-data">[00:00:00]</span>
+      </div>
+    </div>
+
+    <!-- Left Column -->
+    <div class="left-col">
+      <div class="readout readout-taller">
+        <div class="readout-label">&#9658; Phase State</div>
+        <div class="readout-canvas"><canvas id="phaseCanvas"></canvas></div>
+        <div class="readout-value">TEMP: 0.50</div>
+      </div>
+      <div class="readout">
+        <div class="readout-label">&#9658; Superposition</div>
+        <div class="readout-canvas"><canvas id="superCanvas"></canvas></div>
+      </div>
+      <div class="readout readout-shorter">
+        <div class="readout-label">&#9658; Hallucination Index</div>
+        <div class="readout-canvas"><canvas id="hallucCanvas"></canvas></div>
+        <div class="readout-value-alert">HIGH [3/5]</div>
+      </div>
+    </div>
+
+    <!-- Center -->
+    <div class="center">
+      <canvas id="centerCanvas" class="center-canvas"></canvas>
+      <div class="alignment-overlay">
+        <div class="alignment-label">&#9678; UNALIGNED</div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-col">
+      <div class="readout">
+        <div class="readout-label">&#9658; Latent Position</div>
+        <div class="readout-canvas"><canvas id="coordsCanvas"></canvas></div>
+        <div class="readout-value-small">
+          X:0.000 Y:0.000<br/>Z:0.000
+        </div>
+      </div>
+      <div class="readout readout-shorter">
+        <div class="readout-label">&#9658; Manifold Curvature</div>
+        <div class="readout-canvas"><canvas id="manifoldCanvas"></canvas></div>
+        <div class="readout-value-alert">MODERATE</div>
+      </div>
+      <div class="readout readout-taller">
+        <div class="readout-label">&#9658; Embedding Signature</div>
+        <div class="readout-canvas"><canvas id="spectralCanvas"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-left">
+        <div class="footer-name">UNNAMED
+ENTITY</div>
+        <div class="footer-meta">
+          <div class="footer-meta-line">CLASS <span>GUARDIAN</span></div>
+          <div class="footer-meta-line">THREAT <span style="color: #7A7868;">CAUTIOUS</span></div>
+          <div class="footer-cardinals">
+            <span style="color: #CAA554;">&#9670;</span> 0.000
+            <span style="margin-left: 6px; color: #ECE3D6;">&#9675;</span> 0.000
+            <span style="margin-left: 6px; color: #5B8A7A;">&#9671;</span> 0.000
+          </div>
+        </div>
+      </div>
+      <div class="footer-right">
+        <div class="footer-bio">
+          No description provided.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Particle system constants
+    const GRID = 3;
+    const GOLD = '202, 165, 84';
+    const DAWN = '236, 227, 214';
+    const DYNAMICS = '91, 138, 122';
+    const VOLATILE = '193, 127, 89';
+
+    // State
+    const state = {
+      phasePoints: [],
+      superStates: [],
+      hallucHistory: [],
+      manifoldParticles: [],
+      signature: [],
+      fieldParticles: [],
+    };
+
+    let time = 0;
+
+    // Draw pixel helper
+    function drawPixel(ctx, x, y, color, alpha, size = GRID) {
+      const px = Math.floor(x / GRID) * GRID;
+      const py = Math.floor(y / GRID) * GRID;
+      ctx.fillStyle = `rgba(${color}, ${alpha})`;
+      ctx.fillRect(px, py, size - 1, size - 1);
+    }
+
+    // Draw particle circle
+    function drawParticleCircle(ctx, cx, cy, r, color, alpha, density = 0.15) {
+      const circumference = 2 * Math.PI * r;
+      const steps = Math.floor(circumference * density);
+      for (let i = 0; i < steps; i++) {
+        const angle = (i / steps) * Math.PI * 2;
+        drawPixel(ctx, cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, color, alpha);
+      }
+    }
+
+    // Setup canvas with DPR
+    function setupCanvas(canvas) {
+      const rect = canvas.parentElement?.getBoundingClientRect();
+      if (!rect) return null;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.scale(dpr, dpr);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+
+    // Initialize states
+    function initStates() {
+      // Phase points
+      for (let i = 0; i < 20; i++) {
+        state.phasePoints.push({
+          phase: Math.random() * Math.PI * 2,
+          amp: 0.2 + Math.random() * 0.5,
+          freq: 0.5 + Math.random() * 1.5,
+        });
+      }
+
+      // Super states
+      for (let i = 0; i < 12; i++) {
+        state.superStates.push({
+          active: Math.random() > 0.6,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+
+      // Hallucination history
+      for (let i = 0; i < 25; i++) {
+        state.hallucHistory.push(0.6 + Math.sin(i * 0.2) * 0.2 + Math.random() * 0.1);
+      }
+
+      // Manifold particles
+      for (let x = 0; x < 7; x++) {
+        for (let y = 0; y < 7; y++) {
+          state.manifoldParticles.push({ baseX: x / 6, baseY: y / 6 });
+        }
+      }
+
+      // Spectral signature
+      for (let i = 0; i < 16; i++) {
+        state.signature.push({
+          base: Math.sin(i * 0.3) * 0.3 + Math.sin(i * 0.7) * 0.2 + 0.5,
+          variance: Math.random() * 0.1,
+        });
+      }
+    }
+
+    // Animation loop
+    function animate() {
+      const hallucinationIndex = 0.5;
+
+      // Phase State
+      const phaseCanvas = document.getElementById('phaseCanvas');
+      if (phaseCanvas) {
+        const setup = setupCanvas(phaseCanvas);
+        if (setup) {
+          const { ctx, width, height } = setup;
+          ctx.fillStyle = 'rgba(5, 4, 3, 0.15)';
+          ctx.fillRect(0, 0, width, height);
+
+          const baseline = height * 0.85;
+          for (let x = 0; x < width; x += GRID * 2) {
+            drawPixel(ctx, x, baseline, DAWN, 0.1);
+          }
+
+          const tempMod = 0.5 + hallucinationIndex;
+          state.phasePoints.forEach((p, i) => {
+            const x = (i / state.phasePoints.length) * width;
+            const wave = Math.sin(time * p.freq * tempMod + p.phase) * p.amp;
+            const y = baseline - (wave + 0.5) * height * 0.6;
+            drawPixel(ctx, x, y, GOLD, 0.5 + wave * 0.3);
+            for (let ty = y; ty < baseline; ty += GRID * 2) {
+              drawPixel(ctx, x, ty, GOLD, 0.06 * (1 - (ty - y) / (baseline - y)));
+            }
+          });
+        }
+      }
+
+      // Superposition
+      const superCanvas = document.getElementById('superCanvas');
+      if (superCanvas) {
+        const setup = setupCanvas(superCanvas);
+        if (setup) {
+          const { ctx, width, height } = setup;
+          ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+          ctx.fillRect(0, 0, width, height);
+
+          const cols = 4, rows = 3;
+          state.superStates.forEach((s, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = (col + 0.5) * (width / cols);
+            const y = (row + 0.5) * (height / rows);
+            const isOn = s.active ? Math.sin(time + s.phase) > 0.3 : Math.random() > 0.97;
+            if (isOn) {
+              drawPixel(ctx, x, y, GOLD, 0.8, 4);
+              drawPixel(ctx, x - GRID, y, GOLD, 0.15);
+              drawPixel(ctx, x + GRID, y, GOLD, 0.15);
+            } else {
+              drawPixel(ctx, x, y, DAWN, 0.1, 4);
+            }
+          });
+        }
+      }
+
+      // Hallucination Index
+      const hallucCanvas = document.getElementById('hallucCanvas');
+      if (hallucCanvas) {
+        const setup = setupCanvas(hallucCanvas);
+        if (setup) {
+          const { ctx, width, height } = setup;
+          ctx.fillStyle = 'rgba(5, 4, 3, 0.1)';
+          ctx.fillRect(0, 0, width, height);
+
+          state.hallucHistory.shift();
+          const level = Math.round(hallucinationIndex * 5);
+          const baseValue = level / 5;
+          state.hallucHistory.push(
+            baseValue * 0.8 + Math.sin(time) * 0.1 + Math.sin(time * 2.3) * 0.05 + (Math.random() - 0.5) * 0.05
+          );
+
+          state.hallucHistory.forEach((v, i) => {
+            const x = (i / state.hallucHistory.length) * width;
+            const y = height - v * height * 0.85;
+            drawPixel(ctx, x, y, VOLATILE, 0.7);
+            for (let fy = y; fy < height; fy += GRID * 2) {
+              drawPixel(ctx, x, fy, VOLATILE, 0.05);
+            }
+          });
+        }
+      }
+
+      // Latent Position
+      const coordsCanvas = document.getElementById('coordsCanvas');
+      if (coordsCanvas) {
+        const setup = setupCanvas(coordsCanvas);
+        if (setup) {
+          const { ctx, width, height } = setup;
+          ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+          ctx.fillRect(0, 0, width, height);
+
+          for (let x = 0; x < width; x += GRID * 3) {
+            for (let y = 0; y < height; y += GRID * 3) {
+              drawPixel(ctx, x, y, DAWN, 0.06);
+            }
+          }
+
+          const cx = width / 2;
+          const cy = height / 2;
+          const pulse = 0.7 + Math.sin(time * 2) * 0.3;
+
+          for (let i = 0; i < 4; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 6;
+            drawPixel(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, GOLD, 0.1 * pulse);
+          }
+          drawPixel(ctx, cx, cy, GOLD, 0.85 * pulse, 4);
+        }
+      }
+
+      // Manifold Curvature
+      const manifoldCanvas = document.getElementById('manifoldCanvas');
+      if (manifoldCanvas) {
+        const setup = setupCanvas(manifoldCanvas);
+        if (setup) {
+          const { ctx, width, height } = setup;
+          ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
+          ctx.fillRect(0, 0, width, height);
+
+          const cx = width / 2;
+          const cy = height / 2;
+          const strength = 15 + Math.sin(time * 0.5) * 4;
+
+          state.manifoldParticles.forEach(p => {
+            const x = p.baseX * width;
+            const y = p.baseY * height;
+            const dx = x - cx;
+            const dy = y - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const pull = Math.max(0, 1 - dist / 45) * strength;
+            drawPixel(ctx, x - (dx / (dist || 1)) * pull, y - (dy / (dist || 1)) * pull, GOLD, 0.2 + (dist / 50) * 0.3);
+          });
+
+          for (let i = 0; i < 4; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 10;
+            drawPixel(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, VOLATILE, 0.2 * (1 - dist / 10));
+          }
+          drawPixel(ctx, cx, cy, VOLATILE, 0.9, 4);
+        }
+      }
+
+      // Embedding Signature
+      const spectralCanvas = document.getElementById('spectralCanvas');
+      if (spectralCanvas) {
+        const setup = setupCanvas(spectralCanvas);
+        if (setup) {
+          const { ctx, width, height } = setup;
+          ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
+          ctx.fillRect(0, 0, width, height);
+
+          state.signature.forEach((band, i) => {
+            const animate = Math.sin(time + i * 0.2) * band.variance;
+            const h = (band.base + animate) * height * 0.8;
+            const color = i / state.signature.length < 0.5 ? DYNAMICS : GOLD;
+            for (let y = height; y > height - h; y -= GRID) {
+              drawPixel(ctx, i * (width / state.signature.length) + (width / state.signature.length) / 2, y, color, 0.2 + (1 - y / height) * 0.35);
+            }
+          });
+
+          const scanX = (time * 4) % width;
+          for (let y = 0; y < height; y += GRID * 2) {
+            drawPixel(ctx, scanX, y, DAWN, 0.2);
+          }
+        }
+      }
+
+      // Center Field
+      const centerCanvas = document.getElementById('centerCanvas');
+      if (centerCanvas) {
+        const setup = setupCanvas(centerCanvas);
+        if (setup) {
+          const { ctx, width, height } = setup;
+
+          if (state.fieldParticles.length === 0) {
+            for (let i = 0; i < 30; i++) {
+              state.fieldParticles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.06,
+                vy: (Math.random() - 0.5) * 0.06,
+                alpha: 0.06 + Math.random() * 0.08,
+              });
+            }
+          }
+
+          ctx.fillStyle = 'rgba(5, 4, 3, 0.05)';
+          ctx.fillRect(0, 0, width, height);
+
+          const cx = width / 2;
+          const cy = height / 2;
+
+          [0.3, 0.45, 0.6].forEach(r => {
+            drawParticleCircle(ctx, cx, cy, Math.min(width, height) * r * 0.45, GOLD, 0.08, 0.05);
+          });
+
+          state.fieldParticles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = width;
+            if (p.x > width) p.x = 0;
+            if (p.y < 0) p.y = height;
+            if (p.y > height) p.y = 0;
+            drawPixel(ctx, p.x, p.y, GOLD, p.alpha);
+          });
+        }
+      }
+
+      time += 0.015;
+      requestAnimationFrame(animate);
+    }
+
+    // Init and start
+    initStates();
+    animate();
+  </script>
+</body>
+</html>
