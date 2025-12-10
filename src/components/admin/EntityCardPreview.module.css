@@ -54,7 +54,7 @@
 /* Header - with glassmorphism */
 .header {
   grid-column: 1 / -1;
-  background: rgba(10, 9, 8, 0.75);
+  background: rgba(10, 9, 8, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;
@@ -93,7 +93,7 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  background: rgba(5, 4, 3, 0.65);
+  background: rgba(5, 4, 3, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   position: relative;
@@ -110,7 +110,7 @@
 
 /* Readout Panels - semi-transparent for glass effect */
 .readout {
-  background: rgba(5, 4, 3, 0.5);
+  background: rgba(5, 4, 3, 0.1);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -246,7 +246,7 @@
 /* Footer - with glassmorphism */
 .footer {
   grid-column: 1 / -1;
-  background: rgba(10, 9, 8, 0.8);
+  background: rgba(10, 9, 8, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid rgba(236, 227, 214, 0.12);
