@@ -138,8 +138,8 @@ export async function POST(request: NextRequest) {
       image: body.image ?? undefined,
       glyphs: body.glyphs,
       position: {
-        x: body.position_x ?? 500,
-        y: body.position_y ?? 400,
+        x: body.position_x ?? 0,
+        y: body.position_y ?? 0,
       },
       coordinates: {
         geometry: body.coord_geometry ?? 0,

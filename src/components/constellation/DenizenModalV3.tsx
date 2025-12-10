@@ -245,13 +245,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           ×
         </button>
 
-        {/* Header */}
+        {/* Header - glassmorphism */}
         <div
           style={{
             gridColumn: '1 / -1',
             position: 'relative',
             zIndex: 10,
-            background: 'rgba(10, 9, 8, 0.75)',
+            background: 'rgba(10, 9, 8, 0.1)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             display: 'flex',
@@ -282,14 +282,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           </div>
         </div>
 
-        {/* Left Column */}
+        {/* Left Column - glassmorphism */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '1px',
           position: 'relative',
           zIndex: 10,
-          background: 'rgba(5, 4, 3, 0.65)',
+          background: 'rgba(5, 4, 3, 0.1)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           borderRight: '1px solid rgba(236, 227, 214, 0.08)',
@@ -402,14 +402,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           )}
         </div>
 
-        {/* Right Column */}
+        {/* Right Column - glassmorphism */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '1px',
           position: 'relative',
           zIndex: 10,
-          background: 'rgba(5, 4, 3, 0.65)',
+          background: 'rgba(5, 4, 3, 0.1)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           borderLeft: '1px solid rgba(236, 227, 214, 0.08)',
@@ -425,13 +425,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           </Readout>
         </div>
 
-        {/* Footer */}
+        {/* Footer - glassmorphism */}
         <div
           style={{
             gridColumn: '1 / -1',
             position: 'relative',
             zIndex: 10,
-            background: 'rgba(10, 9, 8, 0.8)',
+            background: 'rgba(10, 9, 8, 0.1)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             borderTop: '1px solid rgba(236, 227, 214, 0.12)',
@@ -484,7 +484,7 @@ function Readout({ label, value, value2, valueColor = '#CAA554', valueSize = '10
 }) {
   return (
     <div style={{
-      background: 'rgba(5, 4, 3, 0.5)',
+      background: 'rgba(5, 4, 3, 0.1)',
       padding: '8px',
       display: 'flex',
       flexDirection: 'column',

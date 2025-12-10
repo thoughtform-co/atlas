@@ -112,9 +112,10 @@ export default function NewEntityPage() {
           coord_dynamics: formData.coordinates.dynamics,
           glyphs: formData.glyphs,
           image: formData.mediaUrl || null,
-          // Position will be auto-calculated from coordinates
-          position_x: formData.coordinates.geometry * 500 + 500,
-          position_y: formData.coordinates.alterity * 400 + 400,
+          // Position centered at (0,0) and spread based on coordinates
+          // Coordinates range from -1 to 1, map to pixel positions around center
+          position_x: formData.coordinates.geometry * 250,
+          position_y: formData.coordinates.alterity * 200,
         }),
       });
 
