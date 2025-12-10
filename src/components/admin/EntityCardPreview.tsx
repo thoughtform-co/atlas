@@ -394,6 +394,30 @@ export function EntityCardPreview({
 
   return (
     <div className={styles.card}>
+      {/* Full-bleed media background */}
+      <div className={styles.mediaBackground}>
+        {formData.mediaUrl ? (
+          isVideo ? (
+            <video
+              src={formData.mediaUrl}
+              className={styles.mediaBg}
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls={false}
+            />
+          ) : (
+            <img
+              src={formData.mediaUrl}
+              alt={formData.name}
+              className={styles.mediaBg}
+            />
+          )
+        ) : null}
+        <div className={styles.mediaOverlay} />
+      </div>
+
       <div className={styles.scanline} />
 
       {/* Header */}
@@ -426,57 +450,34 @@ export function EntityCardPreview({
       </div>
 
       {/* Center */}
-        <div className={styles.center}>
-          {/* Media background layer */}
-          <div className={styles.mediaLayer}>
-            {formData.mediaUrl ? (
-              isVideo ? (
-                <video
-                  src={formData.mediaUrl}
-                  className={styles.entityMedia}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  controls={false}
-                />
-              ) : (
-                <img 
-                  src={formData.mediaUrl} 
-                  alt={formData.name} 
-                  className={styles.entityMedia}
-                />
-              )
-            ) : null}
-          </div>
-
-          <canvas ref={centerCanvasRef} className={styles.centerCanvas} />
-          <div className={styles.alignmentOverlay}>
-            <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
-          </div>
-
-          {/* Upload overlay (compact) */}
-          {onMediaAnalyzed && setIsAnalyzing && (
-            <div className={styles.uploadOverlay}>
-              <MediaUploadZone
-                compact
-                onMediaAnalyzed={onMediaAnalyzed}
-                isAnalyzing={!!isAnalyzing}
-                setIsAnalyzing={setIsAnalyzing}
-                existingMediaUrl={formData.mediaUrl}
-                existingMimeType={formData.mediaMimeType}
-                onClear={onClearMedia}
-              />
-            </div>
-          )}
-
-          {!formData.mediaUrl && (
-            <div className={styles.entityPlaceholder}>
-              <div className={styles.placeholderBox}>◇</div>
-              <span>[NO IMAGE]</span>
-            </div>
-          )}
+      <div className={styles.center}>
+        <canvas ref={centerCanvasRef} className={styles.centerCanvas} />
+        <div className={styles.alignmentOverlay}>
+          <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
         </div>
+
+        {/* Upload overlay (compact) */}
+        {onMediaAnalyzed && setIsAnalyzing && (
+          <div className={styles.uploadOverlay}>
+            <MediaUploadZone
+              compact
+              onMediaAnalyzed={onMediaAnalyzed}
+              isAnalyzing={!!isAnalyzing}
+              setIsAnalyzing={setIsAnalyzing}
+              existingMediaUrl={formData.mediaUrl}
+              existingMimeType={formData.mediaMimeType}
+              onClear={onClearMedia}
+            />
+          </div>
+        )}
+
+        {!formData.mediaUrl && (
+          <div className={styles.entityPlaceholder}>
+            <div className={styles.placeholderBox}>◇</div>
+            <span>[NO IMAGE]</span>
+          </div>
+        )}
+      </div>
 
       {/* Right Column */}
       <div className={styles.rightCol}>

@@ -13,6 +13,34 @@
   border: 1px solid rgba(236, 227, 214, 0.08);
 }
 
+/* Full-bleed media background */
+.mediaBackground {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.mediaBg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.mediaOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(5, 4, 3, 0.5) 0%,
+    rgba(5, 4, 3, 0.3) 30%,
+    rgba(5, 4, 3, 0.3) 70%,
+    rgba(5, 4, 3, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
 .scanline {
   position: absolute;
   top: 0;
@@ -35,7 +63,8 @@
 /* Header */
 .header {
   grid-column: 1 / -1;
-  background: var(--surface-0, #0A0908);
+  background: rgba(10, 9, 8, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   padding: 0 12px;
@@ -43,6 +72,8 @@
   letter-spacing: 0.1em;
   gap: 12px;
   border-bottom: 1px solid rgba(236, 227, 214, 0.08);
+  position: relative;
+  z-index: 10;
 }
 
 .headerTitle {
@@ -70,17 +101,21 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  background: rgba(236, 227, 214, 0.04);
+  background: transparent;
+  position: relative;
+  z-index: 10;
 }
 
 /* Readout Panels */
 .readout {
-  background: var(--void, #050403);
+  background: rgba(5, 4, 3, 0.75);
+  backdrop-filter: blur(4px);
   padding: 8px;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  border: 1px solid rgba(236, 227, 214, 0.04);
 }
 
 .readoutLabel {
@@ -88,8 +123,9 @@
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(236, 227, 214, 0.3);
+  color: rgba(236, 227, 214, 0.4);
   margin-bottom: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .readoutCanvas {
@@ -112,6 +148,7 @@
   margin-top: 6px;
   text-align: center;
   letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .readoutValueAlert {
@@ -121,6 +158,7 @@
   margin-top: 6px;
   text-align: center;
   letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .readoutValueSmall {
@@ -130,30 +168,18 @@
   margin-top: 6px;
   text-align: center;
   letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Center Zone */
 .center {
-  background: var(--void, #050403);
+  background: transparent;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-}
-
-.mediaLayer {
-  position: absolute;
-  inset: 0;
   z-index: 5;
-}
-
-.entityMedia {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.9;
-  mix-blend-mode: screen;
 }
 
 .centerCanvas {
@@ -161,6 +187,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  opacity: 0.4;
 }
 
 .alignmentOverlay {
@@ -178,6 +205,7 @@
   color: var(--gold, #CAA554);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .entityPlaceholder {
@@ -217,12 +245,15 @@
 /* Footer */
 .footer {
   grid-column: 1 / -1;
-  background: var(--surface-0, #0A0908);
+  background: rgba(10, 9, 8, 0.85);
+  backdrop-filter: blur(8px);
   border-top: 1px solid rgba(236, 227, 214, 0.08);
   padding: 18px 28px;
   display: grid;
   grid-template-columns: 180px 1fr;
   gap: 24px;
+  position: relative;
+  z-index: 10;
 }
 
 .footerLeft {
@@ -238,6 +269,7 @@
   letter-spacing: 0.1em;
   line-height: 1.1;
   text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .footerMeta {
@@ -250,19 +282,21 @@
 }
 
 .footerMetaLine {
-  color: rgba(236, 227, 214, 0.3);
+  color: rgba(236, 227, 214, 0.4);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .footerMetaLine span {
-  color: rgba(236, 227, 214, 0.5);
+  color: rgba(236, 227, 214, 0.6);
 }
 
 .footerCardinals {
   margin-top: 8px;
-  color: rgba(236, 227, 214, 0.3);
+  color: rgba(236, 227, 214, 0.4);
   line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .footerRight {
@@ -275,7 +309,7 @@
 .footerBio {
   font-family: var(--font-sans, 'IBM Plex Sans', sans-serif);
   font-size: 12px;
-  color: rgba(236, 227, 214, 0.5);
+  color: rgba(236, 227, 214, 0.6);
   line-height: 1.7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
-
