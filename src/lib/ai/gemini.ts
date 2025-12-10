@@ -148,7 +148,8 @@ export async function analyzeVideo(
 
 /**
  * Analyze media from a URL (works for both images and videos)
- * Note: This function requires the media to be accessible via URL (e.g., Google Cloud Storage)
+ * Fetches the media and converts to base64 for Gemini API compatibility.
+ * This works with any accessible URL (including Supabase storage).
  */
 export async function analyzeMediaUrl(
   url: string,
@@ -159,26 +160,36 @@ export async function analyzeMediaUrl(
     throw new Error('Gemini API not configured. Set GOOGLE_GEMINI_API_KEY environment variable.');
   }
 
-  const model = genAI.getGenerativeModel({ model: MODEL_NAME });
-  const basePrompt = worldContext ? buildEntityAnalysisPrompt(worldContext) : ENTITY_ANALYSIS_PROMPT;
-
-  const mediaPart: Part = {
-    fileData: {
-      fileUri: url,
-      mimeType,
-    },
-  };
-
-  const isVideo = mimeType.startsWith('video/');
-  const prompt = isVideo
-    ? basePrompt + '\n\nAnalyze key moments throughout the video to understand this entity\'s nature.'
-    : basePrompt;
-
-  const result = await model.generateContent([prompt, mediaPart]);
-  const response = await result.response;
-  const text = response.text();
-
-  return parseAnalysisResponse(text);
+  // Fetch the media content and convert to base64
+  // This is necessary because fileUri only works with Google Cloud Storage
+  try {
+    console.log(`[gemini] Fetching media from URL: ${url.substring(0, 100)}...`);
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    
+    console.log(`[gemini] Converted ${arrayBuffer.byteLength} bytes to base64`);
+    
+    // Use the appropriate analysis function based on media type
+    const isVideo = mimeType.startsWith('video/');
+    
+    if (isVideo) {
+      return analyzeVideo({ base64, mimeType }, worldContext);
+    } else {
+      return analyzeImage({ base64, mimeType }, worldContext);
+    }
+  } catch (fetchError) {
+    console.error('[gemini] Error fetching media from URL:', fetchError);
+    return {
+      success: false,
+      error: `Failed to fetch media from URL: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
+    };
+  }
 }
 
 /**

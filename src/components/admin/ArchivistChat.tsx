@@ -12,6 +12,11 @@ interface ToolUsage {
   durationMs?: number;
 }
 
+interface FieldSuggestions {
+  fields: Partial<EntityFormData>;
+  applied: boolean;
+}
+
 interface Message {
   id: string;
   role: 'archivist' | 'user';
@@ -21,7 +26,7 @@ interface Message {
     title: string;
     text: string;
   };
-  fieldSuggestion?: Partial<EntityFormData>;
+  fieldSuggestion?: FieldSuggestions;
   toolsUsed?: ToolUsage[];
 }
 
@@ -41,6 +46,7 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
+  const processedAnalysisNotes = useRef<string | null>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -102,19 +108,25 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
     }
   };
 
-  // React to analysis notes from Gemini
+  // React to analysis notes from Gemini - only once per unique analysis
   useEffect(() => {
-    if (analysisNotes && formData.name) {
-      const analysisMessage: Message = {
-        id: `analysis-${Date.now()}`,
-        role: 'archivist',
-        content: `*studies the visual signature*\n\n${analysisNotes}\n\nThe entity appears to be of the **${formData.type}** class, with ${formData.threatLevel.toLowerCase()} threat potential. I have pre-filled the parameters based on my observations.\n\nWhat designation would you assign to this entity?`,
-        timestamp: formatTime(),
-      };
-      setMessages(prev => [...prev, analysisMessage]);
-      setStatus('Analysis complete');
+    // Skip if no notes, or if we've already processed this exact note
+    if (!analysisNotes || processedAnalysisNotes.current === analysisNotes) {
+      return;
     }
-  }, [analysisNotes, formData.name, formData.type, formData.threatLevel]);
+    
+    // Mark as processed before adding message to prevent duplicates
+    processedAnalysisNotes.current = analysisNotes;
+    
+    const analysisMessage: Message = {
+      id: `analysis-${Date.now()}`,
+      role: 'archivist',
+      content: `*studies the visual signature*\n\n${analysisNotes}\n\nThe entity appears to be of the **${formData.type}** class, with ${formData.threatLevel.toLowerCase()} threat potential. I have pre-filled the parameters based on my observations.\n\nWhat designation would you assign to this entity?`,
+      timestamp: formatTime(),
+    };
+    setMessages(prev => [...prev, analysisMessage]);
+    setStatus('Analysis complete');
+  }, [analysisNotes]); // Only depend on analysisNotes - formData refs are stale but we read current values
 
   // Format time
   const formatTime = () => {
@@ -132,6 +144,41 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
       }
       return next;
     });
+  };
+
+  // Apply field suggestions (Writ button handler)
+  const handleApplySuggestion = (messageId: string, fields: Partial<EntityFormData>) => {
+    // Apply the fields to the form
+    onApplyField(fields);
+    
+    // Mark suggestion as applied in the message
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId && msg.fieldSuggestion) {
+        return {
+          ...msg,
+          fieldSuggestion: {
+            ...msg.fieldSuggestion,
+            applied: true,
+          },
+        };
+      }
+      return msg;
+    }));
+    
+    setStatus('Fields inscribed');
+  };
+
+  // Format field names for display
+  const formatFieldName = (key: string): string => {
+    const names: Record<string, string> = {
+      name: 'Name',
+      type: 'Class',
+      domain: 'Domain',
+      description: 'Description',
+      allegiance: 'Allegiance',
+      threatLevel: 'Threat',
+    };
+    return names[key] || key;
   };
 
   // Send message to archivist
@@ -183,11 +230,8 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
             };
           }
 
-          setMessages(prev => [...prev, archivistResponse]);
-          
-          // Apply extracted fields if any
+          // Store extracted fields as suggestion instead of auto-applying
           if (data.extractedFields && Object.keys(data.extractedFields).length > 0) {
-            // Map extracted fields to form data format
             const updates: Partial<EntityFormData> = {};
             if (data.extractedFields.name) updates.name = data.extractedFields.name;
             if (data.extractedFields.type) updates.type = data.extractedFields.type;
@@ -197,10 +241,14 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
             if (data.extractedFields.threatLevel) updates.threatLevel = data.extractedFields.threatLevel;
             
             if (Object.keys(updates).length > 0) {
-              onApplyField(updates);
+              archivistResponse.fieldSuggestion = {
+                fields: updates,
+                applied: false,
+              };
             }
           }
 
+          setMessages(prev => [...prev, archivistResponse]);
           setStatus(data.isComplete ? 'Classification complete' : 'Ready');
         } else {
           // Fallback to local response
@@ -333,12 +381,38 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
               )}
               
               {msg.fieldSuggestion && (
-                <button 
-                  className={styles.applyButton}
-                  onClick={() => onApplyField(msg.fieldSuggestion!)}
-                >
-                  Apply Suggestion
-                </button>
+                <div className={styles.suggestionBox}>
+                  <div className={styles.suggestionHeader}>
+                    <span className={styles.suggestionIcon}>⟡</span>
+                    <span className={styles.suggestionTitle}>
+                      {msg.fieldSuggestion.applied ? 'Inscribed' : 'Suggested Fields'}
+                    </span>
+                  </div>
+                  <div className={styles.suggestionFields}>
+                    {Object.entries(msg.fieldSuggestion.fields).map(([key, value]) => (
+                      <div key={key} className={styles.suggestionField}>
+                        <span className={styles.fieldLabel}>{formatFieldName(key)}</span>
+                        <span className={styles.fieldValue}>{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {!msg.fieldSuggestion.applied && (
+                    <button 
+                      className={styles.writButton}
+                      onClick={() => handleApplySuggestion(msg.id, msg.fieldSuggestion!.fields)}
+                      title="Inscribe these fields"
+                    >
+                      <span className={styles.writIcon}>✎</span>
+                      <span className={styles.writText}>Writ</span>
+                    </button>
+                  )}
+                  {msg.fieldSuggestion.applied && (
+                    <div className={styles.appliedBadge}>
+                      <span className={styles.appliedIcon}>✓</span>
+                      <span>Applied</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <div className={styles.messageTime}>{msg.timestamp}</div>

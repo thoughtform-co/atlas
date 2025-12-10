@@ -1,0 +1,30 @@
+# Google Cloud IAM Permissions for API Key Creation
+# Copy and paste these commands into Cloud Shell (console.cloud.google.com)
+# Replace YOUR_EMAIL with your actual Google account email
+
+# 1. Set your project (if not already set)
+gcloud config set project atlas
+
+# 2. Enable required APIs
+gcloud services enable apikeys.googleapis.com
+gcloud services enable iam.googleapis.com
+gcloud services enable aiplatform.googleapis.com
+
+# 3. Grant API Key Admin role (includes all API key permissions)
+gcloud projects add-iam-policy-binding atlas \
+  --member="user:YOUR_EMAIL" \
+  --role="roles/apikeys.admin"
+
+# 4. Grant Service Account Admin role (for creating service accounts if needed)
+gcloud projects add-iam-policy-binding atlas \
+  --member="user:YOUR_EMAIL" \
+  --role="roles/iam.serviceAccountAdmin"
+
+# 5. Grant Vertex AI User role (for using Vertex AI services)
+gcloud projects add-iam-policy-binding atlas \
+  --member="user:YOUR_EMAIL" \
+  --role="roles/aiplatform.user"
+
+# After running these, refresh the API Keys page in the console
+# You should now be able to create API keys
+
