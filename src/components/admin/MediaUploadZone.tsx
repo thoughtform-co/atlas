@@ -103,7 +103,7 @@ export function MediaUploadZone({
 
       if (!analyzeResponse.ok) {
         const error = await analyzeResponse.json();
-        console.warn('Analysis failed:', error);
+        console.error('[MediaUpload] Analysis API failed:', analyzeResponse.status, error);
         // Don't throw - analysis is optional
         setIsAnalyzing(false);
         setUploadProgress(100);
@@ -120,14 +120,18 @@ export function MediaUploadZone({
       setUploadProgress(100);
       setIsAnalyzing(false);
 
+      console.log('[MediaUpload] Analysis result:', analysisResult);
+
       // Apply analysis results
       if (analysisResult.success && analysisResult.formData) {
+        console.log('[MediaUpload] Applying form data:', analysisResult.formData);
         onMediaAnalyzed({
           ...analysisResult.formData,
           mediaUrl: uploadResult.publicUrl,
           mediaMimeType: file.type,
         });
       } else {
+        console.warn('[MediaUpload] No form data in result, only setting media URL');
         onMediaAnalyzed({
           mediaUrl: uploadResult.publicUrl,
           mediaMimeType: file.type,

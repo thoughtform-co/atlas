@@ -6,24 +6,29 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserFromRequest, isUserAdmin } from '@/lib/auth/admin-check';
+import { getAuthUser } from '@/lib/supabase-server';
+import { isUserAdmin } from '@/lib/auth/admin-check';
 import { analyzeImage, analyzeVideo, isGeminiConfigured, buildWorldContext, EntityAnalysisData } from '@/lib/ai/gemini';
 import { fetchDenizens } from '@/lib/data';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getUserFromRequest(request);
+    // Check authentication using cookie-based auth (same as upload route)
+    const user = await getAuthUser();
     if (!user) {
+      console.log('[analyze] No authenticated user found');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    console.log('[analyze] User authenticated:', user.id);
+
     // Check admin role
     const isAdmin = await isUserAdmin(user.id);
     if (!isAdmin) {
+      console.log('[analyze] User is not admin:', user.id);
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -106,6 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!result.success) {
+      console.error('[analyze] Analysis failed:', result.error, result.rawText);
       return NextResponse.json(
         { 
           error: result.error || 'Analysis failed',
@@ -115,8 +121,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('[analyze] Analysis succeeded, raw data:', JSON.stringify(result.data, null, 2));
+
     // Transform the analysis data to match our entity form structure
     const entityData = transformAnalysisToFormData(result.data!);
+    console.log('[analyze] Transformed form data:', JSON.stringify(entityData, null, 2));
 
     return NextResponse.json({
       success: true,
