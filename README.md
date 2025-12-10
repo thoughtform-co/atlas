@@ -2,23 +2,46 @@
 
 > *A bestiary of what stirs in the space between meanings.*
 
-Atlas Eidolon is a visual bestiary for navigating Latent Space Denizens—creatures that inhabit the semantic manifold in the Thoughtform universe.
+Atlas Eidolon is a visual bestiary for navigating Latent Space Denizens—creatures that inhabit the semantic manifold in the Thoughtform universe. Features an AI-powered entity creation system with "The Archivist" assistant.
 
 ## Features
 
-- Constellation view with pannable/zoomable canvas
-- Pulsing particle connectors between entity cards
-- Background effects (star glitches, chromatic aberration, ambient noise)
-- Entity cards with alien glyphs and type indicators
-- Hover detail panel showing coordinates and descriptions
+### Core Experience
+- **Constellation View** — Pannable/zoomable canvas with entity cards positioned in 3D latent space
+- **Entity Cards** — Alien glyphs, type indicators, threat levels, and domain classifications
+- **Particle System** — Pulsing connectors between entities, background star glitches, chromatic aberration
+- **Entity Modal** — Detailed view with lore, coordinates, and phase state visualizations
+
+### Admin & Creation
+- **New Entity Page** (`/admin/new-entity`) — Create entities with live preview card
+- **The Archivist** — AI assistant that analyzes uploaded media and suggests entity parameters
+- **Media Upload** — Image/video upload with AI-powered analysis
+- **Prompt Management** (`/admin/prompts`) — Customize AI system prompts
+
+### Content Pages
+- **Atlas** (`/`) — Main constellation view
+- **Lore** (`/lore`) — Bestiary browser with filters by domain, class, and threat level
+- **Archive** (`/archive`) — Additional content archive
+
+### Authentication
+- **Role-based Access** — Admin, Archivist, and User roles
+- **Supabase Auth** — Cookie-based session management with `@supabase/ssr`
+- **Protected Routes** — Admin pages require admin role
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS v4
-- **Database:** Supabase (optional, falls back to static data)
-- **Animation:** Canvas API for particles
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript |
+| Styling | CSS Modules + Tailwind CSS v4 |
+| Database | Supabase (PostgreSQL) |
+| Auth | Supabase Auth with SSR |
+| AI - Chat | Anthropic Claude (claude-sonnet-4-20250514) |
+| AI - Vision | Google Gemini (gemini-2.0-flash) |
+| AI - Embeddings | Voyage AI (voyage-3) |
+| Animation | Canvas API (2D context) |
+| Storage | Supabase Storage (media uploads) |
 
 ## Getting Started
 
@@ -26,6 +49,7 @@ Atlas Eidolon is a visual bestiary for navigating Latent Space Denizens—creatu
 
 - Node.js 18+
 - npm or yarn
+- Supabase project (for full functionality)
 
 ### Installation
 
@@ -33,83 +57,159 @@ Atlas Eidolon is a visual bestiary for navigating Latent Space Denizens—creatu
 # Install dependencies
 npm install
 
+# Copy environment template
+cp .env.example .env.local
+
 # Run development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-## Database Setup (Supabase)
-
-The app works out of the box with static data. To enable Supabase:
-
-### 1. Create a Supabase Project
-
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Note your project URL and anon key from Settings > API
-
-### 2. Run Database Migrations
-
-In your Supabase SQL Editor, run the contents of:
-- `supabase/migrations/001_create_tables.sql` (creates tables and policies)
-- `supabase/seed.sql` (populates initial denizens)
-
-### 3. Configure Environment Variables
+## Environment Variables
 
 ```bash
-# Copy example env file
-cp .env.example .env.local
+# Supabase (Required for database features)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # For admin operations
 
-# Edit with your Supabase credentials
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+# AI Services (Required for Archivist features)
+ANTHROPIC_API_KEY=sk-ant-...      # Claude - entity generation
+GOOGLE_GEMINI_API_KEY=...         # Gemini - image/video analysis
+VOYAGE_API_KEY=...                # Voyage - semantic embeddings
 ```
 
-## Deploy to Vercel
+## Database Setup
 
-### One-Click Deploy
+### 1. Create Supabase Project
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/thoughtform-co/atlas)
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. Note your project URL, anon key, and service role key from Settings > API
 
-### Manual Deploy
+### 2. Run Migrations
 
-1. Push your code to GitHub
-2. Import the repository in [Vercel](https://vercel.com/new)
-3. Add environment variables in Vercel project settings:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Deploy
+In your Supabase SQL Editor, run:
+- `supabase/migrations/001_create_tables.sql` — Creates tables and RLS policies
+- `supabase/seed.sql` — Populates initial denizens (optional)
+
+### 3. Set Up Storage
+
+1. Create a storage bucket named `entity-media`
+2. Set bucket to public or configure appropriate policies
+
+### 4. Configure User Roles
+
+Admin users need a row in the `user_roles` table:
+```sql
+INSERT INTO user_roles (user_id, role)
+VALUES ('your-user-uuid', 'admin');
+```
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── globals.css          # Design tokens
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Main constellation page
+│   ├── page.tsx                    # Main constellation view
+│   ├── lore/page.tsx               # Bestiary browser
+│   ├── archive/page.tsx            # Content archive
+│   ├── admin/
+│   │   ├── new-entity/page.tsx     # Entity creation with preview
+│   │   └── prompts/page.tsx        # AI prompt management
+│   └── api/
+│       ├── admin/                  # CRUD endpoints for entities, media
+│       └── archivist/              # AI chat endpoints
 ├── components/
-│   ├── constellation/       # Canvas and card components
-│   └── ui/                  # Navigation, etc.
-├── data/
-│   └── denizens.ts          # Static fallback data
+│   ├── constellation/              # Canvas, cards, modals
+│   ├── admin/                      # Entity preview, forms, Archivist chat
+│   └── ui/                         # Navigation, login modal
+├── context/
+│   └── AuthContext.tsx             # Auth state, role management
 ├── lib/
-│   ├── types.ts             # TypeScript interfaces
-│   ├── utils.ts             # Helper functions
-│   ├── supabase.ts          # Supabase client
-│   ├── database.types.ts    # Database types
-│   └── data.ts              # Data fetching layer
-supabase/
-├── migrations/              # SQL migrations
-└── seed.sql                 # Initial data
+│   ├── ai/                         # Claude, Gemini, Voyage clients
+│   ├── archivist/                  # AI assistant logic, tools, prompts
+│   ├── auth/                       # Admin verification utilities
+│   ├── supabase.ts                 # Browser client (lazy init)
+│   ├── supabase-server.ts          # Server client
+│   ├── data.ts                     # Data fetching layer
+│   └── media.ts                    # Media upload utilities
+└── middleware.ts                   # Auth middleware
 ```
+
+## Architecture Notes
+
+### Authentication Flow
+
+The app uses a "mounted guard" pattern to handle SSR/client hydration:
+
+```typescript
+// AuthContext.tsx
+const [mounted, setMounted] = useState(false);
+
+useEffect(() => {
+  setMounted(true);  // Proof we're on the client
+}, []);
+
+useEffect(() => {
+  if (!mounted) return;  // Don't run auth until client-side
+  // ... initialize Supabase auth
+}, [mounted]);
+```
+
+**Important:** Components checking `isAdmin` should wait for `roleLoading` to be false:
+```typescript
+{!roleLoading && isAdmin && <AdminButton />}
+```
+
+### AI Pipeline (The Archivist)
+
+1. **Media Upload** → Supabase Storage
+2. **Vision Analysis** → Gemini analyzes image/video, extracts visual description
+3. **Entity Generation** → Claude generates entity parameters from description
+4. **Embeddings** → Voyage creates semantic embeddings for similarity search
+
+### Canvas Rendering
+
+All visualizations use the Canvas 2D API with:
+- 3px grid snapping for pixel-art aesthetic
+- `requestAnimationFrame` for smooth 60fps animation
+- Device pixel ratio scaling for crisp rendering
 
 ## Design System
 
-- **Colors:** Dawn (#ECE3D6) on Void (#050403)
-- **Fonts:** PT Mono (UI), IBM Plex Sans (content)
-- **No rounded corners** — sharp edges throughout
-- **Particles:** 3px grid snapping, pulsing (not streaming)
+| Element | Value |
+|---------|-------|
+| Primary Text | Dawn `#ECE3D6` |
+| Background | Void `#050403` |
+| Accent | Gold `#CAA554` |
+| Alert | Volatile `#C17F59` |
+| Dynamics | `#5B8A7A` |
+| Font (UI) | PT Mono |
+| Font (Content) | IBM Plex Sans |
+| Corners | Sharp (no border-radius) |
+| Particles | 3px grid, pulsing animation |
+
+## Known Issues
+
+- **Auth on page refresh**: Role must load before admin UI appears. If the Add Entity button doesn't show after login, check browser console for `[Auth]` logs.
+- **Supabase client SSR**: The browser client uses lazy initialization to avoid SSR issues. Never import `supabase` directly at module level in components.
+
+## Deployment
+
+### Vercel (Recommended)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/thoughtform-co/atlas)
+
+1. Import repository to Vercel
+2. Add all environment variables in project settings
+3. Deploy
+
+### Environment Variables in Vercel
+
+All variables from `.env.local` must be added to Vercel:
+- `NEXT_PUBLIC_*` variables are exposed to the browser
+- Other variables are server-only
 
 ## License
 
