@@ -57,20 +57,21 @@ const defaultFormData: EntityFormData = {
 
 export default function NewEntityPage() {
   const router = useRouter();
-  const { isAdmin, isAuthenticated, loading } = useAuth();
+  const { isAdmin, isAuthenticated, loading, roleLoading } = useAuth();
   const [formData, setFormData] = useState<EntityFormData>(defaultFormData);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [analysisNotes, setAnalysisNotes] = useState<string>('');
 
-  // Redirect non-admins
+  // Redirect non-admins - wait for BOTH auth AND role to load
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    const isFullyLoaded = !loading && !roleLoading;
+    if (isFullyLoaded && !isAuthenticated) {
       router.push('/');
-    } else if (!loading && !isAdmin) {
+    } else if (isFullyLoaded && !isAdmin) {
       router.push('/');
     }
-  }, [loading, isAuthenticated, isAdmin, router]);
+  }, [loading, roleLoading, isAuthenticated, isAdmin, router]);
 
   // Handle form field changes
   const handleFormChange = (updates: Partial<EntityFormData>) => {

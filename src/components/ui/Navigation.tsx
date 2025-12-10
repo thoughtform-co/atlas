@@ -34,6 +34,7 @@ export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isAdmin, signOut, user, roleLoading } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,8 +47,10 @@ export function Navigation() {
   const adminIconRef = useRef<HTMLCanvasElement>(null);
   const logoutIconRef = useRef<HTMLCanvasElement>(null);
 
-  // Note: Role is already fetched in AuthContext on mount and auth state changes
-  // No need to refresh here as it causes flashing
+  // Client-side mount detection
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Dropdown hover handlers with delay to prevent flicker
   const handleDropdownEnter = useCallback(() => {
@@ -201,8 +204,8 @@ export function Navigation() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
-          {/* Add Button - Only show after role is resolved */}
-          {!roleLoading && isAdmin && (
+          {/* Add Button - Only show after mounted AND role is resolved */}
+          {mounted && !roleLoading && isAdmin && (
             <Link
               href="/admin/new-entity"
               style={{
