@@ -33,6 +33,19 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     setMounted(true);
   }, []);
 
+  // Auto-center view on entities when first loaded
+  useEffect(() => {
+    if (!mounted || currentDenizens.length === 0) return;
+    
+    // Calculate the center of all entities
+    const avgX = currentDenizens.reduce((sum, d) => sum + d.position.x, 0) / currentDenizens.length;
+    const avgY = currentDenizens.reduce((sum, d) => sum + d.position.y, 0) / currentDenizens.length;
+    
+    // Set offset to center the view on entities
+    // We negate because offset moves the view, not the entities
+    setOffset({ x: -avgX, y: -avgY });
+  }, [mounted, currentDenizens.length]); // Only run when mounted or entity count changes
+
   // Calculate screen position for a denizen
   const getScreenPosition = useCallback(
     (id: string): Position | null => {

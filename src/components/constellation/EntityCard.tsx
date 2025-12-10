@@ -55,7 +55,13 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
     return getMediaPublicUrl(path) || undefined;
   };
   const mediaUrl = getMediaUrl(primaryMedia?.storagePath) || denizen.image;
-  const isVideo = primaryMedia?.mediaType === 'video' || !!denizen.videoUrl;
+  
+  // Check if media is video based on multiple sources
+  const isVideoFromMedia = primaryMedia?.mediaType === 'video';
+  const isVideoFromUrl = !!denizen.videoUrl;
+  // Also check file extension of image field (for entities created before denizen_media table)
+  const isVideoFromExtension = mediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
+  const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
 
   return (
     <article

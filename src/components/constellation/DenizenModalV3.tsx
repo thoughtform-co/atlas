@@ -146,7 +146,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   // Use uploaded media if available, otherwise use denizen's existing media
   const primaryMedia = displayDenizen.media?.find(m => m.isPrimary) || displayDenizen.media?.[0];
   const mediaUrl = uploadedMedia?.url || resolveMediaUrl(primaryMedia?.storagePath) || displayDenizen.image;
-  const isVideo = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video' || displayDenizen.videoUrl;
+  
+  // Check if media is video based on multiple sources
+  const isVideoFromMedia = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video';
+  const isVideoFromUrl = displayDenizen.videoUrl != null;
+  // Also check file extension of image field (for entities created before denizen_media table)
+  const isVideoFromExtension = mediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
+  const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
 
   return (
     <div
@@ -336,70 +342,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             </div>
           )}
 
-          {/* Upload button with glass effect */}
-          {isAuthenticated && (
-            <div style={{
-              position: 'absolute',
-              bottom: '12px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 30,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '4px',
-            }}>
-              <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleUpload} style={{ display: 'none' }} />
-              {uploadSuccess && (
-                <div style={{
-                  padding: '4px 10px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '8px',
-                  color: '#5B8A7A',
-                  background: 'rgba(5, 4, 3, 0.75)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(91, 138, 122, 0.3)',
-                }}>
-                  ✓ UPLOAD COMPLETE
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  setUploadSuccess(false);
-                  fileInputRef.current?.click();
-                }}
-                disabled={isUploading}
-                style={{
-                  padding: '6px 12px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '9px',
-                  letterSpacing: '0.05em',
-                  color: isUploading ? 'rgba(236, 227, 214, 0.3)' : 'rgba(236, 227, 214, 0.7)',
-                  background: 'rgba(5, 4, 3, 0.75)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(236, 227, 214, 0.2)',
-                  cursor: isUploading ? 'default' : 'pointer',
-                }}
-              >
-                {isUploading ? 'UPLOADING...' : uploadSuccess ? 'UPLOAD ANOTHER' : '+ UPLOAD MEDIA'}
-              </button>
-              {uploadError && (
-                <div style={{
-                  padding: '4px 8px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '8px',
-                  color: '#C17F59',
-                  background: 'rgba(5, 4, 3, 0.75)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                }}>
-                  {uploadError}
-                </div>
-              )}
-            </div>
-          )}
+          {/* Upload section - hidden in view mode, will show in edit mode future */}
+          {/* TODO: Add isEditing prop to control visibility */}
         </div>
 
         {/* Right Column - glassmorphism */}
