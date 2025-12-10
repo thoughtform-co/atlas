@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('user');
-  const fetchingRoleRef = useRef(false); // Prevent duplicate role fetches
+  const [mounted, setMounted] = useState(false);
 
   // Fetch user role from database
   const fetchUserRole = useCallback(async (userId: string, userObj?: User | null) => {
@@ -65,14 +65,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user?.id) {
       setRoleLoading(true);
       try {
-        // Pass current user object so metadata can be checked
         const userRole = await fetchUserRole(user.id, user);
         setRole(userRole);
       } finally {
         setRoleLoading(false);
       }
+    } else {
+      setRole('user');
+      setRoleLoading(false);
     }
   }, [user, fetchUserRole]);
+
+  // Mark mounted for client-only guards
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) {
@@ -82,36 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
-      if (session?.user?.id) {
-        // Check metadata first - if role is in metadata, no need to fetch
-        const metadataRole = session.user.app_metadata?.role || session.user.user_metadata?.role;
-        if (metadataRole === 'admin' || metadataRole === 'archivist') {
-          setRole(metadataRole as UserRole);
-          setRoleLoading(false);
-        } else if (!fetchingRoleRef.current) {
-          // Only fetch if not already fetching and no metadata role
-          fetchingRoleRef.current = true;
-          try {
-            const userRole = await fetchUserRole(session.user.id, session.user);
-            setRole(userRole);
-          } catch (error) {
-            console.error('[Auth] Failed to fetch initial role:', error);
-          } finally {
-            fetchingRoleRef.current = false;
-            setRoleLoading(false);
-          }
-        } else {
-          setRoleLoading(false);
-        }
-      } else {
-        setRole('user');
-        setRoleLoading(false);
-      }
-      
       setLoading(false);
     });
 
@@ -120,42 +100,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event: AuthChangeEvent, session: Session | null) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (session?.user?.id) {
-          // Check metadata first - if role is in metadata, no need to fetch
-          const metadataRole = session.user.app_metadata?.role || session.user.user_metadata?.role;
-          if (metadataRole === 'admin' || metadataRole === 'archivist') {
-            setRole(metadataRole as UserRole);
-            setRoleLoading(false);
-          } else if (!fetchingRoleRef.current) {
-            // Only fetch if not already fetching and no metadata role
-            fetchingRoleRef.current = true;
-            setRoleLoading(true);
-            try {
-              const userRole = await fetchUserRole(session.user.id, session.user);
-              setRole(userRole);
-            } catch (error) {
-              console.error('[Auth] Failed to fetch role on auth change:', error);
-            } finally {
-              fetchingRoleRef.current = false;
-              setRoleLoading(false);
-            }
-          } else {
-            // Already fetching, just wait for it to complete
-            setRoleLoading(true);
-          }
-        } else {
-          setRole('user');
-          setRoleLoading(false);
-          fetchingRoleRef.current = false;
-        }
-        
-        setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
   }, [fetchUserRole]);
+
+  // Resolve role whenever user changes
+  useEffect(() => {
+    if (!mounted) return;
+    if (!user) {
+      setRole('user');
+      setRoleLoading(false);
+      return;
+    }
+
+    const metadataRole = user.app_metadata?.role || user.user_metadata?.role;
+    if (metadataRole === 'admin' || metadataRole === 'archivist') {
+      setRole(metadataRole as UserRole);
+      setRoleLoading(false);
+      return;
+    }
+
+    setRoleLoading(true);
+    fetchUserRole(user.id, user)
+      .then((userRole) => setRole(userRole))
+      .catch((error) => {
+        console.error('[Auth] Failed to resolve role:', error);
+        setRole('user');
+      })
+      .finally(() => setRoleLoading(false));
+  }, [user, mounted, fetchUserRole]);
 
   const signIn = async (email: string, password: string) => {
     console.log('[Auth] signIn called, checking Supabase client...');

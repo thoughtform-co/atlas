@@ -33,10 +33,11 @@ function setupIcon(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: n
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, isAdmin, signOut, user, roleLoading } = useAuth();
+  const { isAuthenticated, isAdmin, signOut, user, roleLoading, loading } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   // Canvas refs
   const addIconRef = useRef<HTMLCanvasElement>(null);
@@ -64,6 +65,11 @@ export function Navigation() {
     }, 150); // Small delay to allow mouse to move to dropdown
   }, []);
 
+  // Mark mounted (client only)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -73,8 +79,9 @@ export function Navigation() {
     };
   }, []);
 
-  // Draw icons
+  // Draw icons (redraw when auth state changes)
   useEffect(() => {
+    if (!mounted) return;
     // Add icon (+)
     const addSetup = setupIcon(addIconRef, 22);
     if (addSetup) {
@@ -181,7 +188,7 @@ export function Navigation() {
       drawPixel(ctx, 8, arrowY - 2, DAWN, 0.4);
       drawPixel(ctx, 8, arrowY + 2, DAWN, 0.4);
     }
-  }, []);
+  }, [mounted, isAdmin, isAuthenticated, loading, roleLoading]);
 
   const isLoreActive = pathname === '/lore';
   const isAtlasActive = pathname === '/';
@@ -202,7 +209,7 @@ export function Navigation() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
           {/* Add Button - Only show after role is resolved */}
-          {!roleLoading && isAdmin && (
+          {mounted && !loading && !roleLoading && isAdmin && (
             <Link
               href="/admin/new-entity"
               style={{
