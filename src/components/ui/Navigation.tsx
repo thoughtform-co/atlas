@@ -33,7 +33,7 @@ function setupIcon(canvasRef: React.RefObject<HTMLCanvasElement | null>, size: n
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, isAdmin, signOut, user, roleLoading } = useAuth();
+  const { isAuthenticated, isAdmin, signOut, user, roleLoading, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -184,7 +184,7 @@ export function Navigation() {
       drawPixel(ctx, 8, arrowY - 2, DAWN, 0.4);
       drawPixel(ctx, 8, arrowY + 2, DAWN, 0.4);
     }
-  }, []);
+  }, [mounted, loading, roleLoading, isAdmin, isAuthenticated, showUserDropdown]);
 
   const isLoreActive = pathname === '/lore';
   const isAtlasActive = pathname === '/';
@@ -204,8 +204,8 @@ export function Navigation() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
-          {/* Add Button - Only show after mounted AND role is resolved */}
-          {mounted && !roleLoading && isAdmin && (
+          {/* Add Button - Only show after mounted AND auth+role are resolved */}
+          {mounted && !loading && !roleLoading && isAdmin && (
             <Link
               href="/admin/new-entity"
               style={{
