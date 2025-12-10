@@ -394,6 +394,30 @@ export function EntityCardPreview({
 
   return (
     <div className={styles.card}>
+      {/* Full-bleed Media Background */}
+      {formData.mediaUrl && (
+        <div className={styles.mediaBackground}>
+          {isVideo ? (
+            <video
+              src={formData.mediaUrl}
+              className={styles.backgroundMedia}
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls={false}
+            />
+          ) : (
+            <img 
+              src={formData.mediaUrl} 
+              alt={formData.name} 
+              className={styles.backgroundMedia}
+            />
+          )}
+          {/* Gradient overlay for readability */}
+          <div className={styles.mediaOverlay} />
+        </div>
+      )}
       <div className={styles.scanline} />
 
       {/* Header */}
@@ -425,58 +449,39 @@ export function EntityCardPreview({
         </div>
       </div>
 
-      {/* Center */}
-        <div className={styles.center}>
-          {/* Media background layer */}
-          <div className={styles.mediaLayer}>
-            {formData.mediaUrl ? (
-              isVideo ? (
-                <video
-                  src={formData.mediaUrl}
-                  className={styles.entityMedia}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  controls={false}
-                />
-              ) : (
-                <img 
-                  src={formData.mediaUrl} 
-                  alt={formData.name} 
-                  className={styles.entityMedia}
-                />
-              )
-            ) : null}
-          </div>
+      {/* Center - transparent to show background media */}
+      <div className={styles.center}>
+        {/* Only show particle canvas if no media */}
+        {!formData.mediaUrl && <canvas ref={centerCanvasRef} className={styles.centerCanvas} />}
 
-          <canvas ref={centerCanvasRef} className={styles.centerCanvas} />
-          <div className={styles.alignmentOverlay}>
-            <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
-          </div>
-
-          {/* Upload overlay (compact) */}
-          {onMediaAnalyzed && setIsAnalyzing && (
-            <div className={styles.uploadOverlay}>
-              <MediaUploadZone
-                compact
-                onMediaAnalyzed={onMediaAnalyzed}
-                isAnalyzing={!!isAnalyzing}
-                setIsAnalyzing={setIsAnalyzing}
-                existingMediaUrl={formData.mediaUrl}
-                existingMimeType={formData.mediaMimeType}
-                onClear={onClearMedia}
-              />
-            </div>
-          )}
-
-          {!formData.mediaUrl && (
-            <div className={styles.entityPlaceholder}>
-              <div className={styles.placeholderBox}>◇</div>
-              <span>[NO IMAGE]</span>
-            </div>
-          )}
+        {/* Alignment Compass Overlay with glass effect */}
+        <div className={styles.alignmentOverlay}>
+          <div className={styles.alignmentLabel}>{allegianceLabels[formData.allegiance]}</div>
         </div>
+
+        {/* Upload overlay (compact) with glass effect */}
+        {onMediaAnalyzed && setIsAnalyzing && (
+          <div className={styles.uploadOverlay}>
+            <MediaUploadZone
+              compact
+              onMediaAnalyzed={onMediaAnalyzed}
+              isAnalyzing={!!isAnalyzing}
+              setIsAnalyzing={setIsAnalyzing}
+              existingMediaUrl={formData.mediaUrl}
+              existingMimeType={formData.mediaMimeType}
+              onClear={onClearMedia}
+            />
+          </div>
+        )}
+
+        {/* No image placeholder */}
+        {!formData.mediaUrl && (
+          <div className={styles.entityPlaceholder}>
+            <div className={styles.placeholderBox}>◇</div>
+            <span>[NO IMAGE]</span>
+          </div>
+        )}
+      </div>
 
       {/* Right Column */}
       <div className={styles.rightCol}>
