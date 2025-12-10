@@ -63,15 +63,15 @@
 /* Header */
 .header {
   grid-column: 1 / -1;
-  background: rgba(10, 9, 8, 0.7);
-  backdrop-filter: blur(6px);
+  background: rgba(5, 4, 3, 0.35);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   padding: 0 12px;
   font-size: 9px;
   letter-spacing: 0.1em;
   gap: 12px;
-  border-bottom: 1px solid rgba(236, 227, 214, 0.08);
+  border-bottom: 1px solid rgba(236, 227, 214, 0.1);
   position: relative;
   z-index: 10;
 }
@@ -108,14 +108,50 @@
 
 /* Readout Panels */
 .readout {
-  background: rgba(5, 4, 3, 0.5);
-  backdrop-filter: blur(3px);
+  background: transparent;
   padding: 8px;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  border: 1px solid rgba(236, 227, 214, 0.06);
+  border: 1px solid rgba(236, 227, 214, 0.08);
+}
+
+/* Size variants for visual variety */
+.readoutTall {
+  flex: 1.4;
+}
+
+.readoutShort {
+  flex: 0.7;
+}
+
+.readoutMedium {
+  flex: 1;
+}
+
+/* Border variants */
+.borderSubtle {
+  border-color: rgba(236, 227, 214, 0.05);
+}
+
+.borderAccent {
+  border-color: rgba(202, 165, 84, 0.15);
+}
+
+.borderLeft {
+  border: none;
+  border-left: 1px solid rgba(236, 227, 214, 0.1);
+}
+
+.borderRight {
+  border: none;
+  border-right: 1px solid rgba(236, 227, 214, 0.1);
+}
+
+.borderTop {
+  border: none;
+  border-top: 1px solid rgba(236, 227, 214, 0.08);
 }
 
 .readoutLabel {
@@ -245,9 +281,9 @@
 /* Footer */
 .footer {
   grid-column: 1 / -1;
-  background: rgba(10, 9, 8, 0.7);
-  backdrop-filter: blur(6px);
-  border-top: 1px solid rgba(236, 227, 214, 0.08);
+  background: rgba(5, 4, 3, 0.4);
+  backdrop-filter: blur(4px);
+  border-top: 1px solid rgba(236, 227, 214, 0.1);
   padding: 18px 28px;
   display: grid;
   grid-template-columns: 180px 1fr;
