@@ -433,18 +433,18 @@ export function EntityCardPreview({
 
       {/* Left Column */}
       <div className={styles.leftCol}>
-        <div className={`${styles.readout} ${styles.readoutTall} ${styles.borderRight}`}>
+        <div className={`${styles.readout} ${styles.borderRight}`}>
           <div className={styles.readoutLabel}>▸ Phase State</div>
-          <div className={styles.readoutCanvas}><canvas ref={phaseCanvasRef} /></div>
+          <div className={`${styles.readoutCanvas} ${styles.canvasCompact}`}><canvas ref={phaseCanvasRef} /></div>
           <div className={styles.readoutValue}>TEMP: {formData.hallucinationIndex.toFixed(2)}</div>
         </div>
-        <div className={`${styles.readout} ${styles.readoutShort} ${styles.borderSubtle}`}>
+        <div className={`${styles.readout} ${styles.borderSubtle}`}>
           <div className={styles.readoutLabel}>▸ Superposition</div>
-          <div className={styles.readoutCanvas}><canvas ref={superCanvasRef} /></div>
+          <div className={`${styles.readoutCanvas} ${styles.canvasTall}`}><canvas ref={superCanvasRef} /></div>
         </div>
-        <div className={`${styles.readout} ${styles.readoutMedium} ${styles.borderAccent}`}>
+        <div className={`${styles.readout} ${styles.borderAccent}`}>
           <div className={styles.readoutLabel}>▸ Hallucination Index</div>
-          <div className={styles.readoutCanvas}><canvas ref={hallucCanvasRef} /></div>
+          <div className={`${styles.readoutCanvas} ${styles.canvasWide}`}><canvas ref={hallucCanvasRef} /></div>
           <div className={styles.readoutValueAlert}>HIGH [{Math.round(formData.hallucinationIndex * 5)}/5]</div>
         </div>
       </div>
@@ -481,22 +481,22 @@ export function EntityCardPreview({
 
       {/* Right Column */}
       <div className={styles.rightCol}>
-        <div className={`${styles.readout} ${styles.readoutMedium} ${styles.borderLeft}`}>
+        <div className={`${styles.readout} ${styles.borderLeft}`}>
           <div className={styles.readoutLabel}>▸ Latent Position</div>
-          <div className={styles.readoutCanvas}><canvas ref={coordsCanvasRef} /></div>
+          <div className={`${styles.readoutCanvas} ${styles.canvasSquare}`}><canvas ref={coordsCanvasRef} /></div>
           <div className={styles.readoutValueSmall}>
             X:{formData.coordinates.geometry.toFixed(3)} Y:{formData.coordinates.alterity.toFixed(3)}<br/>
             Z:{formData.coordinates.dynamics.toFixed(3)}
           </div>
         </div>
-        <div className={`${styles.readout} ${styles.readoutShort} ${styles.borderAccent}`}>
+        <div className={`${styles.readout} ${styles.borderAccent}`}>
           <div className={styles.readoutLabel}>▸ Manifold Curvature</div>
-          <div className={styles.readoutCanvas}><canvas ref={manifoldCanvasRef} /></div>
+          <div className={`${styles.readoutCanvas} ${styles.canvasSquare}`}><canvas ref={manifoldCanvasRef} /></div>
           <div className={styles.readoutValueAlert}>{formData.manifoldCurvature.toUpperCase()}</div>
         </div>
-        <div className={`${styles.readout} ${styles.readoutTall} ${styles.borderSubtle}`}>
+        <div className={`${styles.readout} ${styles.borderSubtle}`}>
           <div className={styles.readoutLabel}>▸ Embedding Signature</div>
-          <div className={styles.readoutCanvas}><canvas ref={spectralCanvasRef} /></div>
+          <div className={`${styles.readoutCanvas} ${styles.canvasWide}`}><canvas ref={spectralCanvasRef} /></div>
         </div>
       </div>
 
