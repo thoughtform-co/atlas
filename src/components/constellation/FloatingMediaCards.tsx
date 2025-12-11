@@ -133,7 +133,8 @@ function FloatingCard({
     if (onCardRef && cardRefForThis.current) {
       onCardRef(mediaIdx, cardRefForThis);
     }
-  }, [onCardRef, mediaIdx]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaIdx]); // Only depend on mediaIdx, not onCardRef to avoid infinite loops
 
   return (
     <div

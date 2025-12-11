@@ -224,19 +224,17 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   };
 
   // Initialize floating card refs when media changes
+  // Note: This is just for sizing the array, actual refs are set by FloatingMediaCards
   useEffect(() => {
     const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
-    const floatingIndices = filteredMedia
-      .map((_, idx) => idx)
-      .filter(idx => idx !== currentMediaIndex)
-      .slice(0, 3);
+    const floatingCount = Math.min(3, Math.max(0, filteredMedia.length - 1));
     
-    // Ensure array is the right size
-    while (floatingCardRefs.current.length < floatingIndices.length) {
+    // Ensure array is the right size (but don't reset refs that are already set)
+    while (floatingCardRefs.current.length < floatingCount) {
       floatingCardRefs.current.push(null);
     }
-    floatingCardRefs.current = floatingCardRefs.current.slice(0, floatingIndices.length);
-  }, [allMedia, currentMediaIndex]);
+    // Don't truncate - keep existing refs even if count decreases temporarily
+  }, [allMedia.length, currentMediaIndex]);
 
   const signalStrength = ((displayDenizen.coordinates.geometry + 1) / 2).toFixed(3);
   const epoch = displayDenizen.firstObserved || '4.2847';
@@ -763,9 +761,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     }
   };
 
-  // Handle floating card refs
+  // Handle floating card refs - use ref to avoid dependency on allMedia array
+  const allMediaRef = useRef(allMedia);
+  useEffect(() => {
+    allMediaRef.current = allMedia;
+  }, [allMedia]);
+
   const handleFloatingCardRef = useCallback((index: number, ref: React.RefObject<HTMLDivElement | null>) => {
-    const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
+    const filteredMedia = allMediaRef.current.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
     const floatingIndices = filteredMedia
       .map((_, idx) => idx)
       .filter(idx => idx !== currentMediaIndex)
@@ -773,13 +776,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     
     const cardIdx = floatingIndices.indexOf(index);
     if (cardIdx >= 0) {
-      if (cardIdx >= floatingCardRefs.current.length) {
-        floatingCardRefs.current.push(ref);
-      } else {
-        floatingCardRefs.current[cardIdx] = ref;
+      // Ensure array is large enough
+      while (floatingCardRefs.current.length <= cardIdx) {
+        floatingCardRefs.current.push(null);
       }
+      floatingCardRefs.current[cardIdx] = ref;
     }
-  }, [allMedia, currentMediaIndex]);
+  }, [currentMediaIndex]); // Only depend on currentMediaIndex
 
   return (
     <div

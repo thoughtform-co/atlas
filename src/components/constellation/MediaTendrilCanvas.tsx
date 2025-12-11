@@ -40,21 +40,22 @@ export function MediaTendrilCanvas({
   const tendrilsRef = useRef<TendrilState[]>([]);
   const animationRef = useRef<number | undefined>(undefined);
 
-  // Filter out thumbnails and limit to 4 cards
-  const displayMedia = allMedia
-    .filter(m => m.mediaType !== 'thumbnail')
-    .slice(0, 4);
-
-  // Get floating card indices (exclude current)
-  const floatingIndices = displayMedia
-    .map((_, idx) => idx)
-    .filter(idx => idx !== currentIndex)
-    .slice(0, 3);
 
   useEffect(() => {
     // Initialize tendrils for each floating card
+    // Filter out thumbnails and limit to 4 cards
+    const filteredMedia = allMedia
+      .filter(m => m.mediaType !== 'thumbnail')
+      .slice(0, 4);
+
+    // Get floating card indices (exclude current)
+    const floatingIndices = filteredMedia
+      .map((_, idx) => idx)
+      .filter(idx => idx !== currentIndex)
+      .slice(0, 3);
+
     tendrilsRef.current = floatingIndices.map((mediaIdx) => {
-      const media = displayMedia[mediaIdx];
+      const media = filteredMedia[mediaIdx];
       if (!media) return null;
 
       const particleCount = 25; // Performance limit: 25 particles per connection
@@ -77,11 +78,52 @@ export function MediaTendrilCanvas({
         pulseSpeed: 0.015 + Math.random() * 0.01,
       };
     }).filter((t): t is TendrilState => t !== null);
-  }, [allMedia, currentIndex, displayMedia, floatingIndices]);
+  }, [allMedia.length, currentIndex]); // Use length instead of array to avoid infinite loops
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !mainCardRef.current || tendrilsRef.current.length === 0) return;
+    if (!canvas || !mainCardRef.current || floatingCardRefs.length === 0) return;
+    
+    // Re-initialize tendrils if needed
+    if (tendrilsRef.current.length === 0) {
+      // Filter out thumbnails and limit to 4 cards
+      const filteredMedia = allMedia
+        .filter(m => m.mediaType !== 'thumbnail')
+        .slice(0, 4);
+
+      // Get floating card indices (exclude current)
+      const floatingIndices = filteredMedia
+        .map((_, idx) => idx)
+        .filter(idx => idx !== currentIndex)
+        .slice(0, 3);
+
+      tendrilsRef.current = floatingIndices.map((mediaIdx) => {
+        const media = filteredMedia[mediaIdx];
+        if (!media) return null;
+
+        const particleCount = 25;
+        const particles: Particle[] = [];
+
+        for (let i = 0; i < particleCount; i++) {
+          const t = (i % (particleCount / 2)) / (particleCount / 2);
+          particles.push({
+            t,
+            baseOffset: (Math.random() - 0.5) * 8,
+            phase: Math.random() * Math.PI * 2,
+            size: 2 + Math.random() * 2,
+          });
+        }
+
+        return {
+          mediaId: media.id,
+          particles,
+          pulsePhase: Math.random() * Math.PI * 2,
+          pulseSpeed: 0.015 + Math.random() * 0.01,
+        };
+      }).filter((t): t is TendrilState => t !== null);
+    }
+    
+    if (tendrilsRef.current.length === 0) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -175,7 +217,10 @@ export function MediaTendrilCanvas({
     };
   }, [mainCardRef, floatingCardRefs, allMedia, currentIndex]);
 
-  if (tendrilsRef.current.length === 0) return null;
+  // Early return if no floating cards to connect
+  const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
+  const floatingCount = Math.min(3, Math.max(0, filteredMedia.length - 1));
+  if (floatingCount === 0 || tendrilsRef.current.length === 0) return null;
 
   return (
     <canvas
