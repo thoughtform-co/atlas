@@ -689,17 +689,16 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                           fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:download-image-mousedown',message:'Download Image button mousedown',data:{eventType:e.type},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'CLICK-1'})}).catch(()=>{});
                         }
                         // #endregion
-                      }}
-                      onClick={(e) => {
-                        // #region agent log
-                        if (typeof window !== 'undefined') {
-                          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:download-image-click',message:'Download Image button clicked',data:{eventType:e.type,currentTarget:!!e.currentTarget},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'CLICK-1'})}).catch(()=>{});
-                        }
-                        // #endregion
                         e.stopPropagation();
                         e.preventDefault();
                         setShowDownloadMenu(false);
+                        // Handle action on mousedown since click may not fire if menu unmounts
                         handleExportPNG();
+                      }}
+                      onClick={(e) => {
+                        // Prevent default click behavior (already handled on mousedown)
+                        e.stopPropagation();
+                        e.preventDefault();
                       }}
                       style={{
                         display: 'flex',
@@ -741,17 +740,16 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                           fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:download-video-mousedown',message:'Download Video button mousedown',data:{eventType:e.type},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'CLICK-2'})}).catch(()=>{});
                         }
                         // #endregion
-                      }}
-                      onClick={(e) => {
-                        // #region agent log
-                        if (typeof window !== 'undefined') {
-                          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:download-video-click',message:'Download Video button clicked',data:{eventType:e.type,currentTarget:!!e.currentTarget},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'CLICK-2'})}).catch(()=>{});
-                        }
-                        // #endregion
                         e.stopPropagation();
                         e.preventDefault();
                         setShowDownloadMenu(false);
+                        // Handle action on mousedown since click may not fire if menu unmounts
                         handleExportVideo();
+                      }}
+                      onClick={(e) => {
+                        // Prevent default click behavior (already handled on mousedown)
+                        e.stopPropagation();
+                        e.preventDefault();
                       }}
                       style={{
                         display: 'flex',
