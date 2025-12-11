@@ -41,7 +41,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [recordingProgress, setRecordingProgress] = useState(0);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -554,9 +554,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                     // #endregion
                     if (!isExporting && !isRecordingVideo && downloadButtonRef.current) {
                       const rect = downloadButtonRef.current.getBoundingClientRect();
+                      // Calculate position: align right edge of dropdown with right edge of button
+                      const dropdownWidth = 140; // minWidth from styles
                       const position = {
                         top: rect.bottom + 4,
-                        right: window.innerWidth - rect.right,
+                        left: rect.right - dropdownWidth, // Align right edge of dropdown with button
                       };
                       // #region agent log
                       if (typeof window !== 'undefined') {
@@ -574,8 +576,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                   }}
                   onMouseLeave={(e) => {
                     // Don't close if moving to the dropdown menu
-                    const relatedTarget = e.relatedTarget as HTMLElement;
-                    if (relatedTarget?.closest('[data-download-menu]')) return;
+                    const relatedTarget = e.relatedTarget;
+                    if (relatedTarget && relatedTarget instanceof HTMLElement) {
+                      const menuElement = relatedTarget.closest('[data-download-menu]');
+                      if (menuElement) return;
+                    }
                     setShowDownloadMenu(false);
                   }}
                   style={{
@@ -620,7 +625,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                     style={{
                       position: 'fixed',
                       top: `${menuPosition.top}px`,
-                      right: `${menuPosition.right}px`,
+                      left: `${menuPosition.left}px`,
                       background: 'rgba(10, 9, 8, 0.35)',
                       backdropFilter: 'blur(16px)',
                       WebkitBackdropFilter: 'blur(16px)',
