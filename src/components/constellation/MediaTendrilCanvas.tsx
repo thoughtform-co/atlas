@@ -7,7 +7,7 @@ interface MediaTendrilCanvasProps {
   allMedia: DenizenMedia[];
   currentIndex: number;
   mainCardRef: React.RefObject<HTMLDivElement | null>;
-  floatingCardRefs: (React.RefObject<HTMLDivElement | null> | null)[];
+  floatingCardRefs: React.RefObject<HTMLDivElement>[];
 }
 
 interface Particle {
@@ -51,11 +51,6 @@ export function MediaTendrilCanvas({
   }, [allMedia, currentIndex]);
 
   useEffect(() => {
-    // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MediaTendrilCanvas.tsx:53',message:'Tendril init effect RUN',data:{allMediaLength:allMedia.length,currentIndex,allMediaRefLength:allMediaRef.current.length,currentIndexRef:currentIndexRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
-    }
-    // #endregion
     // Initialize tendrils for each floating card
     // Filter out thumbnails and limit to 4 cards
     const filteredMedia = allMediaRef.current
@@ -122,9 +117,9 @@ export function MediaTendrilCanvas({
 
     const gridSize = 2; // Grid-snapped pixels for performance
 
-    const getCardCenter = (ref: React.RefObject<HTMLDivElement | null> | null): { x: number; y: number } | null => {
-      if (!ref || !ref.current) return null;
-      const rect = ref.current.getBoundingClientRect();
+    const getCardCenter = (node: HTMLDivElement | null): { x: number; y: number } | null => {
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
       return {
         x: rect.left + rect.width / 2,
         y: rect.top + rect.height / 2,
@@ -132,14 +127,14 @@ export function MediaTendrilCanvas({
     };
 
     const drawTendril = (tendril: TendrilState, floatingCardIdx: number) => {
-      const mainCenter = getCardCenter(mainCardRef);
+      const mainCenter = getCardCenter(mainCardRef.current);
       if (!mainCenter) return;
 
       // Get floating card ref (mapped by floatingIndices)
       const floatingRef = floatingCardRefs[floatingCardIdx];
-      if (!floatingRef) return;
+      if (!floatingRef || !floatingRef.current) return;
 
-      const floatingCenter = getCardCenter(floatingRef);
+      const floatingCenter = getCardCenter(floatingRef.current);
       if (!floatingCenter) return;
 
       const dx = floatingCenter.x - mainCenter.x;

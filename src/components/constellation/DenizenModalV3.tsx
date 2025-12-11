@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Denizen } from '@/lib/types';
@@ -35,11 +35,6 @@ const DAWN = { r: 236, g: 227, b: 214 };
 const GRID = 3;
 
 export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenModalV3Props) {
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:33',message:'COMPONENT RENDER START',data:{hasDenizen:!!denizen,denizenId:denizen?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-  }
-  // #endregion
   const router = useRouter();
   const { isAuthenticated, isAdmin } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
@@ -56,7 +51,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [isMenuHovered, setIsMenuHovered] = useState(false);
   const [allMedia, setAllMedia] = useState<DenizenMedia[]>([]);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-  const floatingCardRefs = useRef<(React.RefObject<HTMLDivElement | null> | null)[]>([]);
+  // Stable array of refs for floating cards (for 3 background slots)
+  const [floatingCardRefs] = useState<React.RefObject<HTMLDivElement>[]>(() => {
+    const refs: React.RefObject<HTMLDivElement>[] = [];
+    for (let i = 0; i < 3; i++) {
+      refs.push(React.createRef<HTMLDivElement>() as React.RefObject<HTMLDivElement>);
+    }
+    return refs;
+  });
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -67,22 +69,12 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
   // Update currentDenizen when denizen prop changes
   useEffect(() => {
-    // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:64',message:'setCurrentDenizen effect RUN',data:{hasDenizen:!!denizen,denizenId:denizen?.id,currentDenizenId:currentDenizen?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    }
-    // #endregion
     setCurrentDenizen(denizen);
   }, [denizen]);
 
-  // Fetch all media when denizen changes
+  // Fetch all media when denizen.id changes (primitive dependency, not object)
   useEffect(() => {
-    // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:69',message:'Fetch media effect START',data:{denizenId:denizen?.id,hasDenizen:!!denizen},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    }
-    // #endregion
-    if (!denizen) {
+    if (!denizen?.id) {
       setAllMedia([]);
       setCurrentMediaIndex(0);
       return;
@@ -93,11 +85,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         const media = await fetchDenizenMedia(denizen.id);
         // Filter out thumbnails - only show image/video media
         const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
-        // #region agent log
-        if (typeof window !== 'undefined') {
-          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:81',message:'Setting allMedia',data:{mediaCount:filteredMedia.length,mediaIds:filteredMedia.map(m=>m.id)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-        }
-        // #endregion
         setAllMedia(filteredMedia);
         
         // Find primary media index, or default to 0
@@ -111,7 +98,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     };
 
     loadMedia();
-  }, [denizen]);
+  }, [denizen?.id]);
 
   useEffect(() => {
     if (!denizen) return;
@@ -243,23 +230,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     }
   };
 
-  // Initialize floating card refs when media changes
-  // Note: This is just for sizing the array, actual refs are set by FloatingMediaCards
-  useEffect(() => {
-    // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:228',message:'Floating card refs init effect RUN',data:{allMediaLength:allMedia.length,currentMediaIndex,floatingCardRefsLength:floatingCardRefs.current.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    }
-    // #endregion
-    const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
-    const floatingCount = Math.min(3, Math.max(0, filteredMedia.length - 1));
-    
-    // Ensure array is the right size (but don't reset refs that are already set)
-    while (floatingCardRefs.current.length < floatingCount) {
-      floatingCardRefs.current.push(null);
-    }
-    // Don't truncate - keep existing refs even if count decreases temporarily
-  }, [allMedia.length, currentMediaIndex]);
 
   const signalStrength = ((displayDenizen.coordinates.geometry + 1) / 2).toFixed(3);
   const epoch = displayDenizen.firstObserved || '4.2847';
@@ -786,46 +756,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     }
   };
 
-  // Handle floating card refs - use ref to avoid dependency on allMedia array
-  const allMediaRef = useRef(allMedia);
-  const currentMediaIndexRef = useRef(currentMediaIndex);
-  
-  useEffect(() => {
-    // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:768',message:'Ref update effect RUN',data:{allMediaLength:allMedia.length,allMediaRefLength:allMediaRef.current.length,currentMediaIndex,currentMediaIndexRef:currentMediaIndexRef.current,allMediaSameRef:allMedia===allMediaRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    }
-    // #endregion
-    allMediaRef.current = allMedia;
-    currentMediaIndexRef.current = currentMediaIndex;
-  }, [allMedia, currentMediaIndex]);
-
-  // WHY: Use useCallback with empty deps to prevent onCardRef from changing
-  // This breaks the infinite loop: FloatingCard's useEffect depends on onCardRef,
-  // but if onCardRef is stable, the effect won't re-run unnecessarily
-  const handleFloatingCardRef = useCallback((index: number, ref: React.RefObject<HTMLDivElement | null>) => {
-    // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:803',message:'handleFloatingCardRef CALLED',data:{index,hasRef:!!ref,refCurrent:!!ref?.current,allMediaLength:allMediaRef.current.length,currentMediaIndex:currentMediaIndexRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-    }
-    // #endregion
-    // Read from refs to avoid dependencies
-    const filteredMedia = allMediaRef.current.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
-    const floatingIndices = filteredMedia
-      .map((_, idx) => idx)
-      .filter(idx => idx !== currentMediaIndexRef.current)
-      .slice(0, 3);
-    
-    const cardIdx = floatingIndices.indexOf(index);
-    if (cardIdx >= 0) {
-      // Ensure array is large enough
-      while (floatingCardRefs.current.length <= cardIdx) {
-        floatingCardRefs.current.push(null);
-      }
-      floatingCardRefs.current[cardIdx] = ref;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - use refs for all values to prevent callback recreation
 
   return (
     <div
@@ -846,23 +776,15 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       </div>
       
       {/* Floating background cards */}
-      {(() => {
-        const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail');
-        // #region agent log
-        if (typeof window !== 'undefined') {
-          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:render',message:'RENDER - checking FloatingMediaCards',data:{allMediaLength:allMedia.length,filteredMediaLength:filteredMedia.length,currentMediaIndex,shouldRender:filteredMedia.length>1,allMediaIds:allMedia.map(m=>m.id).join(',')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-        }
-        // #endregion
-        return filteredMedia.length > 1 ? (
-          <FloatingMediaCards
-            denizen={displayDenizen}
-            allMedia={allMedia}
-            currentIndex={currentMediaIndex}
-            cardRef={cardRef}
-            onCardRef={handleFloatingCardRef}
-          />
-        ) : null;
-      })()}
+      {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
+        <FloatingMediaCards
+          denizen={displayDenizen}
+          allMedia={allMedia}
+          currentIndex={currentMediaIndex}
+          cardRef={cardRef}
+          floatingCardRefs={floatingCardRefs}
+        />
+      )}
 
       {/* Tendril particle connections */}
       {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
@@ -870,7 +792,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           allMedia={allMedia}
           currentIndex={currentMediaIndex}
           mainCardRef={cardRef}
-          floatingCardRefs={floatingCardRefs.current.filter((ref): ref is React.RefObject<HTMLDivElement> => ref !== null)}
+          floatingCardRefs={floatingCardRefs}
         />
       )}
 

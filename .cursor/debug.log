@@ -654,3 +654,14 @@
 {"location":"DenizenModalV3.tsx:handleExportVideo:video-drawn","message":"Video frame drawn to canvas","data":{"videoWidth":544,"videoHeight":720,"canvasWidth":1440,"canvasHeight":1800,"readyState":4,"frameCount":2},"timestamp":1765460012877,"sessionId":"debug-session","hypothesisId":"VID-4"}
 {"location":"DenizenModalV3.tsx:handleExportVideo:frame-composited","message":"Frame composited (video + UI)","data":{"centerPixel":[62,58,50,255],"isDark":false,"frameCount":2,"canvasWidth":1440,"canvasHeight":1800},"timestamp":1765460013027,"sessionId":"debug-session","hypothesisId":"VID-7"}
 {"location":"DenizenModalV3.tsx:69","message":"Fetch media effect START","data":{"hasDenizen":false},"timestamp":1765470748983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":false},"timestamp":1765472491301,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":false},"timestamp":1765472491311,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:64","message":"setCurrentDenizen effect RUN","data":{"hasDenizen":false},"timestamp":1765472491308,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:69","message":"Fetch media effect START","data":{"hasDenizen":false},"timestamp":1765472491308,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":false},"timestamp":1765472491318,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":false},"timestamp":1765472491325,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":false},"timestamp":1765472491329,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":false},"timestamp":1765472491332,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":false},"timestamp":1765472491489,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":true,"denizenId":"eigensage-mj0htgm6"},"timestamp":1765472492488,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"DenizenModalV3.tsx:33","message":"COMPONENT RENDER START","data":{"hasDenizen":true,"denizenId":"eigensage-mj0htgm6"},"timestamp":1765472492496,"sessionId":"debug-session","hypothesisId":"A"}
