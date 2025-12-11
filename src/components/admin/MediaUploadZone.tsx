@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { EntityFormData } from '@/app/admin/new-entity/page';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import styles from './MediaUploadZone.module.css';
 
 interface MediaUploadZoneProps {
@@ -75,6 +77,7 @@ export function MediaUploadZone({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   // Handle file selection
   const handleFileSelect = useCallback(async (file: File) => {
@@ -105,9 +108,10 @@ export function MediaUploadZone({
     setUploadProgress(10);
     
     try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', file);
+      // Check if Supabase is available and user is authenticated
+      if (!supabase || !user) {
+        throw new Error('Authentication required. Please log in to upload media.');
+      }
 
       // For videos, extract thumbnail first
       let thumbnailUrl: string | undefined;
@@ -116,66 +120,63 @@ export function MediaUploadZone({
         const thumbnailBlob = await extractVideoThumbnail(file);
         
         if (thumbnailBlob) {
-          // Upload thumbnail
-          const thumbFormData = new FormData();
+          // Upload thumbnail directly to Supabase Storage
           const thumbFile = new File([thumbnailBlob], `thumb_${file.name.replace(/\.[^.]+$/, '.jpg')}`, { type: 'image/jpeg' });
-          thumbFormData.append('file', thumbFile);
+          const thumbTimestamp = Date.now();
+          const thumbPath = `uploads/${user.id}/${thumbTimestamp}_thumb_${thumbFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
           
-          const thumbResponse = await fetch('/api/admin/upload', {
-            method: 'POST',
-            body: thumbFormData,
-          });
+          const { data: thumbData, error: thumbError } = await supabase.storage
+            .from('entity-media')
+            .upload(thumbPath, thumbFile, {
+              contentType: 'image/jpeg',
+              upsert: false,
+            });
           
-          if (thumbResponse.ok) {
-            try {
-              const thumbResult = await thumbResponse.json();
-              thumbnailUrl = thumbResult.publicUrl;
-              console.log('[MediaUpload] Thumbnail uploaded:', thumbnailUrl);
-            } catch (err) {
-              console.warn('[MediaUpload] Failed to parse thumbnail response:', err);
-            }
+          if (!thumbError && thumbData) {
+            const { data: thumbUrlData } = supabase.storage
+              .from('entity-media')
+              .getPublicUrl(thumbData.path);
+            thumbnailUrl = thumbUrlData.publicUrl;
+            console.log('[MediaUpload] Thumbnail uploaded:', thumbnailUrl);
           } else {
-            console.warn('[MediaUpload] Thumbnail upload failed, continuing without thumbnail');
+            console.warn('[MediaUpload] Thumbnail upload failed, continuing without thumbnail:', thumbError);
           }
         }
       }
 
-      // Upload main file
+      // Upload main file directly to Supabase Storage
+      // WHY: Direct uploads bypass Vercel's 4.5MB serverless function limit
       setUploadProgress(30);
-      const uploadResponse = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      const timestamp = Date.now();
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `uploads/${user.id}/${timestamp}_${sanitizedName}`;
 
-      if (!uploadResponse.ok) {
-        // Handle different error response types
-        let errorMessage = 'Upload failed';
-        const contentType = uploadResponse.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-          try {
-            const error = await uploadResponse.json();
-            errorMessage = error.error || 'Upload failed';
-          } catch {
-            errorMessage = `Upload failed with status ${uploadResponse.status}`;
-          }
-        } else {
-          // Handle non-JSON responses (e.g., 413 HTML error pages)
-          if (uploadResponse.status === 413) {
-            errorMessage = 'File too large. Maximum size: 100MB for videos, 10MB for images';
-          } else {
-            errorMessage = `Upload failed with status ${uploadResponse.status}`;
-          }
-        }
-        throw new Error(errorMessage);
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('entity-media')
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('[MediaUpload] Upload error:', uploadError);
+        throw new Error(uploadError.message || 'Failed to upload file');
       }
 
-      const uploadResult = await uploadResponse.json();
+      if (!uploadData) {
+        throw new Error('Upload failed: No data returned');
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('entity-media')
+        .getPublicUrl(uploadData.path);
+
       setUploadProgress(60);
       
       setUploadedFile({
         name: file.name,
-        url: uploadResult.publicUrl,
+        url: urlData.publicUrl,
         type: file.type,
       });
 
@@ -187,7 +188,7 @@ export function MediaUploadZone({
         setIsAnalyzing(false);
         console.log('[MediaUpload] Skipping analysis - only updating media URL');
         onMediaAnalyzed({
-          mediaUrl: uploadResult.publicUrl,
+          mediaUrl: urlData.publicUrl,
           mediaMimeType: file.type,
           thumbnailUrl,
         });
@@ -221,7 +222,7 @@ export function MediaUploadZone({
         
         // Still update with the media URL and thumbnail
         onMediaAnalyzed({
-          mediaUrl: uploadResult.publicUrl,
+          mediaUrl: urlData.publicUrl,
           mediaMimeType: file.type,
           thumbnailUrl,
         });
@@ -239,14 +240,14 @@ export function MediaUploadZone({
         console.log('[MediaUpload] Applying form data:', analysisResult.formData);
         onMediaAnalyzed({
           ...analysisResult.formData,
-          mediaUrl: uploadResult.publicUrl,
+          mediaUrl: urlData.publicUrl,
           mediaMimeType: file.type,
           thumbnailUrl,
         });
       } else {
         console.warn('[MediaUpload] No form data in result, only setting media URL');
         onMediaAnalyzed({
-          mediaUrl: uploadResult.publicUrl,
+          mediaUrl: urlData.publicUrl,
           mediaMimeType: file.type,
           thumbnailUrl,
         });
@@ -258,7 +259,7 @@ export function MediaUploadZone({
       setUploadProgress(0);
       setIsAnalyzing(false);
     }
-  }, [onMediaAnalyzed, setIsAnalyzing]);
+  }, [onMediaAnalyzed, setIsAnalyzing, user, skipAnalysis]);
 
   // Convert file to base64
   const fileToBase64 = (file: File): Promise<string> => {
