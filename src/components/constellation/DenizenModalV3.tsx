@@ -73,21 +73,28 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   }, [denizen]);
 
   // Fetch all media when denizen.id changes (primitive dependency, not object)
+  // WHY: Using denizen?.id instead of denizen object prevents effect from running when object reference changes
+  // Sentinel: Primitive dependencies prevent unnecessary re-runs
   useEffect(() => {
-    if (!denizen?.id) {
+    const denizenId = denizen?.id;
+    if (!denizenId) {
       setAllMedia([]);
       setCurrentMediaIndex(0);
       return;
     }
 
+    // WHY: Async function to load media - must be defined inside effect to access denizenId
+    // Sentinel: Null check narrowing - capture denizenId before async operations
     const loadMedia = async () => {
       try {
-        const media = await fetchDenizenMedia(denizen.id);
+        const media = await fetchDenizenMedia(denizenId);
         // Filter out thumbnails - only show image/video media
+        // WHY: Thumbnails are metadata, not displayable media items
         const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
         setAllMedia(filteredMedia);
         
         // Find primary media index, or default to 0
+        // WHY: Primary media should be shown first when modal opens
         const primaryIndex = filteredMedia.findIndex(m => m.isPrimary);
         setCurrentMediaIndex(primaryIndex >= 0 ? primaryIndex : 0);
       } catch (error) {
