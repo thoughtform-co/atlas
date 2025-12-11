@@ -41,17 +41,26 @@ export function MediaTendrilCanvas({
   const animationRef = useRef<number | undefined>(undefined);
 
 
+  // Store allMedia in ref to avoid dependency issues
+  const allMediaRef = useRef(allMedia);
+  const currentIndexRef = useRef(currentIndex);
+  
+  useEffect(() => {
+    allMediaRef.current = allMedia;
+    currentIndexRef.current = currentIndex;
+  }, [allMedia, currentIndex]);
+
   useEffect(() => {
     // Initialize tendrils for each floating card
     // Filter out thumbnails and limit to 4 cards
-    const filteredMedia = allMedia
+    const filteredMedia = allMediaRef.current
       .filter(m => m.mediaType !== 'thumbnail')
       .slice(0, 4);
 
     // Get floating card indices (exclude current)
     const floatingIndices = filteredMedia
       .map((_, idx) => idx)
-      .filter(idx => idx !== currentIndex)
+      .filter(idx => idx !== currentIndexRef.current)
       .slice(0, 3);
 
     tendrilsRef.current = floatingIndices.map((mediaIdx) => {
@@ -78,13 +87,7 @@ export function MediaTendrilCanvas({
         pulseSpeed: 0.015 + Math.random() * 0.01,
       };
     }).filter((t): t is TendrilState => t !== null);
-  }, [allMedia.length, currentIndex]); // Use length instead of array to avoid infinite loops
-
-  // Store allMedia in ref to avoid dependency issues
-  const allMediaRef = useRef(allMedia);
-  useEffect(() => {
-    allMediaRef.current = allMedia;
-  }, [allMedia]);
+  }, [allMedia.length, currentIndex]); // Only depend on length and index, not the array itself
 
   useEffect(() => {
     const canvas = canvasRef.current;

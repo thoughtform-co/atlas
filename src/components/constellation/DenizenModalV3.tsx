@@ -763,15 +763,18 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
   // Handle floating card refs - use ref to avoid dependency on allMedia array
   const allMediaRef = useRef(allMedia);
+  const currentMediaIndexRef = useRef(currentMediaIndex);
+  
   useEffect(() => {
     allMediaRef.current = allMedia;
-  }, [allMedia]);
+    currentMediaIndexRef.current = currentMediaIndex;
+  }, [allMedia, currentMediaIndex]);
 
   const handleFloatingCardRef = useCallback((index: number, ref: React.RefObject<HTMLDivElement | null>) => {
     const filteredMedia = allMediaRef.current.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
     const floatingIndices = filteredMedia
       .map((_, idx) => idx)
-      .filter(idx => idx !== currentMediaIndex)
+      .filter(idx => idx !== currentMediaIndexRef.current)
       .slice(0, 3);
     
     const cardIdx = floatingIndices.indexOf(index);
@@ -782,7 +785,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       }
       floatingCardRefs.current[cardIdx] = ref;
     }
-  }, [currentMediaIndex]); // Only depend on currentMediaIndex
+  }, []); // Empty deps - use refs for all values
 
   return (
     <div
