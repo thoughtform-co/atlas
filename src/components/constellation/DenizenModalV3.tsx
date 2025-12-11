@@ -143,30 +143,38 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     [onClose]
   );
 
+  // Handle additional media upload
+  // WHY: Allows admins to add extra images/videos to entities after creation
+  // Sentinel: Null check narrowing - capture supabase and denizen in const before await
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!supabase || !denizen || !e.target.files?.length) return;
+    const client = supabase;
+    const currentDenizen = denizen;
+    if (!client || !currentDenizen || !e.target.files?.length) return;
+    
     setIsUploading(true);
     setUploadError(null);
 
     const file = e.target.files[0];
     const fileExt = file.name.split('.').pop();
-    const fileName = `${denizen.id}/${Date.now()}.${fileExt}`;
+    const fileName = `${currentDenizen.id}/${Date.now()}.${fileExt}`;
 
     try {
-      const { error: uploadError } = await supabase.storage
+      // Upload to storage
+      const { error: uploadError } = await client.storage
         .from('denizen-media')
         .upload(fileName, file);
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = client.storage
         .from('denizen-media')
         .getPublicUrl(fileName);
 
       // Get existing media count to set display_order
+      // WHY: display_order determines the sequence of media in the modal view
       const existingMediaCount = allMedia.filter(m => m.mediaType !== 'thumbnail').length;
       
       const mediaInsert: DenizenMediaInsert = {
-        denizen_id: denizen.id,
+        denizen_id: currentDenizen.id,
         media_type: file.type.startsWith('video/') ? 'video' : 'image',
         storage_path: fileName,  // Store relative path, not full URL
         file_name: file.name,
@@ -176,23 +184,23 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         is_primary: false, // Additional media is never primary
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (supabase as any).from('denizen_media').insert(mediaInsert);
+      const { error: dbError } = await (client as any).from('denizen_media').insert(mediaInsert);
       if (dbError) throw dbError;
 
       // Refetch the denizen with updated media from database
-      if (denizen) {
-        const updatedDenizen = await fetchDenizenById(denizen.id);
-        if (updatedDenizen) {
-          setCurrentDenizen(updatedDenizen);
-          // Notify parent component of the update
-          onDenizenUpdate?.(updatedDenizen);
-        }
-        
-        // Reload media list
-        const media = await fetchDenizenMedia(denizen.id);
-        const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
-        setAllMedia(filteredMedia);
+      // Sentinel: Null check narrowing - capture result before await
+      const updatedDenizen = await fetchDenizenById(currentDenizen.id);
+      if (updatedDenizen) {
+        setCurrentDenizen(updatedDenizen);
+        // Notify parent component of the update
+        onDenizenUpdate?.(updatedDenizen);
       }
+      
+      // Reload media list
+      // WHY: Refresh allMedia state to include the newly uploaded media
+      const media = await fetchDenizenMedia(currentDenizen.id);
+      const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
+      setAllMedia(filteredMedia);
 
       // Update local state to show the uploaded media immediately
       setUploadedMedia({
@@ -201,7 +209,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       });
       setUploadSuccess(true);
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      setUploadError(errorMessage);
     } finally {
       setIsUploading(false);
     }

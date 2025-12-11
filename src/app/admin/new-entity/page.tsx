@@ -193,6 +193,26 @@ export default function NewEntityPage() {
               setFormData(prev => ({ ...prev, mediaUrl: undefined, mediaMimeType: undefined }))
             }
           />
+          
+          {/* Note about additional media */}
+          <div style={{ 
+            marginTop: '1rem', 
+            padding: '0.75rem',
+            background: 'rgba(236, 227, 214, 0.05)',
+            border: '1px solid rgba(236, 227, 214, 0.1)',
+            fontSize: '0.5rem',
+            color: 'rgba(236, 227, 214, 0.5)',
+            fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+            letterSpacing: '0.05em',
+            lineHeight: '1.4',
+          }}>
+            <div style={{ marginBottom: '0.25rem', color: 'rgba(236, 227, 214, 0.6)' }}>
+              NOTE: Additional media can be added after saving the entity.
+            </div>
+            <div style={{ fontSize: '0.45rem', color: 'rgba(236, 227, 214, 0.4)' }}>
+              Click on the entity card in the Atlas view to open the modal and use the "Add Media" button.
+            </div>
+          </div>
         </div>
 
         {/* Middle: Parameter Form */}

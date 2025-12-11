@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { EntityCardPreview } from '@/components/admin/EntityCardPreview';
@@ -8,6 +8,9 @@ import { ParameterForm } from '@/components/admin/ParameterForm';
 import { ArchivistChat } from '@/components/admin/ArchivistChat';
 import { EntityFormData } from '@/app/admin/new-entity/page';
 import { getMediaPublicUrl } from '@/lib/media';
+import { supabase } from '@/lib/supabase';
+import { fetchDenizenMedia } from '@/lib/media';
+import { Database } from '@/lib/database.types';
 import styles from '../../new-entity/page.module.css';
 
 // Default form values
@@ -46,6 +49,9 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [analysisNotes, setAnalysisNotes] = useState<string>('');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [uploadMediaError, setUploadMediaError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect non-admins (wait for role)
   useEffect(() => {
@@ -188,6 +194,65 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
     }
   };
 
+  // Handle additional media upload (for multiple media per entity)
+  // WHY: This allows adding extra images/videos after entity creation, similar to DenizenModalV3
+  // Sentinel: Null check narrowing - capture supabase and id in const before await
+  const handleAddMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const client = supabase;
+    const entityId = id;
+    if (!client || !entityId || !e.target.files?.length) return;
+    
+    setIsUploadingMedia(true);
+    setUploadMediaError(null);
+
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${entityId}/${Date.now()}.${fileExt}`;
+
+    try {
+      // Upload to storage
+      const { error: uploadError } = await client.storage
+        .from('denizen-media')
+        .upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      // Get existing media count to set display_order
+      // Sentinel: Null check narrowing - capture result before await
+      const existingMedia = await fetchDenizenMedia(entityId);
+      const existingMediaCount = existingMedia.filter(m => m.mediaType !== 'thumbnail').length;
+      
+      // Insert media record
+      type DenizenMediaInsert = Database['public']['Tables']['denizen_media']['Insert'];
+      const mediaInsert: DenizenMediaInsert = {
+        denizen_id: entityId,
+        media_type: file.type.startsWith('video/') ? 'video' : 'image',
+        storage_path: fileName,
+        file_name: file.name,
+        file_size: file.size,
+        mime_type: file.type,
+        display_order: existingMediaCount,
+        is_primary: false, // Additional media is never primary
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: dbError } = await (client as any).from('denizen_media').insert(mediaInsert);
+      if (dbError) throw dbError;
+
+      // Show success message
+      alert('Media added successfully! Refresh the page to see it in the modal.');
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      setUploadMediaError(errorMessage);
+      alert(`Failed to add media: ${errorMessage}`);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
   // Convert curvature string to numeric value
   const getCurvatureValue = (curvature: string): number => {
     const map: Record<string, number> = {
@@ -257,6 +322,63 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
               setFormData(prev => ({ ...prev, mediaUrl: undefined, mediaMimeType: undefined }))
             }
           />
+          
+          {/* Add Media button for additional media */}
+          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              onChange={handleAddMedia}
+              style={{ display: 'none' }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingMedia}
+              style={{
+                padding: '0.5rem 1rem',
+                background: 'rgba(236, 227, 214, 0.1)',
+                border: '1px solid rgba(236, 227, 214, 0.2)',
+                color: 'rgba(236, 227, 214, 0.8)',
+                fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                fontSize: '0.5625rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: isUploadingMedia ? 'wait' : 'pointer',
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!isUploadingMedia) {
+                  e.currentTarget.style.background = 'rgba(236, 227, 214, 0.15)';
+                  e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isUploadingMedia) {
+                  e.currentTarget.style.background = 'rgba(236, 227, 214, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.2)';
+                }
+              }}
+            >
+              {isUploadingMedia ? 'UPLOADING...' : '+ ADD MEDIA'}
+            </button>
+            {uploadMediaError && (
+              <span style={{ 
+                fontSize: '0.5rem', 
+                color: 'rgba(193, 127, 89, 0.8)',
+                fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+              }}>
+                {uploadMediaError}
+              </span>
+            )}
+            <span style={{ 
+              fontSize: '0.5rem', 
+              color: 'rgba(236, 227, 214, 0.4)',
+              fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+            }}>
+              Additional media will appear in the modal view
+            </span>
+          </div>
         </div>
 
         {/* Middle: Parameter Form */}
