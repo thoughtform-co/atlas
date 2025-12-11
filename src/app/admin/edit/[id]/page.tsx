@@ -177,27 +177,37 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
     // If thumbnail was uploaded, save it immediately to database so it appears in ConstellationView
     // WHY: Thumbnails should update in the constellation view immediately when media is replaced,
     // not just when the entity is saved
-    if (entityData.thumbnailUrl) {
+    if (entityData.thumbnailUrl || entityData.mediaUrl) {
       try {
+        const updatePayload: { thumbnail?: string; image?: string } = {};
+        
+        if (entityData.thumbnailUrl) {
+          updatePayload.thumbnail = entityData.thumbnailUrl;
+          console.log('[EditPage] Updating thumbnail:', entityData.thumbnailUrl);
+        }
+        
+        if (entityData.mediaUrl) {
+          updatePayload.image = entityData.mediaUrl;
+          console.log('[EditPage] Updating image:', entityData.mediaUrl);
+        }
+
         const response = await fetch(`/api/admin/denizens/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            thumbnail: entityData.thumbnailUrl,
-            // Also update image if mediaUrl was provided
-            ...(entityData.mediaUrl && { image: entityData.mediaUrl }),
-          }),
+          body: JSON.stringify(updatePayload),
         });
 
         if (!response.ok) {
-          console.warn('[EditPage] Failed to update thumbnail immediately:', await response.json());
+          const errorData = await response.json();
+          console.warn('[EditPage] Failed to update thumbnail/image immediately:', errorData);
         } else {
-          console.log('[EditPage] Thumbnail updated in database');
+          const result = await response.json();
+          console.log('[EditPage] Thumbnail/image updated in database:', result.data?.thumbnail, result.data?.image);
         }
       } catch (error) {
-        console.error('[EditPage] Error updating thumbnail:', error);
+        console.error('[EditPage] Error updating thumbnail/image:', error);
         // Don't throw - this is a background update, main upload already succeeded
       }
     }

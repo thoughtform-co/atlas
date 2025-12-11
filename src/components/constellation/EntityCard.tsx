@@ -75,16 +75,18 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   // Use resolved media if available, otherwise use original image field
   // WHY: This ensures additional media never replaces the original in Constellation view
   const rawMediaUrl = resolvedMedia ? getMediaUrl(resolvedMedia.storagePath) : denizen.image;
-  const isVideoFromExtension = rawMediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
+  // Check for video extension in URL (handle both full URLs and paths, with or without query params)
+  const isVideoFromExtension = rawMediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) != null;
   const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
   
   // For card preview, prefer thumbnail for video entities (faster loading, no autoplay)
   // Falls back to video URL if no thumbnail, then to image
   const thumbnailUrl = denizen.thumbnail ? getMediaUrl(denizen.thumbnail) : undefined;
   
-  // For videos: use thumbnail if available, otherwise we'll render video element
+  // If we have a thumbnail, prefer it for videos (even if video detection failed)
   // For images: use the raw media URL
-  const imageUrl = isVideo ? thumbnailUrl : rawMediaUrl;
+  // WHY: If thumbnail exists, it means this is likely a video entity, so use the thumbnail
+  const imageUrl = (isVideo && thumbnailUrl) ? thumbnailUrl : (thumbnailUrl && !rawMediaUrl) ? thumbnailUrl : rawMediaUrl;
   // Track if we need to render video instead of image (video without thumbnail)
   const shouldRenderVideo = isVideo && !thumbnailUrl && rawMediaUrl;
 
