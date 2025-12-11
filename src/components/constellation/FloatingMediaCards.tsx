@@ -11,6 +11,7 @@ interface FloatingMediaCardsProps {
   currentIndex: number;
   cardRef: React.RefObject<HTMLDivElement | null>;
   floatingCardRefs: React.RefObject<HTMLDivElement>[];
+  onSelect?: (index: number) => void;
 }
 
 /**
@@ -18,7 +19,7 @@ interface FloatingMediaCardsProps {
  * 
  * Performance: Only renders 3-4 visible cards max to save GPU resources
  */
-export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, floatingCardRefs }: FloatingMediaCardsProps) {
+export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, floatingCardRefs, onSelect }: FloatingMediaCardsProps) {
   // Filter out thumbnails and limit to 4 cards for performance
   const displayMedia = allMedia
     .filter(m => m.mediaType !== 'thumbnail')
@@ -61,7 +62,14 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
   };
 
   return (
-    <>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none', // Overridden on child cards
+        zIndex: 20, // Below blur (35) + main card (50)
+      }}
+    >
       {floatingIndices.map((mediaIdx, cardIdx) => {
         const media = displayMedia[mediaIdx];
         if (!media) return null;
@@ -93,10 +101,11 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
             rotation={rotation}
             zIndex={zIndex}
             cardRef={floatingCardRefs[cardIdx]}
+            onSelect={onSelect ? () => onSelect(mediaIdx) : undefined}
           />
         );
       })}
-    </>
+    </div>
   );
 }
 
@@ -113,6 +122,7 @@ function FloatingCard({
   rotation,
   zIndex,
   cardRef,
+  onSelect,
 }: {
   media: DenizenMedia;
   mediaIdx: number;
@@ -125,11 +135,12 @@ function FloatingCard({
   rotation: number;
   zIndex: number;
   cardRef: React.RefObject<HTMLDivElement>;
+  onSelect?: () => void;
 }) {
   return (
     <div
       ref={cardRef}
-      className="fixed pointer-events-none"
+      className="fixed"
       style={{
         width: '720px',
         maxWidth: '720px',
@@ -141,7 +152,11 @@ function FloatingCard({
         zIndex,
         filter: 'blur(8px)',
         willChange: 'transform',
+        pointerEvents: 'auto', // Override parent's pointerEvents: 'none'
+        cursor: onSelect ? 'pointer' : 'default',
+        transition: 'transform 400ms ease, opacity 400ms ease',
       }}
+      onClick={onSelect}
     >
       {/* Card outline - simplified version */}
       <div
@@ -152,15 +167,16 @@ function FloatingCard({
           borderRadius: '2px',
         }}
       >
-        {/* Media preview - use thumbnail for videos */}
+        {/* Media preview - use thumbnail for videos, never autoplay */}
         {isVideoMedia && !thumbnailUrl ? (
           <video
             src={displayUrl}
             className="w-full h-full object-cover"
             muted
-            loop
             playsInline
             style={{ opacity: 0.4 }}
+            autoPlay={false}
+            controls={false}
           />
         ) : (
           <Image

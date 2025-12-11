@@ -202,7 +202,7 @@ export function MediaTendrilCanvas({
       ref={canvasRef}
       className="absolute inset-0 pointer-events-none"
       style={{
-        zIndex: 45, // Between main card (z-50) and floating cards (z-40)
+        zIndex: 30, // Between floating cards (20) and blur (35)
       }}
     />
   );

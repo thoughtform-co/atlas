@@ -1,6 +1,6 @@
 'use client';
 
-import { Denizen } from '@/lib/types';
+import { Denizen, DenizenMedia } from '@/lib/types';
 import { getMediaPublicUrl } from '@/lib/media';
 import Image from 'next/image';
 
@@ -11,6 +11,8 @@ interface EntityCardProps {
   onClick?: (denizen: Denizen) => void;
   onEdit?: (denizen: Denizen) => void;
   isSelected?: boolean;
+  /** If provided, this card must render this media instead of resolving its own */
+  activeMedia?: DenizenMedia;
 }
 
 /**
@@ -24,7 +26,7 @@ interface EntityCardProps {
  * - Subtle lift animation
  * - Nomenclate allegiance tinting
  */
-export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelected }: EntityCardProps) {
+export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelected, activeMedia }: EntityCardProps) {
 
   // Format coordinate for display (removes leading zero)
   const formatCoord = (n: number): string => {
@@ -54,31 +56,25 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   };
   
   // Get primary media for Constellation view
-  // WHY: Prioritize explicit primary media, then original image field, then first media in array
+  // WHY: If activeMedia is provided, use it immediately (for stacked cards)
+  // Otherwise, prioritize explicit primary media, then original image field, then first media in array
   // This ensures additional media doesn't replace the original entity image in Constellation view
-  const explicitPrimaryMedia = denizen.media?.find(m => m.isPrimary);
-  
-  // If there's an explicit primary, use it
-  // Otherwise, prefer the original denizen.image field (which is the original entity media)
-  // Only use media array if no image field exists
-  const primaryMedia = explicitPrimaryMedia || 
-    (denizen.image ? 
-      // Try to find media that matches the original image field
-      denizen.media?.find(m => {
-        const mediaUrl = getMediaUrl(m.storagePath);
-        return mediaUrl === denizen.image || m.storagePath === denizen.image;
-      }) || 
-      // If no match found, we'll use denizen.image directly (not from media array)
-      null :
-      // No image field, use first media in array as fallback
-      denizen.media?.[0]);
+  const resolvedMedia = activeMedia || (
+    denizen.media?.find(m => m.isPrimary) ||
+    (denizen.image
+      ? denizen.media?.find(m => {
+          const mediaUrl = getMediaUrl(m.storagePath);
+          return mediaUrl === denizen.image || m.storagePath === denizen.image;
+        }) || null
+      : denizen.media?.[0])
+  );
   
   // Check if media is video based on multiple sources
-  const isVideoFromMedia = primaryMedia?.mediaType === 'video';
+  const isVideoFromMedia = resolvedMedia?.mediaType === 'video';
   const isVideoFromUrl = !!denizen.videoUrl;
-  // Use primary media if available, otherwise use original image field
+  // Use resolved media if available, otherwise use original image field
   // WHY: This ensures additional media never replaces the original in Constellation view
-  const rawMediaUrl = primaryMedia ? getMediaUrl(primaryMedia.storagePath) : denizen.image;
+  const rawMediaUrl = resolvedMedia ? getMediaUrl(resolvedMedia.storagePath) : denizen.image;
   const isVideoFromExtension = rawMediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
   const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
   
@@ -93,8 +89,9 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   const shouldRenderVideo = isVideo && !thumbnailUrl && rawMediaUrl;
 
   // Check if entity has multiple media for stacked hint
+  // WHY: Only show stack hint on main card (not on background stacked cards)
   const mediaCount = denizen.media?.filter(m => m.mediaType !== 'thumbnail').length || 0;
-  const showStackedHint = mediaCount > 1 && mediaCount <= 5; // Performance limit: only show if <= 5 media
+  const showStackedHint = !activeMedia && mediaCount > 1 && mediaCount <= 5; // Performance limit: only show if <= 5 media
   const stackedLayers = showStackedHint ? Math.min(3, mediaCount - 1) : 0; // Max 3 stacked hints
 
 
@@ -106,9 +103,9 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
         ${isNomenclate ? 'entity-card--nomenclate' : ''}
       `}
       style={style}
-      onMouseEnter={() => onHover?.(denizen)}
-      onMouseLeave={() => onHover?.(null)}
-      onClick={() => onClick?.(denizen)}
+      onMouseEnter={!activeMedia ? () => onHover?.(denizen) : undefined}
+      onMouseLeave={!activeMedia ? () => onHover?.(null) : undefined}
+      onClick={!activeMedia ? () => onClick?.(denizen) : undefined}
       data-id={denizen.id}
     >
       {/* Outer glow */}

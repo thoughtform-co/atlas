@@ -189,19 +189,64 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
           const pos = getScreenPosition(denizen.id);
           if (!pos) return null;
 
+          const isSelected = selectedDenizen?.id === denizen.id;
+
+          // Non-thumbnail media only
+          const allMedia = denizen.media?.filter(m => m.mediaType !== 'thumbnail') || [];
+
+          // Main media (for filtering stack only; EntityCard will still resolve on its own)
+          const mainMedia =
+            allMedia.find(m => m.isPrimary) ||
+            allMedia[0] ||
+            null;
+
+          // Stack media: everything except main, hard-capped so total cards = 5
+          const stackMedia = allMedia
+            .filter(m => !mainMedia || m.id !== mainMedia.id)
+            .slice(0, 4); // 4 bg + 1 main = 5 max
+
+          const baseLeft = `${pos.x}px`;
+          const baseTop = `${pos.y}px`;
+
           return (
-            <EntityCard
-              key={denizen.id}
-              denizen={denizen}
-              style={{
-                left: `${pos.x}px`,
-                top: `${pos.y}px`,
-                transform: `translate(-50%, -50%) scale(${scale})`,
-              }}
-              onClick={handleCardClick}
-              onEdit={handleEditClick}
-              isSelected={selectedDenizen?.id === denizen.id}
-            />
+            <div key={denizen.id}>
+              {/* Background stacked cards */}
+              {stackMedia.map((media, idx) => {
+                const offset = (idx + 1) * 4; // px
+                const rotation = (idx % 2 === 0 ? 1 : -1) * 2; // degrees
+
+                return (
+                  <EntityCard
+                    key={`${denizen.id}-stack-${media.id ?? idx}`}
+                    denizen={denizen}
+                    activeMedia={media}
+                    style={{
+                      left: baseLeft,
+                      top: baseTop,
+                      transform: `translate(-50%, -50%) scale(${scale}) translate(${offset}px, ${offset}px) rotate(${rotation}deg)`,
+                      zIndex: isSelected ? 90 + idx : 5 + idx,
+                      opacity: 0.6,
+                      filter: 'grayscale(0.4) brightness(0.7)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                );
+              })}
+
+              {/* Main card */}
+              <EntityCard
+                denizen={denizen}
+                isSelected={isSelected}
+                onClick={handleCardClick}
+                onEdit={handleEditClick}
+                style={{
+                  left: baseLeft,
+                  top: baseTop,
+                  transform: `translate(-50%, -50%) scale(${scale})`,
+                  zIndex: isSelected ? 100 : 10,
+                }}
+              />
+            </div>
           );
         })}
       </div>

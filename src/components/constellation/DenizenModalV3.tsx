@@ -51,6 +51,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [isMenuHovered, setIsMenuHovered] = useState(false);
   const [allMedia, setAllMedia] = useState<DenizenMedia[]>([]);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
   // Stable array of refs for floating cards (for 3 background slots)
   const [floatingCardRefs] = useState<React.RefObject<HTMLDivElement>[]>(() => {
     const refs: React.RefObject<HTMLDivElement>[] = [];
@@ -88,27 +89,42 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     const loadMedia = async () => {
       try {
         const media = await fetchDenizenMedia(denizenId);
-        // Filter out thumbnails - only show image/video media
-        // WHY: Thumbnails are metadata, not displayable media items
-        const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
+        let filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
+
+        // If denizen.image exists and isn't in fetched media, create virtual legacy media
+        // WHY: Ensures backwards compatibility with entities that only have denizen.image
+        if (denizen?.image) {
+          const legacyUrl = getMediaPublicUrl(denizen.image) || denizen.image;
+
+          const hasOriginal = filteredMedia.some(m => {
+            const mUrl = getMediaPublicUrl(m.storagePath);
+            return mUrl === legacyUrl || m.storagePath === denizen.image;
+          });
+
+          if (!hasOriginal) {
+            const isLegacyVideo = /\.(mp4|webm|mov|avi|mkv)$/i.test(denizen.image);
+
+            const virtualMedia: DenizenMedia = {
+              id: `legacy-${denizen.id}`,
+              denizenId: denizen.id,
+              mediaType: isLegacyVideo ? 'video' : 'image',
+              storagePath: denizen.image,
+              fileName: 'Original Manifestation',
+              displayOrder: -1,
+              isPrimary: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            filteredMedia = [virtualMedia, ...filteredMedia];
+          }
+        }
+
         setAllMedia(filteredMedia);
-        
+
         // Find primary media index
         // WHY: Primary media should be shown first when modal opens
-        // If no explicit primary, try to match the original denizen.image field
-        // This ensures additional media doesn't replace the original in the modal
-        let primaryIndex = filteredMedia.findIndex(m => m.isPrimary);
-        
-        if (primaryIndex < 0 && denizen?.image) {
-          // No explicit primary - try to find media that matches the original image field
-          const originalImageUrl = getMediaPublicUrl(denizen.image) || denizen.image;
-          primaryIndex = filteredMedia.findIndex(m => {
-            const mediaUrl = getMediaPublicUrl(m.storagePath);
-            return mediaUrl === originalImageUrl || m.storagePath === denizen.image;
-          });
-        }
-        
-        // Default to 0 if no match found
+        const primaryIndex = filteredMedia.findIndex(m => m.isPrimary);
         setCurrentMediaIndex(primaryIndex >= 0 ? primaryIndex : 0);
       } catch (error) {
         console.error('Error fetching media:', error);
@@ -245,17 +261,32 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     router.push(`/admin/edit/${displayDenizen.id}`);
   };
 
+  // Handle media selection from floating cards
+  // WHY: Allows clicking floating cards to promote them to main card with carousel animation
+  const handleMediaSelect = (index: number) => {
+    if (index === currentMediaIndex) return;
+    setAnimatingIndex(index);
+    // Brief delay for out-animation before switching
+    setTimeout(() => {
+      setCurrentMediaIndex(index);
+      setAnimatingIndex(null);
+    }, 200);
+  };
+
   // Handle media navigation
   const handleNextMedia = () => {
     if (allMedia.length > 0) {
-      setCurrentMediaIndex((prev) => (prev + 1) % allMedia.filter(m => m.mediaType !== 'thumbnail').length);
+      const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail');
+      const nextIndex = (currentMediaIndex + 1) % filteredMedia.length;
+      handleMediaSelect(nextIndex);
     }
   };
 
   const handlePrevMedia = () => {
     if (allMedia.length > 0) {
       const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail');
-      setCurrentMediaIndex((prev) => (prev - 1 + filteredMedia.length) % filteredMedia.length);
+      const prevIndex = (currentMediaIndex - 1 + filteredMedia.length) % filteredMedia.length;
+      handleMediaSelect(prevIndex);
     }
   };
 
@@ -823,6 +854,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           currentIndex={currentMediaIndex}
           cardRef={cardRef}
           floatingCardRefs={floatingCardRefs}
+          onSelect={handleMediaSelect}
         />
       )}
 
@@ -865,6 +897,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           gap: '1px',
           border: '1px solid rgba(236, 227, 214, 0.08)',
           zIndex: 50, // Main card on top
+          transform: animatingIndex !== null
+            ? 'translateZ(-30px) rotateY(10deg)'
+            : 'translateZ(0) rotateY(0deg)',
+          transition: 'transform 300ms ease, opacity 300ms ease',
         }}
       >
         {/* Full-bleed Media Background */}
@@ -872,6 +908,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             {isVideo ? (
               <video
+                key={currentMedia?.id ?? displayDenizen.id}
                 ref={videoRef}
                 src={displayDenizen.videoUrl || mediaUrl}
                 crossOrigin="anonymous"
