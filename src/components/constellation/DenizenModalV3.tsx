@@ -868,20 +868,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         />
       )}
 
-      {/* Blur overlay between floating cards and main card */}
-      {/* WHY: Subtle blur to create depth, but not so strong it hides floating cards */}
-      {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backdropFilter: 'blur(2px)', // Reduced blur for better visibility
-            WebkitBackdropFilter: 'blur(2px)',
-            zIndex: 35,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {/* Depth overlay - removed blur, using z-axis depth instead */}
 
       {/* Card — 4:5 Aspect */}
       <div

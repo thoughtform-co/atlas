@@ -68,6 +68,8 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
         inset: 0,
         pointerEvents: 'none', // Overridden on child cards
         zIndex: 20, // Below blur (35) + main card (50)
+        perspective: '1000px', // Enable 3D transforms for z-axis depth
+        perspectiveOrigin: '50% 50%',
       }}
     >
       {floatingIndices.map((mediaIdx, cardIdx) => {
@@ -79,10 +81,11 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
         const isVideoMedia = isVideo(media);
         const displayUrl = isVideoMedia && thumbnailUrl ? thumbnailUrl : mediaUrl;
 
-        // Staggered offsets for depth - positioned to be visible around main card
-        // WHY: Cards should be visible in viewport, not hidden off-screen
-        const offsetX = -60 - (cardIdx * 30); // Move left, but keep visible
-        const offsetY = -40 - (cardIdx * 25); // Move up, but keep visible
+        // Staggered offsets for depth - positioned to be visible behind main card
+        // WHY: Cards should be clearly visible, using z-axis depth instead of blur
+        const offsetX = -80 - (cardIdx * 20); // Move left, clearly visible
+        const offsetY = 40 + (cardIdx * 30); // Move down, clearly visible
+        const offsetZ = -50 - (cardIdx * 30); // Push back on z-axis for depth
         const rotation = -5 + (cardIdx * 3); // Slight rotation variation
         const zIndex = 40 - (cardIdx * 10); // Decreasing z-index
 
@@ -99,6 +102,7 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
             thumbnailUrl={thumbnailUrl}
             offsetX={offsetX}
             offsetY={offsetY}
+            offsetZ={offsetZ}
             rotation={rotation}
             zIndex={zIndex}
             cardRef={floatingCardRefs[cardIdx]}
@@ -120,6 +124,7 @@ function FloatingCard({
   thumbnailUrl,
   offsetX,
   offsetY,
+  offsetZ,
   rotation,
   zIndex,
   cardRef,
@@ -133,6 +138,7 @@ function FloatingCard({
   thumbnailUrl: string | undefined;
   offsetX: number;
   offsetY: number;
+  offsetZ: number;
   rotation: number;
   zIndex: number;
   cardRef: React.RefObject<HTMLDivElement>;
@@ -148,10 +154,10 @@ function FloatingCard({
         aspectRatio: '4/5',
         left: '50%',
         top: '50%',
-        transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) rotate(${rotation}deg)`,
-        opacity: 0.4 - (cardIdx * 0.05), // Slightly more visible
+        transform: `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), ${offsetZ}px) rotate(${rotation}deg)`,
+        opacity: 0.5 - (cardIdx * 0.05), // More visible since no blur
         zIndex,
-        filter: 'blur(6px)', // Slightly less blur for better visibility
+        // No blur - using z-axis depth instead
         willChange: 'transform',
         pointerEvents: 'auto', // Override parent's pointerEvents: 'none'
         cursor: onSelect ? 'pointer' : 'default',
