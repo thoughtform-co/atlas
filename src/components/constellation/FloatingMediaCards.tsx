@@ -81,13 +81,16 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
         const isVideoMedia = isVideo(media);
         const displayUrl = isVideoMedia && thumbnailUrl ? thumbnailUrl : mediaUrl;
 
-        // Staggered offsets for depth - positioned to be partially visible behind main card
-        // WHY: Cards should be visible behind main card, using previous position but without blur
-        const offsetX = -60 - (cardIdx * 20); // Move left, but less extreme
-        const offsetY = -15 - (cardIdx * 15); // Move up slightly (previous position)
-        const offsetZ = -30 - (cardIdx * 20); // Push back on z-axis, but less extreme
-        const scale = 0.95 - (cardIdx * 0.05); // Slightly smaller: 0.95, 0.9, 0.85...
-        const rotation = -5 + (cardIdx * 3); // Slight rotation variation
+        // Alternating left/right positioning with increased spacing for clickability
+        // WHY: Cards should be spread out enough to be individually clickable
+        // Pattern: First card (cardIdx=0) goes right, second (cardIdx=1) goes left, etc.
+        const isRight = cardIdx % 2 === 0; // Even indices (0, 2) go right, odd (1) go left
+        const baseOffsetX = isRight ? 120 : -120; // Increased spacing: 120px left/right
+        const offsetX = baseOffsetX + (isRight ? (cardIdx * 20) : -(cardIdx * 20)); // Stagger within side
+        const offsetY = -20 - (cardIdx * 25); // More vertical spacing: -20, -45, -70...
+        const offsetZ = -40 - (cardIdx * 30); // More z-axis depth for better separation
+        const scale = 0.90 - (cardIdx * 0.05); // Smaller cards: 0.90, 0.85, 0.80...
+        const rotation = isRight ? 8 - (cardIdx * 2) : -8 + (cardIdx * 2); // Alternating rotation
         const zIndex = 40 - (cardIdx * 10); // Decreasing z-index
 
         if (!displayUrl) return null;
@@ -159,7 +162,7 @@ function FloatingCard({
         left: '50%',
         top: '50%',
         transform: `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), ${offsetZ}px) scale(${scale}) rotate(${rotation}deg)`,
-        opacity: 0.5 - (cardIdx * 0.05), // More visible since no blur
+        opacity: 0.6 - (cardIdx * 0.08), // More visible: 0.6, 0.52, 0.44...
         zIndex,
         // No blur - using z-axis depth instead
         willChange: 'transform',
