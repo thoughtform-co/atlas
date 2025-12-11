@@ -82,11 +82,11 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
         const displayUrl = isVideoMedia && thumbnailUrl ? thumbnailUrl : mediaUrl;
 
         // Staggered offsets for depth - positioned to be partially visible behind main card
-        // WHY: Cards should be smaller, moved left, and pushed back so only half is visible
-        const offsetX = -120 - (cardIdx * 30); // Move further left
-        const offsetY = 40 + (cardIdx * 30); // Move down
-        const offsetZ = -100 - (cardIdx * 50); // Push further back on z-axis
-        const scale = 0.7 - (cardIdx * 0.1); // Scale down: 0.7, 0.6, 0.5...
+        // WHY: Cards should be visible behind main card, using previous position but without blur
+        const offsetX = -60 - (cardIdx * 20); // Move left, but less extreme
+        const offsetY = -15 - (cardIdx * 15); // Move up slightly (previous position)
+        const offsetZ = -30 - (cardIdx * 20); // Push back on z-axis, but less extreme
+        const scale = 0.95 - (cardIdx * 0.05); // Slightly smaller: 0.95, 0.9, 0.85...
         const rotation = -5 + (cardIdx * 3); // Slight rotation variation
         const zIndex = 40 - (cardIdx * 10); // Decreasing z-index
 
