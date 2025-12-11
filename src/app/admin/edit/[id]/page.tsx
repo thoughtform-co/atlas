@@ -7,7 +7,7 @@ import { EntityCardPreview } from '@/components/admin/EntityCardPreview';
 import { ParameterForm } from '@/components/admin/ParameterForm';
 import { ArchivistChat } from '@/components/admin/ArchivistChat';
 import { EntityFormData } from '@/app/admin/new-entity/page';
-import { getMediaPublicUrl } from '@/lib/media';
+import { getMediaPublicUrl, deleteDenizenMedia } from '@/lib/media';
 import { supabase } from '@/lib/supabase';
 import { fetchDenizenMedia } from '@/lib/media';
 import { Database } from '@/lib/database.types';
@@ -52,6 +52,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [uploadMediaError, setUploadMediaError] = useState<string | null>(null);
   const [additionalMedia, setAdditionalMedia] = useState<Array<{ id: string; url: string; type: 'image' | 'video'; fileName: string }>>([]);
+  const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect non-admins (wait for role)
@@ -219,6 +220,47 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Handle additional media deletion
+  const handleDeleteMedia = async (mediaId: string) => {
+    if (!confirm('Are you sure you want to delete this media?')) return;
+    
+    setDeletingMediaId(mediaId);
+    try {
+      const success = await deleteDenizenMedia(mediaId);
+      if (success) {
+        // Reload additional media list
+        const media = await fetchDenizenMedia(id);
+        const additional = media
+          .filter(m => m.mediaType !== 'thumbnail' && !m.isPrimary)
+          .map(m => ({
+            id: m.id,
+            url: getMediaPublicUrl(m.storagePath) || '',
+            type: (m.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
+            fileName: m.fileName,
+          }));
+        setAdditionalMedia(additional);
+      } else {
+        alert('Failed to delete media');
+      }
+    } catch (error) {
+      console.error('Error deleting media:', error);
+      alert('Error deleting media');
+    } finally {
+      setDeletingMediaId(null);
+    }
+  };
+
+  // Handle additional media replace (delete old, trigger upload)
+  const handleReplaceMedia = async (mediaId: string) => {
+    if (!confirm('Replace this media? The old file will be deleted.')) return;
+    
+    // Delete the old media first
+    await handleDeleteMedia(mediaId);
+    
+    // Trigger file input for new upload
+    fileInputRef.current?.click();
   };
 
   // Handle additional media upload (for multiple media per entity)
