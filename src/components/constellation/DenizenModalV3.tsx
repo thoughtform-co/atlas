@@ -35,6 +35,11 @@ const DAWN = { r: 236, g: 227, b: 214 };
 const GRID = 3;
 
 export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenModalV3Props) {
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:33',message:'COMPONENT RENDER START',data:{hasDenizen:!!denizen,denizenId:denizen?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+  }
+  // #endregion
   const router = useRouter();
   const { isAuthenticated, isAdmin } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
@@ -62,6 +67,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
   // Update currentDenizen when denizen prop changes
   useEffect(() => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:64',message:'setCurrentDenizen effect RUN',data:{hasDenizen:!!denizen,denizenId:denizen?.id,currentDenizenId:currentDenizen?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    }
+    // #endregion
     setCurrentDenizen(denizen);
   }, [denizen]);
 
@@ -790,12 +800,16 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     currentMediaIndexRef.current = currentMediaIndex;
   }, [allMedia, currentMediaIndex]);
 
+  // WHY: Use useCallback with empty deps to prevent onCardRef from changing
+  // This breaks the infinite loop: FloatingCard's useEffect depends on onCardRef,
+  // but if onCardRef is stable, the effect won't re-run unnecessarily
   const handleFloatingCardRef = useCallback((index: number, ref: React.RefObject<HTMLDivElement | null>) => {
     // #region agent log
     if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:773',message:'handleFloatingCardRef CALLED',data:{index,hasRef:!!ref,refCurrent:!!ref?.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:803',message:'handleFloatingCardRef CALLED',data:{index,hasRef:!!ref,refCurrent:!!ref?.current,allMediaLength:allMediaRef.current.length,currentMediaIndex:currentMediaIndexRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
     }
     // #endregion
+    // Read from refs to avoid dependencies
     const filteredMedia = allMediaRef.current.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
     const floatingIndices = filteredMedia
       .map((_, idx) => idx)
@@ -810,7 +824,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       }
       floatingCardRefs.current[cardIdx] = ref;
     }
-  }, []); // Empty deps - use refs for all values
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - use refs for all values to prevent callback recreation
 
   return (
     <div

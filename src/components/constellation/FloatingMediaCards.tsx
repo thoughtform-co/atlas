@@ -129,26 +129,37 @@ function FloatingCard({
   const cardRefForThis = useRef<HTMLDivElement>(null);
   
   // Notify parent of ref - use ref callback pattern to avoid dependency issues
+  // WHY: Store onCardRef in a ref so we can call it without depending on it
+  // This prevents infinite loops when onCardRef changes
   const onCardRefRef = useRef(onCardRef);
+  
+  // WHY: Update the ref whenever onCardRef changes, but don't trigger notification
+  // The notification effect below will use the latest onCardRef via the ref
   useEffect(() => {
     // #region agent log
     if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FloatingMediaCards.tsx:133',message:'onCardRef update effect RUN',data:{mediaIdx,hasOnCardRef:!!onCardRef,onCardRefChanged:onCardRef!==onCardRefRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FloatingMediaCards.tsx:135',message:'onCardRef update effect RUN',data:{mediaIdx,hasOnCardRef:!!onCardRef,onCardRefChanged:onCardRef!==onCardRefRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
     }
     // #endregion
     onCardRefRef.current = onCardRef;
-  }, [onCardRef]);
+  }, [onCardRef, mediaIdx]);
 
+  // WHY: Only notify parent when cardRef is ready OR when mediaIdx changes
+  // We do NOT depend on onCardRef directly - we read it from the ref
+  // This prevents infinite loops: if onCardRef changes, we update the ref but don't re-notify
   useEffect(() => {
     // #region agent log
     if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FloatingMediaCards.tsx:137',message:'FloatingCard ref notification effect RUN',data:{mediaIdx,hasOnCardRef:!!onCardRefRef.current,hasCardRef:!!cardRefForThis.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FloatingMediaCards.tsx:148',message:'FloatingCard ref notification effect RUN',data:{mediaIdx,hasOnCardRef:!!onCardRefRef.current,hasCardRef:!!cardRefForThis.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
     }
     // #endregion
+    // Only call if both refs are ready
+    // Use onCardRefRef.current to get the latest callback without depending on it
     if (onCardRefRef.current && cardRefForThis.current) {
       onCardRefRef.current(mediaIdx, cardRefForThis);
     }
-  }, [mediaIdx]); // Only depend on mediaIdx
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaIdx]); // Only depend on mediaIdx - onCardRef is accessed via ref to prevent loops
 
   return (
     <div
