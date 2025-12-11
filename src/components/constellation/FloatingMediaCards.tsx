@@ -81,11 +81,12 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
         const isVideoMedia = isVideo(media);
         const displayUrl = isVideoMedia && thumbnailUrl ? thumbnailUrl : mediaUrl;
 
-        // Staggered offsets for depth - positioned to be visible behind main card
-        // WHY: Cards should be clearly visible, using z-axis depth instead of blur
-        const offsetX = -80 - (cardIdx * 20); // Move left, clearly visible
-        const offsetY = 40 + (cardIdx * 30); // Move down, clearly visible
-        const offsetZ = -50 - (cardIdx * 30); // Push back on z-axis for depth
+        // Staggered offsets for depth - positioned to be partially visible behind main card
+        // WHY: Cards should be smaller, moved left, and pushed back so only half is visible
+        const offsetX = -120 - (cardIdx * 30); // Move further left
+        const offsetY = 40 + (cardIdx * 30); // Move down
+        const offsetZ = -100 - (cardIdx * 50); // Push further back on z-axis
+        const scale = 0.7 - (cardIdx * 0.1); // Scale down: 0.7, 0.6, 0.5...
         const rotation = -5 + (cardIdx * 3); // Slight rotation variation
         const zIndex = 40 - (cardIdx * 10); // Decreasing z-index
 
@@ -103,6 +104,7 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
             offsetX={offsetX}
             offsetY={offsetY}
             offsetZ={offsetZ}
+            scale={scale}
             rotation={rotation}
             zIndex={zIndex}
             cardRef={floatingCardRefs[cardIdx]}
@@ -125,6 +127,7 @@ function FloatingCard({
   offsetX,
   offsetY,
   offsetZ,
+  scale,
   rotation,
   zIndex,
   cardRef,
@@ -139,6 +142,7 @@ function FloatingCard({
   offsetX: number;
   offsetY: number;
   offsetZ: number;
+  scale: number;
   rotation: number;
   zIndex: number;
   cardRef: React.RefObject<HTMLDivElement>;
@@ -154,7 +158,7 @@ function FloatingCard({
         aspectRatio: '4/5',
         left: '50%',
         top: '50%',
-        transform: `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), ${offsetZ}px) rotate(${rotation}deg)`,
+        transform: `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), ${offsetZ}px) scale(${scale}) rotate(${rotation}deg)`,
         opacity: 0.5 - (cardIdx * 0.05), // More visible since no blur
         zIndex,
         // No blur - using z-axis depth instead

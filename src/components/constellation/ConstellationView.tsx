@@ -192,47 +192,49 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
           const isSelected = selectedDenizen?.id === denizen.id;
 
           // Non-thumbnail media only
+          // Check if entity has multiple media for visual stack hint
+          // WHY: Use CSS-only visual hints instead of rendering actual cards to save resources
           const allMedia = denizen.media?.filter(m => m.mediaType !== 'thumbnail') || [];
-
-          // Main media (for filtering stack only; EntityCard will still resolve on its own)
-          const mainMedia =
-            allMedia.find(m => m.isPrimary) ||
-            allMedia[0] ||
-            null;
-
-          // Stack media: everything except main, hard-capped so total cards = 5
-          const stackMedia = allMedia
-            .filter(m => !mainMedia || m.id !== mainMedia.id)
-            .slice(0, 4); // 4 bg + 1 main = 5 max
+          const mediaCount = allMedia.length;
+          const hasMultipleMedia = mediaCount > 1;
+          const stackedLayers = hasMultipleMedia ? Math.min(3, mediaCount - 1) : 0; // Max 3 stacked hints
 
           const baseLeft = `${pos.x}px`;
           const baseTop = `${pos.y}px`;
 
           return (
-            <div key={denizen.id}>
-              {/* Background stacked cards */}
-              {stackMedia.map((media, idx) => {
-                const offsetX = (idx + 1) * 3; // px - slight horizontal offset
-                const offsetY = -(idx + 1) * 8; // px - negative to move up, showing top of card
-                const rotation = (idx % 2 === 0 ? 1 : -1) * 2; // degrees
-
-                return (
-                  <EntityCard
-                    key={`${denizen.id}-stack-${media.id ?? idx}`}
-                    denizen={denizen}
-                    activeMedia={media}
-                    style={{
-                      left: baseLeft,
-                      top: baseTop,
-                      transform: `translate(-50%, -50%) scale(${scale}) translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`,
-                      zIndex: isSelected ? 90 + idx : 5 + idx,
-                      opacity: 0.6,
-                      filter: 'grayscale(0.4) brightness(0.7)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                );
-              })}
+            <div key={denizen.id} style={{ position: 'relative' }}>
+              {/* Visual stacked cards hint - CSS-only, no actual card rendering */}
+              {/* WHY: Performance optimization - visual hint only, saves GPU/bandwidth */}
+              {hasMultipleMedia && (
+                <>
+                  {Array.from({ length: stackedLayers }).map((_, layerIdx) => {
+                    const offsetX = (layerIdx + 1) * 3; // px - slight horizontal offset
+                    const offsetY = -(layerIdx + 1) * 8; // px - negative to move up, showing top
+                    const rotation = (layerIdx % 2 === 0 ? 1 : -1) * 2; // degrees
+                    const opacity = 0.15 - (layerIdx * 0.03); // Decreasing opacity
+                    
+                    return (
+                      <div
+                        key={`stacked-hint-${denizen.id}-${layerIdx}`}
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: baseLeft,
+                          top: baseTop,
+                          width: '200px',
+                          aspectRatio: '3/4',
+                          transform: `translate(-50%, -50%) scale(${scale}) translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`,
+                          border: '1px solid rgba(236, 227, 214, 0.08)',
+                          background: 'rgba(5, 4, 3, 0.3)',
+                          opacity,
+                          filter: 'grayscale(0.4) brightness(0.7)',
+                          zIndex: isSelected ? 90 + layerIdx : 5 + layerIdx,
+                        }}
+                      />
+                    );
+                  })}
+                </>
+              )}
 
               {/* Main card */}
               <EntityCard
