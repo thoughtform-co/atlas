@@ -149,9 +149,9 @@ function FloatingCard({
         left: '50%',
         top: '50%',
         transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) rotate(${rotation}deg)`,
-        opacity: 0.3 - (cardIdx * 0.05), // Decreasing opacity
+        opacity: 0.4 - (cardIdx * 0.05), // Slightly more visible
         zIndex,
-        filter: 'blur(8px)',
+        filter: 'blur(6px)', // Slightly less blur for better visibility
         willChange: 'transform',
         pointerEvents: 'auto', // Override parent's pointerEvents: 'none'
         cursor: onSelect ? 'pointer' : 'default',
