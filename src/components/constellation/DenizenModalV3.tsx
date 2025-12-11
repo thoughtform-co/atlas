@@ -569,14 +569,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                       top: '100%',
                       right: 0,
                       marginTop: '4px',
-                      background: 'rgba(10, 9, 8, 0.95)',
-                      backdropFilter: 'blur(12px)',
-                      WebkitBackdropFilter: 'blur(12px)',
+                      background: 'rgba(10, 9, 8, 0.35)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
                       border: '1px solid rgba(236, 227, 214, 0.15)',
                       borderRadius: '4px',
                       overflow: 'hidden',
                       minWidth: '140px',
-                      zIndex: 200,
+                      zIndex: 1000,
                     }}
                   >
                     {/* Download as Image */}
