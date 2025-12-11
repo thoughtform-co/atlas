@@ -67,6 +67,13 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   const thumbnailUrl = denizen.thumbnail ? getMediaUrl(denizen.thumbnail) : undefined;
   const mediaUrl = isVideo && thumbnailUrl ? thumbnailUrl : rawMediaUrl;
 
+  // #region agent log
+  // Debug: trace media URL resolution
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EntityCard.tsx:68',message:'Media URL resolution',data:{denizenId:denizen.id,denizenName:denizen.name,rawThumbnail:denizen.thumbnail,resolvedThumbnail:thumbnailUrl,rawMediaPath:primaryMedia?.storagePath,denizenImage:denizen.image,rawMediaUrl,finalMediaUrl:mediaUrl,isVideo,primaryMediaType:primaryMedia?.mediaType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-H4'})}).catch(()=>{});
+  }
+  // #endregion
+
   return (
     <article
       className={`
@@ -125,43 +132,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
           `}
         />
 
-        {/* Edit button - appears on hover */}
-        {onEdit && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(denizen);
-            }}
-            className="
-              absolute top-2 right-2 z-20
-              w-6 h-6 flex items-center justify-center
-              opacity-0 group-hover:opacity-100
-              border border-[var(--dawn-15)] hover:border-[var(--dawn-50)]
-              bg-[var(--surface-0)] hover:bg-[var(--surface-1)]
-              text-[var(--dawn-30)] hover:text-[var(--dawn)]
-              transition-all duration-200
-            "
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-            }}
-            title="Edit denizen"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-        )}
+        {/* Edit button removed - only available in modal popup */}
 
         {/* Image container - full bleed */}
         <div
