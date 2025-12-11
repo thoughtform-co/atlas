@@ -360,6 +360,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
             onClearMedia={() =>
               setFormData(prev => ({ ...prev, mediaUrl: undefined, mediaMimeType: undefined }))
             }
+            skipAnalysis={true}
           />
           
           {/* Add Media button for additional media */}
@@ -485,6 +486,63 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
                       whiteSpace: 'nowrap',
                     }}>
                       {media.fileName}
+                    </div>
+                    {/* Delete and Replace buttons */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '0.25rem',
+                      right: '0.25rem',
+                      display: 'flex',
+                      gap: '0.25rem',
+                    }}>
+                      <button
+                        onClick={() => handleReplaceMedia(media.id)}
+                        disabled={deletingMediaId === media.id}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          fontSize: '0.4rem',
+                          background: 'rgba(236, 227, 214, 0.1)',
+                          border: '1px solid rgba(236, 227, 214, 0.2)',
+                          color: 'rgba(236, 227, 214, 0.8)',
+                          cursor: deletingMediaId === media.id ? 'not-allowed' : 'pointer',
+                          fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                          opacity: deletingMediaId === media.id ? 0.5 : 1,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (deletingMediaId !== media.id) {
+                            e.currentTarget.style.background = 'rgba(236, 227, 214, 0.2)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(236, 227, 214, 0.1)';
+                        }}
+                      >
+                        REPLACE
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMedia(media.id)}
+                        disabled={deletingMediaId === media.id}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          fontSize: '0.4rem',
+                          background: 'rgba(193, 127, 89, 0.2)',
+                          border: '1px solid rgba(193, 127, 89, 0.4)',
+                          color: 'rgba(236, 227, 214, 0.8)',
+                          cursor: deletingMediaId === media.id ? 'not-allowed' : 'pointer',
+                          fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                          opacity: deletingMediaId === media.id ? 0.5 : 1,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (deletingMediaId !== media.id) {
+                            e.currentTarget.style.background = 'rgba(193, 127, 89, 0.3)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(193, 127, 89, 0.2)';
+                        }}
+                      >
+                        {deletingMediaId === media.id ? '...' : 'DELETE'}
+                      </button>
                     </div>
                   </div>
                 ))}

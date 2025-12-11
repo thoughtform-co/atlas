@@ -12,6 +12,7 @@ interface MediaUploadZoneProps {
   existingMediaUrl?: string;
   existingMimeType?: string;
   onClear?: () => void;
+  skipAnalysis?: boolean; // If true, only upload media without analyzing/extracting fields
 }
 
 // Extract first frame from video as a thumbnail
@@ -67,6 +68,7 @@ export function MediaUploadZone({
   existingMediaUrl,
   existingMimeType,
   onClear,
+  skipAnalysis = false,
 }: MediaUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{ name: string; url: string; type: string } | null>(null);
@@ -152,6 +154,21 @@ export function MediaUploadZone({
         url: uploadResult.publicUrl,
         type: file.type,
       });
+
+      // If skipAnalysis is true, only update media URL without field extraction
+      // WHY: When editing existing entities, changing media should only update the media file,
+      // not trigger field extraction that would overwrite existing entity data
+      if (skipAnalysis) {
+        setUploadProgress(100);
+        setIsAnalyzing(false);
+        console.log('[MediaUpload] Skipping analysis - only updating media URL');
+        onMediaAnalyzed({
+          mediaUrl: uploadResult.publicUrl,
+          mediaMimeType: file.type,
+          thumbnailUrl,
+        });
+        return;
+      }
 
       // Start AI analysis
       setIsAnalyzing(true);

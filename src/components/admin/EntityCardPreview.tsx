@@ -18,6 +18,7 @@ interface EntityCardPreviewProps {
   isAnalyzing?: boolean;
   setIsAnalyzing?: (analyzing: boolean) => void;
   onClearMedia?: () => void;
+  skipAnalysis?: boolean; // If true, only upload media without analyzing/extracting fields
 }
 
 export function EntityCardPreview({
@@ -26,6 +27,7 @@ export function EntityCardPreview({
   isAnalyzing,
   setIsAnalyzing,
   onClearMedia,
+  skipAnalysis = false,
 }: EntityCardPreviewProps) {
   const phaseCanvasRef = useRef<HTMLCanvasElement>(null);
   const superCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -456,6 +458,7 @@ export function EntityCardPreview({
               setIsAnalyzing={setIsAnalyzing}
               existingMediaUrl={formData.mediaUrl}
               existingMimeType={formData.mediaMimeType}
+              skipAnalysis={skipAnalysis}
               onClear={onClearMedia}
             />
           </div>
