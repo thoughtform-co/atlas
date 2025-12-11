@@ -198,6 +198,12 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     
     setIsExporting(true);
     
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:start',message:'PNG export started',data:{isVideo,hasThumbnail:!!thumbnailUrl,thumbnailUrl,hasVideoRef:!!videoRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PNG-1'})}).catch(()=>{});
+    }
+    // #endregion
+    
     // Elements to restore after capture
     let videoElement: HTMLVideoElement | null = null;
     let frameImg: HTMLImageElement | null = null;
@@ -212,6 +218,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       
       // For videos: use thumbnail if available, otherwise capture current frame
       if (isVideo && video) {
+        // #region agent log
+        if (typeof window !== 'undefined') {
+          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:video-handling',message:'Processing video for PNG',data:{hasThumbnail:!!thumbnailUrl,thumbnailUrl,videoWidth:video.videoWidth,videoHeight:video.videoHeight},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PNG-2'})}).catch(()=>{});
+        }
+        // #endregion
         video.pause();
         videoElement = video;
         originalVideoDisplay = video.style.display;
@@ -236,6 +247,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           }
           
           if (imageSrc) {
+            // #region agent log
+            if (typeof window !== 'undefined') {
+              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:image-insert',message:'Inserting thumbnail/frame image',data:{imageSrcType:thumbnailUrl?'thumbnail':'frame',imageSrcLength:imageSrc.length,hasParent:!!video.parentElement},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PNG-3'})}).catch(()=>{});
+            }
+            // #endregion
             // Create an img element with the thumbnail/frame
             frameImg = document.createElement('img');
             frameImg.src = imageSrc;
@@ -250,8 +266,22 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             // Wait for image to load
             await new Promise<void>((resolve) => {
               if (frameImg) {
-                frameImg.onload = () => resolve();
-                frameImg.onerror = () => resolve(); // Resolve even on error to not block
+                frameImg.onload = () => {
+                  // #region agent log
+                  if (typeof window !== 'undefined' && frameImg) {
+                    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:image-loaded',message:'Thumbnail/frame image loaded',data:{imageWidth:frameImg.width,imageHeight:frameImg.height},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PNG-4'})}).catch(()=>{});
+                  }
+                  // #endregion
+                  resolve();
+                };
+                frameImg.onerror = () => {
+                  // #region agent log
+                  if (typeof window !== 'undefined') {
+                    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:image-error',message:'Thumbnail/frame image failed to load',data:{imageSrc},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PNG-5'})}).catch(()=>{});
+                  }
+                  // #endregion
+                  resolve(); // Resolve even on error to not block
+                };
                 // Ensure we wait long enough for render
                 setTimeout(() => resolve(), 500);
               } else {
@@ -314,9 +344,19 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     
     // Ensure video is playing if it exists
     const video = videoRef.current;
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:start',message:'Video export started',data:{isVideo,hasVideo:!!video,videoReadyState:video?.readyState,videoWidth:video?.videoWidth,videoHeight:video?.videoHeight},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-1'})}).catch(()=>{});
+    }
+    // #endregion
     if (isVideo && video) {
       video.play().catch((e) => {
         console.warn('Could not play video for recording:', e);
+        // #region agent log
+        if (typeof window !== 'undefined') {
+          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:play-error',message:'Video play failed',data:{error:String(e)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-2'})}).catch(()=>{});
+        }
+        // #endregion
       });
     }
     
@@ -340,13 +380,20 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       // Try MP4 (H.264), fallback to WebM
       let mimeType = 'video/mp4';
       let fileExtension = 'mp4';
-      if (!MediaRecorder.isTypeSupported('video/mp4')) {
+      const mp4Supported = MediaRecorder.isTypeSupported('video/mp4');
+      if (!mp4Supported) {
         mimeType = 'video/webm;codecs=vp9';
         fileExtension = 'webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
+        const vp9Supported = MediaRecorder.isTypeSupported(mimeType);
+        if (!vp9Supported) {
           mimeType = 'video/webm';
         }
       }
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:mime-type',message:'MimeType selection',data:{mimeType,fileExtension,mp4Supported},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-3'})}).catch(()=>{});
+      }
+      // #endregion
       
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,
@@ -400,9 +447,25 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                 0, 0, video.videoWidth, video.videoHeight,
                 0, 0, recordCanvas.width, recordCanvas.height
               );
+              // #region agent log
+              if (frameCount === 0 && typeof window !== 'undefined') {
+                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-drawn',message:'Video frame drawn to canvas',data:{videoWidth:video.videoWidth,videoHeight:video.videoHeight,canvasWidth:recordCanvas.width,canvasHeight:recordCanvas.height,readyState:video.readyState},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-4'})}).catch(()=>{});
+              }
+              // #endregion
             } catch (e) {
               console.warn('Could not draw video frame:', e);
+              // #region agent log
+              if (frameCount === 0 && typeof window !== 'undefined') {
+                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-draw-error',message:'Video frame draw failed',data:{error:String(e),readyState:video.readyState},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-5'})}).catch(()=>{});
+              }
+              // #endregion
             }
+          } else if (frameCount === 0) {
+            // #region agent log
+            if (typeof window !== 'undefined') {
+              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-skipped',message:'Video not drawn (condition check)',data:{isVideo,hasVideo:!!video,readyState:video?.readyState},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-6'})}).catch(()=>{});
+            }
+            // #endregion
           }
           
           // Capture UI elements with html2canvas (this will include everything except video)
