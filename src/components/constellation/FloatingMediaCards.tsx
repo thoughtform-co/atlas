@@ -128,13 +128,17 @@ function FloatingCard({
 }) {
   const cardRefForThis = useRef<HTMLDivElement>(null);
   
-  // Notify parent of ref
+  // Notify parent of ref - use ref callback pattern to avoid dependency issues
+  const onCardRefRef = useRef(onCardRef);
   useEffect(() => {
-    if (onCardRef && cardRefForThis.current) {
-      onCardRef(mediaIdx, cardRefForThis);
+    onCardRefRef.current = onCardRef;
+  }, [onCardRef]);
+
+  useEffect(() => {
+    if (onCardRefRef.current && cardRefForThis.current) {
+      onCardRefRef.current(mediaIdx, cardRefForThis);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaIdx]); // Only depend on mediaIdx, not onCardRef to avoid infinite loops
+  }, [mediaIdx]); // Only depend on mediaIdx
 
   return (
     <div

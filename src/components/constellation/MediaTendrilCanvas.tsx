@@ -80,50 +80,21 @@ export function MediaTendrilCanvas({
     }).filter((t): t is TendrilState => t !== null);
   }, [allMedia.length, currentIndex]); // Use length instead of array to avoid infinite loops
 
+  // Store allMedia in ref to avoid dependency issues
+  const allMediaRef = useRef(allMedia);
+  useEffect(() => {
+    allMediaRef.current = allMedia;
+  }, [allMedia]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !mainCardRef.current || floatingCardRefs.length === 0) return;
+    if (!canvas || !mainCardRef.current) return;
     
-    // Re-initialize tendrils if needed
-    if (tendrilsRef.current.length === 0) {
-      // Filter out thumbnails and limit to 4 cards
-      const filteredMedia = allMedia
-        .filter(m => m.mediaType !== 'thumbnail')
-        .slice(0, 4);
-
-      // Get floating card indices (exclude current)
-      const floatingIndices = filteredMedia
-        .map((_, idx) => idx)
-        .filter(idx => idx !== currentIndex)
-        .slice(0, 3);
-
-      tendrilsRef.current = floatingIndices.map((mediaIdx) => {
-        const media = filteredMedia[mediaIdx];
-        if (!media) return null;
-
-        const particleCount = 25;
-        const particles: Particle[] = [];
-
-        for (let i = 0; i < particleCount; i++) {
-          const t = (i % (particleCount / 2)) / (particleCount / 2);
-          particles.push({
-            t,
-            baseOffset: (Math.random() - 0.5) * 8,
-            phase: Math.random() * Math.PI * 2,
-            size: 2 + Math.random() * 2,
-          });
-        }
-
-        return {
-          mediaId: media.id,
-          particles,
-          pulsePhase: Math.random() * Math.PI * 2,
-          pulseSpeed: 0.015 + Math.random() * 0.01,
-        };
-      }).filter((t): t is TendrilState => t !== null);
-    }
-    
+    // Don't start animation if no tendrils
     if (tendrilsRef.current.length === 0) return;
+    
+    // Don't start if no floating card refs
+    if (floatingCardRefs.length === 0) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -215,7 +186,8 @@ export function MediaTendrilCanvas({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [mainCardRef, floatingCardRefs, allMedia, currentIndex]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once when canvas is ready - tendrils are initialized in separate effect
 
   // Early return if no floating cards to connect
   const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
