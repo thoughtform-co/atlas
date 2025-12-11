@@ -65,12 +65,17 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   // For card preview, prefer thumbnail for video entities (faster loading, no autoplay)
   // Falls back to video URL if no thumbnail, then to image
   const thumbnailUrl = denizen.thumbnail ? getMediaUrl(denizen.thumbnail) : undefined;
-  const mediaUrl = isVideo && thumbnailUrl ? thumbnailUrl : rawMediaUrl;
+  
+  // For videos: use thumbnail if available, otherwise we'll render video element
+  // For images: use the raw media URL
+  const imageUrl = isVideo ? thumbnailUrl : rawMediaUrl;
+  // Track if we need to render video instead of image (video without thumbnail)
+  const shouldRenderVideo = isVideo && !thumbnailUrl && rawMediaUrl;
 
   // #region agent log
   // Debug: trace media URL resolution
   if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EntityCard.tsx:68',message:'Media URL resolution',data:{denizenId:denizen.id,denizenName:denizen.name,rawThumbnail:denizen.thumbnail,resolvedThumbnail:thumbnailUrl,rawMediaPath:primaryMedia?.storagePath,denizenImage:denizen.image,rawMediaUrl,finalMediaUrl:mediaUrl,isVideo,primaryMediaType:primaryMedia?.mediaType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-H4'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EntityCard.tsx:68',message:'Media URL resolution',data:{denizenId:denizen.id,denizenName:denizen.name,rawThumbnail:denizen.thumbnail,resolvedThumbnail:thumbnailUrl,denizenImage:denizen.image,rawMediaUrl,imageUrl,isVideo,shouldRenderVideo},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1-H4'})}).catch(()=>{});
   }
   // #endregion
 
@@ -142,11 +147,32 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
             background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%)',
           }}
         >
-          {/* Full-bleed Media Background - always use image (thumbnail for videos) */}
-          {mediaUrl ? (
+          {/* Full-bleed Media Background */}
+          {shouldRenderVideo && rawMediaUrl ? (
+            // Video without thumbnail - render video element (muted, no controls for card preview)
+            <div className="absolute inset-0">
+              <video
+                src={rawMediaUrl}
+                className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+              {/* Subtle gradient overlay for readability */}
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(5, 4, 3, 0.1) 0%, transparent 30%, transparent 50%, rgba(5, 4, 3, 0.4) 80%, rgba(5, 4, 3, 0.85) 100%)',
+                }}
+              />
+            </div>
+          ) : imageUrl ? (
+            // Image or video thumbnail
             <div className="absolute inset-0">
               <Image
-                src={mediaUrl}
+                src={imageUrl}
                 alt={denizen.name}
                 fill
                 className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
