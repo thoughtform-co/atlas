@@ -57,6 +57,20 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     return () => clearInterval(interval);
   }, [denizen]);
 
+  // Close download menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target as Node)) {
+        setShowDownloadMenu(false);
+      }
+    };
+    
+    if (showDownloadMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDownloadMenu]);
+
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
@@ -371,20 +385,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       setRecordingProgress(0);
     }
   };
-
-  // Close download menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target as Node)) {
-        setShowDownloadMenu(false);
-      }
-    };
-    
-    if (showDownloadMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showDownloadMenu]);
 
   return (
     <div
