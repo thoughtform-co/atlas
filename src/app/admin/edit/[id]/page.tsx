@@ -418,6 +418,79 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
               Additional media will appear in the modal view
             </span>
           </div>
+
+          {/* Additional Media Preview */}
+          {additionalMedia.length > 0 && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <div style={{ 
+                fontSize: '0.5rem', 
+                color: 'rgba(236, 227, 214, 0.5)',
+                fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                letterSpacing: '0.05em',
+                marginBottom: '0.75rem',
+                textTransform: 'uppercase',
+              }}>
+                Additional Media ({additionalMedia.length})
+              </div>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                gap: '0.75rem',
+              }}>
+                {additionalMedia.map((media) => (
+                  <div
+                    key={media.id}
+                    style={{
+                      aspectRatio: '4/5',
+                      border: '1px solid rgba(236, 227, 214, 0.1)',
+                      background: 'rgba(236, 227, 214, 0.05)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      borderRadius: '2px',
+                    }}
+                  >
+                    {media.type === 'video' ? (
+                      <video
+                        src={media.url}
+                        className="w-full h-full object-cover"
+                        muted
+                        loop
+                        playsInline
+                        style={{ opacity: 0.8 }}
+                      />
+                    ) : (
+                      <img
+                        src={media.url}
+                        alt={media.fileName}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          opacity: 0.8,
+                        }}
+                      />
+                    )}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(5, 4, 3, 0.8), transparent)',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.4rem',
+                      color: 'rgba(236, 227, 214, 0.6)',
+                      fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {media.fileName}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Middle: Parameter Form */}
