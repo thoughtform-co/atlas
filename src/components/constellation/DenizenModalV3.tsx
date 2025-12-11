@@ -41,6 +41,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [recordingProgress, setRecordingProgress] = useState(0);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -530,10 +532,20 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               <div 
                 ref={downloadMenuRef}
                 style={{ position: 'relative' }}
-                onMouseEnter={() => !isExporting && !isRecordingVideo && setShowDownloadMenu(true)}
+                onMouseEnter={() => {
+                  if (!isExporting && !isRecordingVideo && downloadButtonRef.current) {
+                    const rect = downloadButtonRef.current.getBoundingClientRect();
+                    setMenuPosition({
+                      top: rect.bottom + 4,
+                      right: window.innerWidth - rect.right,
+                    });
+                    setShowDownloadMenu(true);
+                  }
+                }}
                 onMouseLeave={() => setShowDownloadMenu(false)}
               >
                 <button
+                  ref={downloadButtonRef}
                   disabled={isExporting || isRecordingVideo}
                   title="Download"
                   style={{
@@ -561,14 +573,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                   )}
                 </button>
                 
-                {/* Dropdown menu */}
+                {/* Dropdown menu - using fixed position to escape stacking context */}
                 {showDownloadMenu && !isExporting && !isRecordingVideo && (
                   <div
                     style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      marginTop: '4px',
+                      position: 'fixed',
+                      top: menuPosition.top,
+                      right: menuPosition.right,
                       background: 'rgba(10, 9, 8, 0.35)',
                       backdropFilter: 'blur(16px)',
                       WebkitBackdropFilter: 'blur(16px)',
@@ -576,7 +587,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                       borderRadius: '4px',
                       overflow: 'hidden',
                       minWidth: '140px',
-                      zIndex: 1000,
+                      zIndex: 10000,
                     }}
                   >
                     {/* Download as Image */}
