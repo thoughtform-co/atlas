@@ -206,6 +206,12 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     
     setIsExporting(true);
     
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:start',message:'Starting PNG export',data:{hasCardRef:!!cardRef.current,isVideo,menuPosition},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PX-1'})}).catch(()=>{});
+    }
+    // #endregion
+    
     // Elements to restore after capture
     let videoElement: HTMLVideoElement | null = null;
     let frameImg: HTMLImageElement | null = null;
@@ -279,9 +285,20 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       link.href = canvas.toDataURL('image/png');
       link.click();
       
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:success',message:'PNG export success',data:{downloadName:link.download},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PX-1'})}).catch(()=>{});
+      }
+      // #endregion
+      
     } catch (error) {
       console.error('Failed to export PNG:', error);
       alert('Failed to export PNG. The media may be from an external source.');
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:error',message:'PNG export failed',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PX-1'})}).catch(()=>{});
+      }
+      // #endregion
     } finally {
       // Restore DOM
       if (frameImg) {
@@ -303,6 +320,12 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     setRecordingProgress(0);
     setShowDownloadMenu(false);
     
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:start',message:'Starting video export',data:{hasCardRef:!!cardRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VX-1'})}).catch(()=>{});
+    }
+    // #endregion
+    
     const card = cardRef.current;
     const cardRect = card.getBoundingClientRect();
     const duration = 12000; // 12 seconds for one full scan cycle
@@ -323,6 +346,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       
       // Setup MediaRecorder
       const stream = recordCanvas.captureStream(fps);
+      if (typeof MediaRecorder === 'undefined') {
+        throw new Error('MediaRecorder not supported in this browser');
+      }
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
         videoBitsPerSecond: 8000000, // 8 Mbps for good quality
@@ -345,6 +371,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         URL.revokeObjectURL(url);
         setIsRecordingVideo(false);
         setRecordingProgress(0);
+        // #region agent log
+        if (typeof window !== 'undefined') {
+          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:success',message:'Video export success',data:{downloadName:link.download},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VX-1'})}).catch(()=>{});
+        }
+        // #endregion
       };
       
       mediaRecorder.start();
@@ -395,6 +426,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     } catch (error) {
       console.error('Failed to export video:', error);
       alert('Failed to export video. Your browser may not support video recording.');
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:error',message:'Video export failed',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VX-1'})}).catch(()=>{});
+      }
+      // #endregion
       setIsRecordingVideo(false);
       setRecordingProgress(0);
     }
