@@ -15,8 +15,8 @@
     "@supabase/supabase-js": "^2.86.0",
     "html2canvas": "^1.4.1",
     "next": "16.0.7",
-    "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react": "^19.2.2",
+    "react-dom": "^19.2.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
