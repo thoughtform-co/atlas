@@ -44,8 +44,6 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   const isExistential = denizen.threatLevel === 'Existential';
   const connectionCount = denizen.connections?.length || 0;
 
-  // Get primary media from uploaded media array
-  const primaryMedia = denizen.media?.find(m => m.isPrimary) || denizen.media?.[0];
   // Convert storage path to public URL, handling both relative paths and full URLs
   const getMediaUrl = (path: string | undefined): string | undefined => {
     if (!path) return undefined;
@@ -55,10 +53,32 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
     return getMediaPublicUrl(path) || undefined;
   };
   
+  // Get primary media for Constellation view
+  // WHY: Prioritize explicit primary media, then original image field, then first media in array
+  // This ensures additional media doesn't replace the original entity image in Constellation view
+  const explicitPrimaryMedia = denizen.media?.find(m => m.isPrimary);
+  
+  // If there's an explicit primary, use it
+  // Otherwise, prefer the original denizen.image field (which is the original entity media)
+  // Only use media array if no image field exists
+  const primaryMedia = explicitPrimaryMedia || 
+    (denizen.image ? 
+      // Try to find media that matches the original image field
+      denizen.media?.find(m => {
+        const mediaUrl = getMediaUrl(m.storagePath);
+        return mediaUrl === denizen.image || m.storagePath === denizen.image;
+      }) || 
+      // If no match found, we'll use denizen.image directly (not from media array)
+      null :
+      // No image field, use first media in array as fallback
+      denizen.media?.[0]);
+  
   // Check if media is video based on multiple sources
   const isVideoFromMedia = primaryMedia?.mediaType === 'video';
   const isVideoFromUrl = !!denizen.videoUrl;
-  const rawMediaUrl = getMediaUrl(primaryMedia?.storagePath) || denizen.image;
+  // Use primary media if available, otherwise use original image field
+  // WHY: This ensures additional media never replaces the original in Constellation view
+  const rawMediaUrl = primaryMedia ? getMediaUrl(primaryMedia.storagePath) : denizen.image;
   const isVideoFromExtension = rawMediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
   const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
   
