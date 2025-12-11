@@ -72,12 +72,6 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   // Track if we need to render video instead of image (video without thumbnail)
   const shouldRenderVideo = isVideo && !thumbnailUrl && rawMediaUrl;
 
-  // #region agent log
-  // Debug: trace media URL resolution
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EntityCard.tsx:68',message:'Media URL resolution',data:{denizenId:denizen.id,denizenName:denizen.name,rawThumbnail:denizen.thumbnail,resolvedThumbnail:thumbnailUrl,denizenImage:denizen.image,rawMediaUrl,imageUrl,isVideo,shouldRenderVideo},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H1-H4'})}).catch(()=>{});
-  }
-  // #endregion
 
   return (
     <article
