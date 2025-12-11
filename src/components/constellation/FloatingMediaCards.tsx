@@ -131,10 +131,20 @@ function FloatingCard({
   // Notify parent of ref - use ref callback pattern to avoid dependency issues
   const onCardRefRef = useRef(onCardRef);
   useEffect(() => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FloatingMediaCards.tsx:133',message:'onCardRef update effect RUN',data:{mediaIdx,hasOnCardRef:!!onCardRef,onCardRefChanged:onCardRef!==onCardRefRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    }
+    // #endregion
     onCardRefRef.current = onCardRef;
   }, [onCardRef]);
 
   useEffect(() => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FloatingMediaCards.tsx:137',message:'FloatingCard ref notification effect RUN',data:{mediaIdx,hasOnCardRef:!!onCardRefRef.current,hasCardRef:!!cardRefForThis.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+    }
+    // #endregion
     if (onCardRefRef.current && cardRefForThis.current) {
       onCardRefRef.current(mediaIdx, cardRefForThis);
     }

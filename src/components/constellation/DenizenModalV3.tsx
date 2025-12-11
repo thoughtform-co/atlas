@@ -67,6 +67,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
   // Fetch all media when denizen changes
   useEffect(() => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:69',message:'Fetch media effect START',data:{denizenId:denizen?.id,hasDenizen:!!denizen},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    }
+    // #endregion
     if (!denizen) {
       setAllMedia([]);
       setCurrentMediaIndex(0);
@@ -78,6 +83,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         const media = await fetchDenizenMedia(denizen.id);
         // Filter out thumbnails - only show image/video media
         const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
+        // #region agent log
+        if (typeof window !== 'undefined') {
+          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:81',message:'Setting allMedia',data:{mediaCount:filteredMedia.length,mediaIds:filteredMedia.map(m=>m.id)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+        }
+        // #endregion
         setAllMedia(filteredMedia);
         
         // Find primary media index, or default to 0
@@ -226,6 +236,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   // Initialize floating card refs when media changes
   // Note: This is just for sizing the array, actual refs are set by FloatingMediaCards
   useEffect(() => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:228',message:'Floating card refs init effect RUN',data:{allMediaLength:allMedia.length,currentMediaIndex,floatingCardRefsLength:floatingCardRefs.current.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    }
+    // #endregion
     const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
     const floatingCount = Math.min(3, Math.max(0, filteredMedia.length - 1));
     
@@ -766,11 +781,21 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const currentMediaIndexRef = useRef(currentMediaIndex);
   
   useEffect(() => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:768',message:'Ref update effect RUN',data:{allMediaLength:allMedia.length,allMediaRefLength:allMediaRef.current.length,currentMediaIndex,currentMediaIndexRef:currentMediaIndexRef.current,allMediaSameRef:allMedia===allMediaRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    }
+    // #endregion
     allMediaRef.current = allMedia;
     currentMediaIndexRef.current = currentMediaIndex;
   }, [allMedia, currentMediaIndex]);
 
   const handleFloatingCardRef = useCallback((index: number, ref: React.RefObject<HTMLDivElement | null>) => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:773',message:'handleFloatingCardRef CALLED',data:{index,hasRef:!!ref,refCurrent:!!ref?.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+    }
+    // #endregion
     const filteredMedia = allMediaRef.current.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
     const floatingIndices = filteredMedia
       .map((_, idx) => idx)
@@ -806,15 +831,23 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       </div>
       
       {/* Floating background cards */}
-      {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
-        <FloatingMediaCards
-          denizen={displayDenizen}
-          allMedia={allMedia}
-          currentIndex={currentMediaIndex}
-          cardRef={cardRef}
-          onCardRef={handleFloatingCardRef}
-        />
-      )}
+      {(() => {
+        const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail');
+        // #region agent log
+        if (typeof window !== 'undefined') {
+          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:render',message:'RENDER - checking FloatingMediaCards',data:{allMediaLength:allMedia.length,filteredMediaLength:filteredMedia.length,currentMediaIndex,shouldRender:filteredMedia.length>1,allMediaIds:allMedia.map(m=>m.id).join(',')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+        }
+        // #endregion
+        return filteredMedia.length > 1 ? (
+          <FloatingMediaCards
+            denizen={displayDenizen}
+            allMedia={allMedia}
+            currentIndex={currentMediaIndex}
+            cardRef={cardRef}
+            onCardRef={handleFloatingCardRef}
+          />
+        ) : null;
+      })()}
 
       {/* Tendril particle connections */}
       {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
