@@ -22,6 +22,10 @@ const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
+// Configure route to allow larger body sizes
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds for large uploads
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication using cookie-based auth

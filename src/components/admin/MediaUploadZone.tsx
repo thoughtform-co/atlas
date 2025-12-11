@@ -127,9 +127,15 @@ export function MediaUploadZone({
           });
           
           if (thumbResponse.ok) {
-            const thumbResult = await thumbResponse.json();
-            thumbnailUrl = thumbResult.publicUrl;
-            console.log('[MediaUpload] Thumbnail uploaded:', thumbnailUrl);
+            try {
+              const thumbResult = await thumbResponse.json();
+              thumbnailUrl = thumbResult.publicUrl;
+              console.log('[MediaUpload] Thumbnail uploaded:', thumbnailUrl);
+            } catch (err) {
+              console.warn('[MediaUpload] Failed to parse thumbnail response:', err);
+            }
+          } else {
+            console.warn('[MediaUpload] Thumbnail upload failed, continuing without thumbnail');
           }
         }
       }
@@ -142,8 +148,26 @@ export function MediaUploadZone({
       });
 
       if (!uploadResponse.ok) {
-        const error = await uploadResponse.json();
-        throw new Error(error.error || 'Upload failed');
+        // Handle different error response types
+        let errorMessage = 'Upload failed';
+        const contentType = uploadResponse.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const error = await uploadResponse.json();
+            errorMessage = error.error || 'Upload failed';
+          } catch {
+            errorMessage = `Upload failed with status ${uploadResponse.status}`;
+          }
+        } else {
+          // Handle non-JSON responses (e.g., 413 HTML error pages)
+          if (uploadResponse.status === 413) {
+            errorMessage = 'File too large. Maximum size: 100MB for videos, 10MB for images';
+          } else {
+            errorMessage = `Upload failed with status ${uploadResponse.status}`;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const uploadResult = await uploadResponse.json();
