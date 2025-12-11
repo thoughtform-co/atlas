@@ -542,7 +542,12 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                     setShowDownloadMenu(true);
                   }
                 }}
-                onMouseLeave={() => setShowDownloadMenu(false)}
+                onMouseLeave={(e) => {
+                  // Don't close if moving to the dropdown menu
+                  const relatedTarget = e.relatedTarget as HTMLElement;
+                  if (relatedTarget?.closest('[data-download-menu]')) return;
+                  setShowDownloadMenu(false);
+                }}
               >
                 <button
                   ref={downloadButtonRef}
@@ -576,6 +581,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                 {/* Dropdown menu - using fixed position to escape stacking context */}
                 {showDownloadMenu && !isExporting && !isRecordingVideo && (
                   <div
+                    data-download-menu
+                    onMouseEnter={() => setShowDownloadMenu(true)}
+                    onMouseLeave={() => setShowDownloadMenu(false)}
                     style={{
                       position: 'fixed',
                       top: menuPosition.top,
