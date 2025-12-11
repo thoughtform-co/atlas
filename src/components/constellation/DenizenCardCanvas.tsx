@@ -23,7 +23,13 @@ interface DenizenCardCanvasProps {
   elapsedTime?: number;
 }
 
-// Helper function to calculate object-fit: cover dimensions
+/**
+ * Calculates source crop dimensions to replicate CSS object-fit: cover behavior.
+ * 
+ * WHY: Canvas drawImage doesn't support object-fit CSS property. We must manually
+ * calculate which portion of the source media to crop and how to scale it to fill
+ * the container while maintaining aspect ratio, matching what users see in the DOM.
+ */
 function getCoverDimensions(
   contentWidth: number,
   contentHeight: number,
@@ -36,11 +42,11 @@ function getCoverDimensions(
   let sx = 0, sy = 0, sWidth = contentWidth, sHeight = contentHeight;
 
   if (containerRatio > contentRatio) {
-    // Container is wider - crop height
+    // Container is wider - crop height to maintain aspect ratio
     sHeight = contentWidth / containerRatio;
     sy = (contentHeight - sHeight) / 2;
   } else {
-    // Container is taller - crop width
+    // Container is taller - crop width to maintain aspect ratio
     sWidth = contentHeight * containerRatio;
     sx = (contentWidth - sWidth) / 2;
   }
@@ -100,7 +106,17 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
     const imageRef = useRef<HTMLImageElement | null>(null);
     const mediaLoadedRef = useRef(false);
     
-    // Visualization state
+    /**
+     * Visualization state stored in refs to persist across renders without triggering re-renders.
+     * 
+     * WHY refs instead of state: Particle positions, animation time, and visualization data
+     * change every frame (60fps). Using state would trigger 60 re-renders per second, causing
+     * performance issues. Refs allow us to mutate data without React re-renders.
+     * 
+     * WHY initialize in render loop: Particles are initialized lazily on first render to
+     * ensure canvas dimensions are set. This prevents particles from being positioned
+     * before canvas is ready.
+     */
     const phaseStateRef = useRef({ time: 0, particles: [] as { t: number; life: number; decay: number }[] });
     const hallucStateRef = useRef({ time: 0, ghosts: [] as { angle: number; drift: number; dist: number; flicker: number }[] });
     const coordsStateRef = useRef({ particles: [] as { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number }[] });
@@ -108,50 +124,85 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
     const spectralStateRef = useRef({ time: 0, signature: [] as { base: number; variance: number }[] });
     const superStateRef = useRef({ time: 0 });
 
-    // Expose export methods via ref
+    /**
+     * Expose export methods via ref so parent component can trigger exports.
+     * 
+     * WHY useImperativeHandle: Parent (DenizenModalV3) needs to call export methods
+     * when user clicks download buttons. Refs allow imperative API while keeping
+     * component encapsulated.
+     */
     useImperativeHandle(ref, () => ({
+      /**
+       * Export current canvas state as PNG image.
+       * 
+       * WHY toBlob instead of toDataURL: toBlob is more memory-efficient for large images
+       * and doesn't create a large base64 string. Better for performance.
+       */
       exportPNG: () => {
-        if (canvasRef.current) {
-          canvasRef.current.toBlob((blob) => {
-            if (blob) {
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.download = `${denizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
-              link.href = url;
-              link.click();
-              URL.revokeObjectURL(url);
-            }
-          }, 'image/png');
-        }
+        const canvas = canvasRef.current; // Capture ref to maintain narrowing
+        if (!canvas) return;
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `${denizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url); // Clean up object URL to prevent memory leak
+          }
+        }, 'image/png');
       },
+      /**
+       * Export animated canvas as video file (MP4 or WebM).
+       * 
+       * WHY captureStream: Native browser API that captures canvas frames as video stream.
+       * More reliable than html2canvas for animated content and doesn't have CORS limitations.
+       * 
+       * WHY 24fps: Balance between file size and smoothness. 24fps is standard for web video
+       * and reduces export file size compared to 60fps while maintaining visual quality.
+       * 
+       * WHY 12 seconds: One complete scan line animation cycle. Ensures exported video
+       * shows full animation without cutting off mid-cycle.
+       */
       exportVideo: async () => {
-        if (!canvasRef.current) return;
-        
+        // Capture canvas ref immediately after null check to maintain narrowing across await
+        // WHY: TypeScript doesn't maintain null narrowing across await boundaries
         const canvas = canvasRef.current;
-        const fps = 24;
-        const duration = 12000; // 12 seconds for one full scan cycle
+        if (!canvas) return;
         
-        // Ensure video is playing if it exists
+        const fps = 24;
+        const duration = 12000; // 12 seconds for one full scan cycle (one complete scan line animation cycle)
+        
+        // Ensure video is playing if it exists - required for captureStream to record video frames
+        // WHY: MediaRecorder captures whatever is currently rendered. If video is paused,
+        // we'd record a static frame instead of animated video background.
         if (isVideo && videoRef.current) {
-          videoRef.current.play().catch(() => {});
+          const video = videoRef.current; // Capture ref to maintain narrowing across async
+          video.play().catch(() => {
+            // Silently fail - video may already be playing or autoplay blocked
+            // Export will still work, just without video background animation
+          });
         }
         
         try {
+          // captureStream creates a MediaStream from canvas - native browser API
           const stream = canvas.captureStream(fps);
           if (typeof MediaRecorder === 'undefined') {
             throw new Error('MediaRecorder not supported in this browser');
           }
           
-          // Try MP4 first, fallback to WebM
+          // Try MP4 first (H.264) for maximum compatibility, fallback to WebM (VP9/VP8)
+          // WHY: MP4 is most shareable format, but browser support varies. WebM is fallback.
           let mimeType = 'video/mp4';
           let fileExtension = 'mp4';
           
           if (!MediaRecorder.isTypeSupported('video/mp4')) {
             if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-              mimeType = 'video/webm;codecs=vp9';
+              mimeType = 'video/webm;codecs=vp9'; // VP9 is better quality than VP8
               fileExtension = 'webm';
             } else {
-              mimeType = 'video/webm';
+              mimeType = 'video/webm'; // VP8 fallback
               fileExtension = 'webm';
             }
           }
@@ -199,7 +250,19 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
       },
     }));
 
-    // Load media (video or image)
+    /**
+     * Load media (video or image) for canvas rendering.
+     * 
+     * WHY separate effect: Media loading is async and independent of rendering loop.
+     * We load media first, then render loop uses it when ready. This prevents
+     * render loop from blocking on media loading and allows proper cleanup.
+     * 
+     * WHY off-screen video: Video element must be in DOM for canvas.drawImage() to work,
+     * but we don't want it visible. Positioned off-screen to avoid layout impact.
+     * 
+     * WHY crossOrigin: Required for canvas to read video/image pixels without CORS errors
+     * during export (canvas.toBlob() and captureStream() require CORS-compliant media).
+     */
     useEffect(() => {
       if (!mediaUrl) {
         mediaLoadedRef.current = false;
@@ -209,40 +272,51 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
       mediaLoadedRef.current = false;
 
       if (isVideo) {
-        // Load video
+        // Load video element for canvas.drawImage()
         const video = document.createElement('video');
-        video.crossOrigin = 'anonymous';
+        video.crossOrigin = 'anonymous'; // Required for canvas export without CORS errors
         video.src = mediaUrl;
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.preload = 'metadata';
+        video.muted = true; // Required for autoplay in most browsers
+        video.loop = true; // Continuous playback for video export
+        video.playsInline = true; // Prevents fullscreen on mobile
+        video.preload = 'metadata'; // Load enough to get dimensions
+        
+        // Position off-screen: video must be in DOM for drawImage, but shouldn't be visible
         video.style.position = 'absolute';
         video.style.left = '-9999px';
         video.style.top = '-9999px';
         document.body.appendChild(video);
 
         video.onloadedmetadata = () => {
-          video.play().catch(() => {});
+          // Start playback immediately so video is ready when render loop needs it
+          // WHY: Canvas.drawImage() needs video to be playing to capture current frame
+          video.play().catch(() => {
+            // Autoplay may be blocked - render loop will handle paused state
+          });
           videoRef.current = video;
           mediaLoadedRef.current = true;
         };
 
         video.onerror = () => {
-          document.body.removeChild(video);
+          // Clean up on error to prevent memory leaks
+          if (video.parentNode) {
+            document.body.removeChild(video);
+          }
           mediaLoadedRef.current = false;
         };
 
         return () => {
+          // Cleanup: remove video element when mediaUrl changes or component unmounts
           if (video.parentNode) {
             document.body.removeChild(video);
           }
           videoRef.current = null;
         };
       } else {
-        // Load image
+        // Load image - prefer thumbnail for videos, fallback to mediaUrl for images
+        // WHY: Thumbnails are pre-extracted and avoid CORS issues during export
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        img.crossOrigin = 'anonymous'; // Required for canvas export without CORS errors
         img.src = thumbnailUrl || mediaUrl;
 
         img.onload = () => {
@@ -251,6 +325,7 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         };
 
         img.onerror = () => {
+          // Image failed to load - render loop will show background color only
           mediaLoadedRef.current = false;
         };
 
@@ -260,47 +335,74 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
       }
     }, [mediaUrl, thumbnailUrl, isVideo]);
 
+    /**
+     * Main rendering loop - draws entire card to canvas every frame.
+     * 
+     * WHY single render loop: All elements drawn in one pass ensures perfect
+     * layering and synchronization. Multiple render passes would cause flickering
+     * and alignment issues.
+     * 
+     * WHY willReadFrequently: Canvas is used for export (toBlob, captureStream),
+     * which reads pixel data frequently. This hint optimizes canvas for read operations.
+     * 
+     * WHY devicePixelRatio: High-DPI displays need 2x/3x resolution to render
+     * crisp text and lines. We scale context back down so coordinates match CSS pixels.
+     */
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      // Set up canvas with device pixel ratio for crisp rendering
+      // Set up canvas with device pixel ratio for crisp rendering on high-DPI displays
       const dpr = window.devicePixelRatio || 1;
       canvas.width = CARD_WIDTH * dpr;
       canvas.height = CARD_HEIGHT * dpr;
       canvas.style.width = `${CARD_WIDTH}px`;
       canvas.style.height = `${CARD_HEIGHT}px`;
 
+      // willReadFrequently optimizes for export operations (toBlob, captureStream)
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) return;
 
+      // Scale context to match CSS pixels - coordinates now match design dimensions
       ctx.scale(dpr, dpr);
 
-      // Rendering loop
+      /**
+       * Rendering loop - draws all layers in correct order (bottom to top).
+       * 
+       * Render order matters: Each layer draws on top of previous layers.
+       * Order: Background → Gradient → Panels → Text → Visualizations → Scan line → Border
+       * 
+       * WHY requestAnimationFrame: Synchronizes with browser repaint (60fps),
+       * ensures smooth animations, and pauses when tab is hidden (saves CPU).
+       */
       const render = () => {
-        // Clear canvas
+        // Clear canvas with card background color - must be first to reset previous frame
         ctx.fillStyle = '#050403';
         ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-        // Phase 2: Background media rendering
+        // Phase 2: Background media rendering (bottom layer)
+        // WHY check readyState >= 2: Video must have loaded metadata (dimensions) before drawImage works
+        // WHY check image.complete: Image must be fully loaded before drawImage works
         if (mediaLoadedRef.current && mediaUrl) {
           if (isVideo && videoRef.current && videoRef.current.readyState >= 2) {
-            const video = videoRef.current;
+            const video = videoRef.current; // Capture ref to maintain narrowing
             const { sx, sy, sWidth, sHeight } = getCoverDimensions(
               video.videoWidth,
               video.videoHeight,
               CARD_WIDTH,
               CARD_HEIGHT
             );
+            // Draw current video frame with object-fit: cover math
             ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, CARD_WIDTH, CARD_HEIGHT);
           } else if (!isVideo && imageRef.current && imageRef.current.complete) {
-            const img = imageRef.current;
+            const img = imageRef.current; // Capture ref to maintain narrowing
             const { sx, sy, sWidth, sHeight } = getCoverDimensions(
               img.width,
               img.height,
               CARD_WIDTH,
               CARD_HEIGHT
             );
+            // Draw image with object-fit: cover math
             ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, CARD_WIDTH, CARD_HEIGHT);
           }
         }
@@ -438,6 +540,10 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         }
 
         // Phase 4: Glassmorphism panels
+        // WHY simple translucent fill: Canvas doesn't support backdrop-filter CSS property.
+        // We simulate glassmorphism with semi-transparent fills that approximate the visual
+        // effect. True blur would require expensive off-screen canvas operations every frame.
+        // 
         // Header panel (full width, 32px tall)
         ctx.fillStyle = 'rgba(10, 9, 8, 0.1)';
         ctx.fillRect(0, 0, CARD_WIDTH, 32);
@@ -502,7 +608,9 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         }
 
         // Phase 5: Canvas visualizations
-        // Initialize visualization states if needed
+        // WHY initialize in render loop: Particles need canvas dimensions to be set first.
+        // Lazy initialization ensures we only create particles once canvas is ready,
+        // and prevents re-initialization on every render (refs persist across renders).
         if (phaseStateRef.current.particles.length === 0) {
           for (let i = 0; i < 50; i++) {
             phaseStateRef.current.particles.push({ 
@@ -746,12 +854,19 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         spectralStateRef.current.time += 0.01;
 
         // Phase 6: Scan line animation
+        // WHY 12 second cycle: Matches the scan line animation duration in DOM version.
+        // Video exports capture exactly one full cycle (12 seconds) for consistency.
+        // WHY timeRef * 0.016: timeRef increments by ~0.016 each frame (60fps), so
+        // timeRef.current * 0.016 gives elapsed time in seconds.
         const scanTime = (timeRef.current * 0.016) % 12; // 12 second cycle
         const scanY = (scanTime / 12) * CARD_HEIGHT;
+        
+        // Fade in/out at top and bottom edges for smooth visual effect
         const scanOpacity = scanY < CARD_HEIGHT * 0.05 ? (scanY / (CARD_HEIGHT * 0.05)) * 0.6 :
                            scanY > CARD_HEIGHT * 0.95 ? ((CARD_HEIGHT - scanY) / (CARD_HEIGHT * 0.05)) * 0.6 : 0.6;
         
         if (scanOpacity > 0) {
+          // Gradient from opaque to transparent creates soft scan line edge
           const gradient = ctx.createLinearGradient(0, scanY, 0, scanY + 2);
           gradient.addColorStop(0, `rgba(202, 165, 84, ${scanOpacity})`);
           gradient.addColorStop(1, 'transparent');
