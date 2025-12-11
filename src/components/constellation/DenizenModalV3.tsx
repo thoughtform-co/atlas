@@ -38,9 +38,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentDenizen, setCurrentDenizen] = useState<Denizen | null>(denizen);
   const [isExporting, setIsExporting] = useState(false);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [recordingProgress, setRecordingProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
 
   // Update currentDenizen when denizen prop changes
   useEffect(() => {
@@ -181,6 +185,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     
     try {
       const video = videoRef.current;
+      const card = cardRef.current;
+      
+      // Get exact card dimensions for proper capture
+      const cardRect = card.getBoundingClientRect();
       
       // For videos: capture current frame and temporarily swap DOM
       if (isVideo && video) {
@@ -202,17 +210,19 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             // Create an img element with the frame
             frameImg = document.createElement('img');
             frameImg.src = frameDataUrl;
-            frameImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+            // Match exact video styling for full-bleed coverage
+            frameImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;';
             
-            // Hide video and insert frame image
+            // Hide video and insert frame image BEFORE the video (so it's in same position)
             video.style.display = 'none';
-            video.parentElement?.appendChild(frameImg);
+            video.parentElement?.insertBefore(frameImg, video);
             
             // Wait for image to load
             await new Promise<void>((resolve) => {
               if (frameImg) {
                 frameImg.onload = () => resolve();
-                setTimeout(() => resolve(), 200);
+                // Ensure we wait long enough for render
+                setTimeout(() => resolve(), 300);
               } else {
                 resolve();
               }
@@ -223,12 +233,16 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         }
       }
       
-      // Use html2canvas - media is now a local data URL image
-      const canvas = await html2canvas(cardRef.current, {
+      // Use html2canvas with exact dimensions
+      const canvas = await html2canvas(card, {
         backgroundColor: '#050403',
         scale: 2,
         logging: false,
         useCORS: true,
+        width: cardRect.width,
+        height: cardRect.height,
+        windowWidth: cardRect.width,
+        windowHeight: cardRect.height,
       });
       
       // Download
@@ -252,6 +266,125 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       setIsExporting(false);
     }
   };
+
+  // Export card as MP4 video (records one full animation cycle - 12 seconds)
+  const handleExportVideo = async () => {
+    if (!cardRef.current) return;
+    
+    setIsRecordingVideo(true);
+    setRecordingProgress(0);
+    setShowDownloadMenu(false);
+    
+    const card = cardRef.current;
+    const cardRect = card.getBoundingClientRect();
+    const duration = 12000; // 12 seconds for one full scan cycle
+    const fps = 24;
+    const frameInterval = 1000 / fps;
+    const totalFrames = Math.ceil(duration / frameInterval);
+    
+    try {
+      // Create a canvas for recording
+      const recordCanvas = document.createElement('canvas');
+      recordCanvas.width = cardRect.width * 2; // 2x scale for quality
+      recordCanvas.height = cardRect.height * 2;
+      const recordCtx = recordCanvas.getContext('2d');
+      
+      if (!recordCtx) {
+        throw new Error('Could not create canvas context');
+      }
+      
+      // Setup MediaRecorder
+      const stream = recordCanvas.captureStream(fps);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 8000000, // 8 Mbps for good quality
+      });
+      
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.webm`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        setIsRecordingVideo(false);
+        setRecordingProgress(0);
+      };
+      
+      mediaRecorder.start();
+      
+      // Record frames
+      const startTime = performance.now();
+      let frameCount = 0;
+      
+      const captureFrame = async () => {
+        const elapsed = performance.now() - startTime;
+        
+        if (elapsed >= duration) {
+          mediaRecorder.stop();
+          return;
+        }
+        
+        try {
+          // Capture current state with html2canvas
+          const frameCanvas = await html2canvas(card, {
+            backgroundColor: '#050403',
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            width: cardRect.width,
+            height: cardRect.height,
+          });
+          
+          // Draw to record canvas
+          recordCtx.drawImage(frameCanvas, 0, 0);
+          
+          frameCount++;
+          setRecordingProgress(Math.round((elapsed / duration) * 100));
+          
+          // Schedule next frame
+          const nextFrameTime = frameCount * frameInterval;
+          const delay = Math.max(0, nextFrameTime - (performance.now() - startTime));
+          setTimeout(captureFrame, delay);
+        } catch (e) {
+          console.warn('Frame capture error:', e);
+          // Continue recording despite errors
+          setTimeout(captureFrame, frameInterval);
+        }
+      };
+      
+      // Start capturing
+      captureFrame();
+      
+    } catch (error) {
+      console.error('Failed to export video:', error);
+      alert('Failed to export video. Your browser may not support video recording.');
+      setIsRecordingVideo(false);
+      setRecordingProgress(0);
+    }
+  };
+
+  // Close download menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target as Node)) {
+        setShowDownloadMenu(false);
+      }
+    };
+    
+    if (showDownloadMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDownloadMenu]);
 
   return (
     <div
@@ -393,33 +526,139 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                 </button>
               )}
               
-              {/* Download button */}
-              <button
-                onClick={handleExportPNG}
-                disabled={isExporting}
-                title="Save as PNG"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  width: '24px',
-                  height: '24px',
-                  padding: 0,
-                  cursor: isExporting ? 'wait' : 'pointer',
-                  color: 'rgba(236, 227, 214, 0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'color 150ms ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+              {/* Download button with dropdown */}
+              <div 
+                ref={downloadMenuRef}
+                style={{ position: 'relative' }}
+                onMouseEnter={() => !isExporting && !isRecordingVideo && setShowDownloadMenu(true)}
+                onMouseLeave={() => setShowDownloadMenu(false)}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </button>
+                <button
+                  disabled={isExporting || isRecordingVideo}
+                  title="Download"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    width: '24px',
+                    height: '24px',
+                    padding: 0,
+                    cursor: (isExporting || isRecordingVideo) ? 'wait' : 'pointer',
+                    color: (isExporting || isRecordingVideo) ? '#CAA554' : 'rgba(236, 227, 214, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 150ms ease',
+                  }}
+                >
+                  {isRecordingVideo ? (
+                    <span style={{ fontSize: '8px', fontFamily: 'var(--font-mono)' }}>{recordingProgress}%</span>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  )}
+                </button>
+                
+                {/* Dropdown menu */}
+                {showDownloadMenu && !isExporting && !isRecordingVideo && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: '4px',
+                      background: 'rgba(10, 9, 8, 0.95)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: '1px solid rgba(236, 227, 214, 0.15)',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      minWidth: '140px',
+                      zIndex: 200,
+                    }}
+                  >
+                    {/* Download as Image */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDownloadMenu(false);
+                        handleExportPNG();
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'rgba(236, 227, 214, 0.7)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '10px',
+                        textAlign: 'left',
+                        transition: 'background 150ms ease, color 150ms ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                        e.currentTarget.style.color = '#CAA554';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'none';
+                        e.currentTarget.style.color = 'rgba(236, 227, 214, 0.7)';
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <span>Download Image</span>
+                    </button>
+                    
+                    {/* Download as Video */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDownloadMenu(false);
+                        handleExportVideo();
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'rgba(236, 227, 214, 0.7)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '10px',
+                        textAlign: 'left',
+                        borderTop: '1px solid rgba(236, 227, 214, 0.08)',
+                        transition: 'background 150ms ease, color 150ms ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                        e.currentTarget.style.color = '#CAA554';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'none';
+                        e.currentTarget.style.color = 'rgba(236, 227, 214, 0.7)';
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7" />
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                      </svg>
+                      <span>Download Video</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               
               {/* Close button */}
               <button
