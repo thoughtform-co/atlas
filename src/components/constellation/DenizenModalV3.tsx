@@ -11,6 +11,7 @@ import { fetchDenizenById } from '@/lib/data';
 import { Database } from '@/lib/database.types';
 import Image from 'next/image';
 import html2canvas from 'html2canvas';
+import { DenizenCardCanvas, DenizenCardCanvasHandle } from './DenizenCardCanvas';
 
 type DenizenMediaInsert = Database['public']['Tables']['denizen_media']['Insert'];
 
@@ -50,6 +51,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const videoRef = useRef<HTMLVideoElement>(null);
   const downloadMenuRef = useRef<HTMLDivElement>(null);
   const closeMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const canvasCardRef = useRef<DenizenCardCanvasHandle>(null);
 
   // Update currentDenizen when denizen prop changes
   useEffect(() => {
@@ -194,6 +196,21 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
   // Export card as PNG
   const handleExportPNG = async () => {
+    if (canvasCardRef.current) {
+      // Use canvas-based export
+      setIsExporting(true);
+      try {
+        canvasCardRef.current.exportPNG();
+      } catch (error) {
+        console.error('Failed to export PNG:', error);
+        alert('Failed to export PNG.');
+      } finally {
+        setIsExporting(false);
+      }
+      return;
+    }
+    
+    // Fallback to html2canvas if canvas not available
     if (!cardRef.current) return;
     
     setIsExporting(true);
@@ -405,6 +422,24 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
   // Export card as MP4 video (records one full animation cycle - 12 seconds)
   const handleExportVideo = async () => {
+    if (canvasCardRef.current) {
+      // Use canvas-based export
+      setIsRecordingVideo(true);
+      setRecordingProgress(0);
+      setShowDownloadMenu(false);
+      try {
+        await canvasCardRef.current.exportVideo();
+      } catch (error) {
+        console.error('Failed to export video:', error);
+        alert('Failed to export video. Your browser may not support video recording.');
+      } finally {
+        setIsRecordingVideo(false);
+        setRecordingProgress(0);
+      }
+      return;
+    }
+    
+    // Fallback to html2canvas/MediaRecorder if canvas not available
     if (!cardRef.current) return;
     
     setIsRecordingVideo(true);
@@ -658,6 +693,18 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       onClick={handleBackdropClick}
       style={{ padding: '16px', background: 'rgba(5, 4, 3, 0.95)', backdropFilter: 'blur(20px)' }}
     >
+      {/* Hidden canvas component for export */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
+        <DenizenCardCanvas
+          ref={canvasCardRef}
+          denizen={displayDenizen}
+          mediaUrl={mediaUrl}
+          thumbnailUrl={thumbnailUrl}
+          isVideo={isVideo}
+          elapsedTime={elapsedTime}
+        />
+      </div>
+      
       {/* Card — 4:5 Aspect */}
       <div
         ref={cardRef}
