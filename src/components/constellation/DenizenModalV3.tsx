@@ -327,20 +327,37 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       }
       
       // Use html2canvas with exact dimensions - capture only the card content
-      // If we couldn't capture the frame (CORS issue), try to let html2canvas capture the video
+      // Calculate exact card dimensions (including border)
+      const computedStyle = window.getComputedStyle(card);
+      const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+      const borderRight = parseFloat(computedStyle.borderRightWidth) || 0;
+      const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
+      const borderBottom = parseFloat(computedStyle.borderBottomWidth) || 0;
+      
+      // Card's content dimensions (excluding border)
+      const cardContentWidth = cardRect.width - borderLeft - borderRight;
+      const cardContentHeight = cardRect.height - borderTop - borderBottom;
+      
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:dimensions',message:'Card dimensions calculated',data:{cardRectWidth:cardRect.width,cardRectHeight:cardRect.height,cardContentWidth,cardContentHeight,borderLeft,borderRight,borderTop,borderBottom},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PNG-B1'})}).catch(()=>{});
+      }
+      // #endregion
+      
       const canvas = await html2canvas(card, {
-        backgroundColor: null, // Let card's own background show through
+        backgroundColor: '#050403', // Match card background exactly
         scale: 2,
         logging: false,
         useCORS: true,
-        width: cardRect.width,
+        width: cardRect.width, // Include border in capture
         height: cardRect.height,
         windowWidth: cardRect.width,
         windowHeight: cardRect.height,
-        x: 0, // Start from top-left of element
-        y: 0,
-        foreignObjectRendering: false, // Better rendering for borders/styling
-        allowTaint: false, // Prevent tainted canvas
+        x: cardRect.left, // Use absolute position to capture exactly this element
+        y: cardRect.top,
+        foreignObjectRendering: false,
+        allowTaint: false,
+        removeContainer: false, // Don't remove container, we want the border
         onclone: (clonedDoc) => {
           // If we have a frame image, ensure video is hidden
           if (frameImg && video) {
@@ -359,23 +376,16 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         },
       });
       
-      // Create final canvas with card background to match popup exactly
-      const finalCanvas = document.createElement('canvas');
-      finalCanvas.width = canvas.width;
-      finalCanvas.height = canvas.height;
-      const finalCtx = finalCanvas.getContext('2d');
-      if (finalCtx) {
-        // Fill with card background color (#050403)
-        finalCtx.fillStyle = '#050403';
-        finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-        // Draw the captured card on top (this preserves borders and styling)
-        finalCtx.drawImage(canvas, 0, 0);
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportPNG:canvas-captured',message:'Canvas captured',data:{canvasWidth:canvas.width,canvasHeight:canvas.height,expectedWidth:cardRect.width*2,expectedHeight:cardRect.height*2},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'PNG-B2'})}).catch(()=>{});
       }
+      // #endregion
       
-      // Download
+      // Download directly - no need for final canvas since we set backgroundColor
       const link = document.createElement('a');
       link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
-      link.href = (finalCtx ? finalCanvas : canvas).toDataURL('image/png');
+      link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (error) {
       console.error('Failed to export PNG:', error);
@@ -538,80 +548,105 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         }
         
         try {
-          // Clear canvas
+          // Clear canvas with card background
           recordCtx.fillStyle = '#050403';
           recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
           
-          // If video exists, draw it as background first
-          // Ensure video is ready and has valid dimensions
-          if (isVideo && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-            try {
-              // Draw video frame scaled to canvas
-              recordCtx.drawImage(
-                video,
-                0, 0, video.videoWidth, video.videoHeight,
-                0, 0, recordCanvas.width, recordCanvas.height
-              );
-              // #region agent log
-              if (frameCount === 0 && typeof window !== 'undefined') {
-                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-drawn',message:'Video frame drawn to canvas',data:{videoWidth:video.videoWidth,videoHeight:video.videoHeight,canvasWidth:recordCanvas.width,canvasHeight:recordCanvas.height,readyState:video.readyState},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-4'})}).catch(()=>{});
+          // ALWAYS draw video first if it exists (on every frame to prevent flickering)
+          // This ensures the video background is present even if html2canvas captures an opaque background
+          if (isVideo && video) {
+            // Check if video is ready, but try to draw even if not fully ready
+            if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+              try {
+                // Draw video frame scaled to canvas - use cover mode to match card styling
+                recordCtx.drawImage(
+                  video,
+                  0, 0, video.videoWidth, video.videoHeight,
+                  0, 0, recordCanvas.width, recordCanvas.height
+                );
+                // #region agent log
+                if (frameCount < 3 && typeof window !== 'undefined') {
+                  fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-drawn',message:'Video frame drawn to canvas',data:{videoWidth:video.videoWidth,videoHeight:video.videoHeight,canvasWidth:recordCanvas.width,canvasHeight:recordCanvas.height,readyState:video.readyState,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-4'})}).catch(()=>{});
+                }
+                // #endregion
+              } catch (e) {
+                console.warn('Could not draw video frame:', e);
+                // #region agent log
+                if (frameCount < 3 && typeof window !== 'undefined') {
+                  fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-draw-error',message:'Video frame draw failed',data:{error:String(e),readyState:video.readyState,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-5'})}).catch(()=>{});
+                }
+                // #endregion
               }
-              // #endregion
-            } catch (e) {
-              console.warn('Could not draw video frame:', e);
+            } else {
               // #region agent log
-              if (frameCount < 3 && typeof window !== 'undefined') {
-                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-draw-error',message:'Video frame draw failed',data:{error:String(e),readyState:video.readyState,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-5'})}).catch(()=>{});
+              if (frameCount < 5 && typeof window !== 'undefined') {
+                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-not-ready',message:'Video not ready for frame',data:{readyState:video.readyState,videoWidth:video.videoWidth,videoHeight:video.videoHeight,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-F2'})}).catch(()=>{});
               }
               // #endregion
             }
-          } else {
-            // #region agent log
-            if (frameCount < 10 && typeof window !== 'undefined') {
-              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-skipped',message:'Video not drawn (condition check)',data:{isVideo,hasVideo:!!video,readyState:video?.readyState,videoWidth:video?.videoWidth,videoHeight:video?.videoHeight,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-6'})}).catch(()=>{});
-            }
-            // #endregion
           }
           
           // Capture UI elements with html2canvas (this will include everything except video)
+          // Use destination-over to composite UI on top of video, preserving video background
           const frameCanvas = await html2canvas(card, {
-            backgroundColor: 'transparent',
+            backgroundColor: 'transparent', // Must be transparent so video shows through
             scale: 2,
             logging: false,
             useCORS: true,
             width: cardRect.width,
             height: cardRect.height,
+            x: cardRect.left, // Use absolute position
+            y: cardRect.top,
             ignoreElements: (element) => {
-              // Ignore the video element since we're drawing it separately
+              // Ignore the video element and its container since we're drawing it separately
               if (element.tagName === 'VIDEO') return true;
+              if (element.classList?.contains('media-background-container')) return true;
               return false;
             },
             onclone: (clonedDoc) => {
-              // Hide video element in cloned DOM to ensure it's not captured
+              // Hide video element and its container in cloned DOM
               const clonedVideo = clonedDoc.querySelector('video');
               if (clonedVideo) {
                 clonedVideo.style.display = 'none';
-                // Make the parent container transparent so our manually drawn video shows through
+                // Make the parent container completely transparent
                 const parent = clonedVideo.parentElement;
                 if (parent) {
                   parent.style.backgroundColor = 'transparent';
                   parent.style.background = 'none';
+                  parent.style.opacity = '0';
                 }
+              }
+              // Also hide any media background containers
+              const mediaContainers = clonedDoc.querySelectorAll('.media-background-container');
+              mediaContainers.forEach((container) => {
+                if (container instanceof HTMLElement) {
+                  container.style.display = 'none';
+                  container.style.backgroundColor = 'transparent';
+                  container.style.background = 'none';
+                  container.style.opacity = '0';
+                }
+              });
+              // Make the card's background transparent so video shows through
+              const clonedCard = clonedDoc.querySelector('[data-atlas-card="true"]');
+              if (clonedCard instanceof HTMLElement) {
+                clonedCard.style.backgroundColor = 'transparent';
+                clonedCard.style.background = 'none';
               }
             },
           });
           
-          // Composite UI on top of video background using source-over (default)
-          // This ensures UI elements are drawn on top of the video we already drew
+          // Composite UI on top of video using source-over (default)
+          // The video was drawn first, now draw UI on top
+          // html2canvas should have captured transparently, so video shows through
           recordCtx.globalCompositeOperation = 'source-over';
           recordCtx.drawImage(frameCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
           
           // #region agent log
-          if (frameCount === 0 && typeof window !== 'undefined') {
-            // Check if video was drawn by sampling a pixel from the canvas
+          if (frameCount < 3 && typeof window !== 'undefined') {
+            // Check if video is visible by sampling a pixel from the canvas
             const imageData = recordCtx.getImageData(recordCanvas.width / 2, recordCanvas.height / 2, 1, 1);
             const pixel = imageData.data;
-            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:frame-composited',message:'Frame composited',data:{centerPixel:[pixel[0],pixel[1],pixel[2],pixel[3]],isDark:pixel[0]<10&&pixel[1]<10&&pixel[2]<10},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-7'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:frame-composited',message:'Frame composited',data:{centerPixel:[pixel[0],pixel[1],pixel[2],pixel[3]],isDark:pixel[0]<10&&pixel[1]<10&&pixel[2]<10,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-7'})}).catch(()=>{});
           }
           // #endregion
           
@@ -649,6 +684,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       {/* Card — 4:5 Aspect */}
       <div
         ref={cardRef}
+        data-atlas-card="true"
         className="relative w-full overflow-hidden"
         style={{
           maxWidth: '720px',
@@ -1707,4 +1743,5 @@ function CenterFieldCanvas() {
 
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />;
 }
+
 
