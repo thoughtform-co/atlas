@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Denizen } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
@@ -547,35 +548,18 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                   disabled={isExporting || isRecordingVideo}
                   title="Download"
                   onMouseEnter={() => {
-                    // #region agent log
-                    if (typeof window !== 'undefined') {
-                      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:button-onMouseEnter',message:'Download button hover',data:{isExporting,isRecordingVideo,hasButtonRef:!!downloadButtonRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-                    }
-                    // #endregion
                     if (!isExporting && !isRecordingVideo && downloadButtonRef.current) {
                       const rect = downloadButtonRef.current.getBoundingClientRect();
-                      // Calculate position: align right edge of dropdown with right edge of button
                       const dropdownWidth = 140; // minWidth from styles
                       const position = {
                         top: rect.bottom + 4,
-                        left: rect.right - dropdownWidth, // Align right edge of dropdown with button
+                        left: Math.max(8, rect.right - dropdownWidth), // clamp to viewport
                       };
-                      // #region agent log
-                      if (typeof window !== 'undefined') {
-                        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:button-onMouseEnter',message:'Setting menu position',data:{position,buttonRect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,width:rect.width,height:rect.height},windowWidth:window.innerWidth},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-                      }
-                      // #endregion
                       setMenuPosition(position);
                       setShowDownloadMenu(true);
-                      // #region agent log
-                      if (typeof window !== 'undefined') {
-                        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:button-onMouseEnter',message:'Menu state set to true',data:{showDownloadMenu:true},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-                      }
-                      // #endregion
                     }
                   }}
                   onMouseLeave={(e) => {
-                    // Don't close if moving to the dropdown menu
                     const relatedTarget = e.relatedTarget;
                     if (relatedTarget && relatedTarget instanceof HTMLElement) {
                       const menuElement = relatedTarget.closest('[data-download-menu]');
@@ -609,7 +593,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                 </button>
                 
                 {/* Dropdown menu - using fixed position to escape stacking context */}
-                {showDownloadMenu && !isExporting && !isRecordingVideo && menuPosition.top > 0 && (
+                {showDownloadMenu && !isExporting && !isRecordingVideo && menuPosition.top > 0 && createPortal(
                   <div
                     data-download-menu
                     ref={(el) => {
@@ -713,7 +697,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                       </svg>
                       <span>Download Video</span>
                     </button>
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
               
