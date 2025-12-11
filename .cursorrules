@@ -1,153 +1,54 @@
-# Atlas Development Guidelines
+# Atlas Project Rules
 
-These are evergreen principles learned from real bugs. They're about preventing classes of issues, not prescribing specific solutions.
+## Development Guidelines
 
----
+Follow the principles documented in `.sentinel.md` for:
+- State management in SSR/Client environments
+- useEffect dependencies and avoiding stale closures
+- Async operations and null check narrowing
+- Component patterns and conditional rendering
+- Media type handling and fallback chains
+- CSS cross-browser support
 
-## State Management in SSR/Client Environments
+## Linear Issue Creation
 
-### The Hydration Problem
-Next.js renders on server first, then hydrates on client. State that exists server-side may not be immediately available client-side.
+When asked to create a Linear issue, follow the template in `.linear-issues/ISSUE_TEMPLATE.md`:
 
-**Pattern: Use a `mounted` guard for client-only state**
-```typescript
-const [mounted, setMounted] = useState(false);
-useEffect(() => setMounted(true), []);
+```
+## Problem
+[Clear description of what's wrong or missing]
 
-// Only trust client-side state after mounting
-if (!mounted) return <LoadingState />;
+## Root Causes
+[Technical root causes or why this is needed]
+
+## Solution
+[Detailed explanation of the solution]
+
+## Files Changed
+[Key files modified]
+
+## Testing
+[What was tested and how]
+
+## Branch
+[Git branch name]
+
+## Commits
+[Commit messages or PR reference]
+
+## Product Learning
+[Key insight gained from solving this issue - what principle was learned]
 ```
 
-### Multiple Loading States
-When a feature depends on multiple async operations (e.g., session + role), gate on ALL of them:
+Reference existing issues in `.linear-issues/` for formatting examples:
+- `ATL-001-spacing-fix.md`
+- `ATL-003-fix-role-resolution-storm.md`
+- `ATL-004-full-bleed-media-glassmorphism.md`
+- `example-formatted-issue.md`
 
-```typescript
-// BAD: Only checks one loading state
-if (loading) return null;
-if (isAdmin) showAdminUI();
+## Code Style
 
-// GOOD: Waits for everything to resolve
-if (loading || roleLoading) return null;
-if (isAdmin) showAdminUI();
-```
-
----
-
-## useEffect Dependencies
-
-### The Stale Closure Problem
-Effects with incomplete dependencies create stale closures. If an effect reads state, that state should be in deps.
-
-**Canvas/Animation components are especially vulnerable:**
-```typescript
-// BAD: Empty deps means this only runs once, even if isAdmin changes later
-useEffect(() => {
-  if (isAdmin) drawAdminIcon();
-}, []);
-
-// GOOD: Effect re-runs when relevant state changes
-useEffect(() => {
-  if (isAdmin) drawAdminIcon();
-}, [isAdmin]);
-```
-
-### API Call Storms
-Multiple effects calling the same API create race conditions and unnecessary load.
-
-**Pattern: Single-source-of-truth**
-- Identify ONE effect responsible for each API call
-- Other effects should read from state, not trigger new fetches
-- Use refs or flags if you need to prevent duplicate calls during initialization
-
----
-
-## Async Operations
-
-### The Null Check Narrowing Issue
-TypeScript doesn't maintain null narrowing across await boundaries:
-
-```typescript
-// BAD: TypeScript can't guarantee client is still non-null after await
-const client = getClient();
-if (!client) return;
-const data = await client.getData(); // TS error possible
-
-// GOOD: Capture in const immediately after check
-const client = getClient();
-if (!client) return;
-const safeClient = client; // Now safely narrowed
-const data = await safeClient.getData();
-```
-
----
-
-## Component Patterns
-
-### Conditional Rendering with Multiple Conditions
-When a component depends on multiple conditions, be explicit about the "not ready" states:
-
-```typescript
-// Pattern for auth-dependent admin UI
-{mounted && !loading && !roleLoading && isAdmin && (
-  <AdminButton />
-)}
-```
-
-### Event Handler Timing
-For dropdown menus and similar UI, be aware of event order (mousedown → blur → click):
-
-```typescript
-// If dropdown closes on blur, the click might not fire
-// Use onMouseDown for critical actions, or prevent blur
-onMouseDown={(e) => {
-  e.preventDefault(); // Prevents blur
-  handleAction();
-}}
-```
-
----
-
-## CSS Considerations
-
-### Cross-Browser Support
-Always include vendor prefixes for newer CSS features:
-```css
-backdrop-filter: blur(12px);
--webkit-backdrop-filter: blur(12px); /* Safari */
-```
-
-### Z-Index Layering
-Document z-index values in comments when they matter:
-```css
-/* z-index layers:
-   0: content
-   1: overlays
-   1000+: navigation/modals */
-```
-
----
-
-## Debugging Patterns
-
-### Console Logging for State Flows
-For complex state flows (auth, async operations), add tagged logs:
-
-```typescript
-console.log('[Auth] Session loaded:', session?.user?.email);
-console.log('[Auth] Role resolved:', role);
-```
-
-Remove or guard with `process.env.NODE_ENV === 'development'` before production.
-
----
-
-## What NOT to Prescribe
-
-These guidelines are about **preventing bugs**, not about:
-- Specific visual designs (full-bleed, glassmorphism, etc.)
-- Component structure choices
-- Naming conventions beyond clarity
-- Any pattern that limits creative problem-solving
-
-When a specific design pattern is chosen for a component, document it in that component's comments or a nearby README, not here.
-
+- Use TypeScript strict mode
+- Prefer named exports over default exports
+- Use CSS modules for component-specific styles
+- Follow existing patterns in the codebase before creating new abstractions
