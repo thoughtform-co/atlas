@@ -205,6 +205,24 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
         } else {
           const result = await response.json();
           console.log('[EditPage] Thumbnail/image updated in database:', result.data?.thumbnail, result.data?.image);
+          
+          // Revalidate the home page so ConstellationView shows the updated thumbnail
+          // WHY: The home page is server-rendered, so we need to invalidate its cache
+          try {
+            const revalidateResponse = await fetch('/api/revalidate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path: '/' }),
+            });
+            if (revalidateResponse.ok) {
+              console.log('[EditPage] Home page cache revalidated');
+            } else {
+              console.warn('[EditPage] Failed to revalidate home page cache');
+            }
+          } catch (revalidateError) {
+            console.warn('[EditPage] Error revalidating cache:', revalidateError);
+            // Don't throw - cache revalidation is nice-to-have, not critical
+          }
         }
       } catch (error) {
         console.error('[EditPage] Error updating thumbnail/image:', error);
