@@ -201,25 +201,72 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
 
         if (!response.ok) {
           const errorData = await response.json();
+          // #region agent log
+          if (typeof window !== 'undefined') {
+            const logData = {location:'edit/[id]/page.tsx:202',message:'Database update failed',data:{error:errorData,payload:updatePayload},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'};
+            console.log('[DEBUG]', logData);
+            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+          }
+          // #endregion
           console.warn('[EditPage] Failed to update thumbnail/image immediately:', errorData);
         } else {
           const result = await response.json();
+          // #region agent log
+          if (typeof window !== 'undefined') {
+            const logData = {location:'edit/[id]/page.tsx:207',message:'Database update success',data:{savedThumbnail:result.data?.thumbnail,savedImage:result.data?.image,payload:updatePayload},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'};
+            console.log('[DEBUG]', logData);
+            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+          }
+          // #endregion
           console.log('[EditPage] Thumbnail/image updated in database:', result.data?.thumbnail, result.data?.image);
           
           // Revalidate the home page so ConstellationView shows the updated thumbnail
           // WHY: The home page is server-rendered, so we need to invalidate its cache
           try {
+            // #region agent log
+            if (typeof window !== 'undefined') {
+              const logData = {location:'edit/[id]/page.tsx:212',message:'Calling revalidate API',data:{thumbnailUrl:entityData.thumbnailUrl,imageUrl:entityData.mediaUrl,denizenId:id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'};
+              console.log('[DEBUG]', logData);
+              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+            }
+            // #endregion
             const revalidateResponse = await fetch('/api/revalidate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ path: '/' }),
             });
+            // #region agent log
+            if (typeof window !== 'undefined') {
+              const logData = {location:'edit/[id]/page.tsx:220',message:'Revalidate API response',data:{ok:revalidateResponse.ok,status:revalidateResponse.status},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'};
+              console.log('[DEBUG]', logData);
+              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+            }
+            // #endregion
             if (revalidateResponse.ok) {
+              const revalidateResult = await revalidateResponse.json();
+              // #region agent log
+              if (typeof window !== 'undefined') {
+                const logData = {location:'edit/[id]/page.tsx:225',message:'Revalidate API success',data:revalidateResult,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'};
+                console.log('[DEBUG]', logData);
+                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+              }
+              // #endregion
               console.log('[EditPage] Home page cache revalidated');
             } else {
+              const errorData = await revalidateResponse.json();
+              // #region agent log
+              if (typeof window !== 'undefined') {
+                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'edit/[id]/page.tsx:232',message:'Revalidate API failed',data:errorData,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+              }
+              // #endregion
               console.warn('[EditPage] Failed to revalidate home page cache');
             }
           } catch (revalidateError) {
+            // #region agent log
+            if (typeof window !== 'undefined') {
+              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'edit/[id]/page.tsx:238',message:'Revalidate API exception',data:{error:revalidateError instanceof Error ? revalidateError.message : String(revalidateError)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+            }
+            // #endregion
             console.warn('[EditPage] Error revalidating cache:', revalidateError);
             // Don't throw - cache revalidation is nice-to-have, not critical
           }

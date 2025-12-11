@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '100mb',
     },
   },
+  // Allow Next.js Image Optimization to process Supabase storage URLs
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

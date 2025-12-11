@@ -135,6 +135,16 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: De
     manifoldCurvature: row.manifold_curvature ?? undefined,
   } : undefined;
 
+  // #region agent log
+  if (typeof window === 'undefined') {
+    const fs = require('fs');
+    const path = require('path');
+    const logPath = path.join(process.cwd(), '.cursor', 'debug.log');
+    const logEntry = JSON.stringify({location:'lib/data.ts:144',message:'transformDenizenRow thumbnail',data:{denizenId:row.id,name:row.name,thumbnailFromDB:row.thumbnail,imageFromDB:row.image},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})+'\n';
+    try { fs.appendFileSync(logPath, logEntry); } catch {}
+  }
+  // #endregion
+
   return {
     id: row.id,
     name: row.name,
@@ -379,6 +389,16 @@ export async function fetchDenizens(): Promise<Denizen[]> {
     const result = (denizenRows as DenizenRow[] || []).map(row =>
       transformDenizenRow(row, connectionMap.get(row.id) || [], mediaMap.get(row.id) || [])
     );
+    
+    // #region agent log
+    if (typeof window === 'undefined') {
+      const fs = require('fs');
+      const path = require('path');
+      const logPath = path.join(process.cwd(), '.cursor', 'debug.log');
+      const logEntry = JSON.stringify({location:'lib/data.ts:383',message:'fetchDenizens result',data:{denizenCount:result.length,thumbnailSamples:result.slice(0,3).map(d=>({id:d.id,name:d.name,thumbnail:d.thumbnail,image:d.image}))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})+'\n';
+      try { fs.appendFileSync(logPath, logEntry); } catch {}
+    }
+    // #endregion
     
     console.log(`[fetchDenizens] Successfully fetched ${result.length} denizens with ${mediaMap.size} denizens having media`);
     return result;
