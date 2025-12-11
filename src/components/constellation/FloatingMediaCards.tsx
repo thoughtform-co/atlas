@@ -79,9 +79,10 @@ export function FloatingMediaCards({ denizen, allMedia, currentIndex, cardRef, f
         const isVideoMedia = isVideo(media);
         const displayUrl = isVideoMedia && thumbnailUrl ? thumbnailUrl : mediaUrl;
 
-        // Staggered offsets for depth
-        const offsetX = -20 - (cardIdx * 20);
-        const offsetY = -15 - (cardIdx * 15);
+        // Staggered offsets for depth - positioned to be visible around main card
+        // WHY: Cards should be visible in viewport, not hidden off-screen
+        const offsetX = -60 - (cardIdx * 30); // Move left, but keep visible
+        const offsetY = -40 - (cardIdx * 25); // Move up, but keep visible
         const rotation = -5 + (cardIdx * 3); // Slight rotation variation
         const zIndex = 40 - (cardIdx * 10); // Decreasing z-index
 

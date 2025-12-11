@@ -212,7 +212,8 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
             <div key={denizen.id}>
               {/* Background stacked cards */}
               {stackMedia.map((media, idx) => {
-                const offset = (idx + 1) * 4; // px
+                const offsetX = (idx + 1) * 3; // px - slight horizontal offset
+                const offsetY = -(idx + 1) * 8; // px - negative to move up, showing top of card
                 const rotation = (idx % 2 === 0 ? 1 : -1) * 2; // degrees
 
                 return (
@@ -223,7 +224,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
                     style={{
                       left: baseLeft,
                       top: baseTop,
-                      transform: `translate(-50%, -50%) scale(${scale}) translate(${offset}px, ${offset}px) rotate(${rotation}deg)`,
+                      transform: `translate(-50%, -50%) scale(${scale}) translate(${offsetX}px, ${offsetY}px) rotate(${rotation}deg)`,
                       zIndex: isSelected ? 90 + idx : 5 + idx,
                       opacity: 0.6,
                       filter: 'grayscale(0.4) brightness(0.7)',
