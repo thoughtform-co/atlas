@@ -51,6 +51,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [uploadMediaError, setUploadMediaError] = useState<string | null>(null);
+  const [additionalMedia, setAdditionalMedia] = useState<Array<{ id: string; url: string; type: 'image' | 'video'; fileName: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect non-admins (wait for role)
@@ -123,6 +124,32 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
     };
 
     loadDenizen();
+  }, [id, loading, roleLoading, isAuthenticated, isAdmin]);
+
+  // Load additional media for preview
+  useEffect(() => {
+    if (!id || loading || roleLoading || !isAuthenticated || !isAdmin) return;
+
+    const loadAdditionalMedia = async () => {
+      try {
+        const media = await fetchDenizenMedia(id);
+        // Filter out thumbnails and primary media - only show additional media
+        const additional = media
+          .filter(m => m.mediaType !== 'thumbnail' && !m.isPrimary)
+          .map(m => ({
+            id: m.id,
+            url: getMediaPublicUrl(m.storagePath) || '',
+            type: (m.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
+            fileName: m.fileName,
+          }));
+        setAdditionalMedia(additional);
+      } catch (error) {
+        console.error('Error loading additional media:', error);
+        setAdditionalMedia([]);
+      }
+    };
+
+    loadAdditionalMedia();
   }, [id, loading, roleLoading, isAuthenticated, isAdmin]);
 
   // Convert curvature value to label
@@ -237,8 +264,20 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
       const { error: dbError } = await (client as any).from('denizen_media').insert(mediaInsert);
       if (dbError) throw dbError;
 
+      // Reload additional media for preview
+      const media = await fetchDenizenMedia(entityId);
+      const additional = media
+        .filter(m => m.mediaType !== 'thumbnail' && !m.isPrimary)
+        .map(m => ({
+          id: m.id,
+          url: getMediaPublicUrl(m.storagePath) || '',
+          type: (m.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
+          fileName: m.fileName,
+        }));
+      setAdditionalMedia(additional);
+
       // Show success message
-      alert('Media added successfully! Refresh the page to see it in the modal.');
+      alert('Media added successfully!');
       
       // Reset file input
       if (fileInputRef.current) {

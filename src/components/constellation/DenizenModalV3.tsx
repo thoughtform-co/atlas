@@ -93,9 +93,22 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
         setAllMedia(filteredMedia);
         
-        // Find primary media index, or default to 0
+        // Find primary media index
         // WHY: Primary media should be shown first when modal opens
-        const primaryIndex = filteredMedia.findIndex(m => m.isPrimary);
+        // If no explicit primary, try to match the original denizen.image field
+        // This ensures additional media doesn't replace the original in the modal
+        let primaryIndex = filteredMedia.findIndex(m => m.isPrimary);
+        
+        if (primaryIndex < 0 && denizen?.image) {
+          // No explicit primary - try to find media that matches the original image field
+          const originalImageUrl = getMediaPublicUrl(denizen.image) || denizen.image;
+          primaryIndex = filteredMedia.findIndex(m => {
+            const mediaUrl = getMediaPublicUrl(m.storagePath);
+            return mediaUrl === originalImageUrl || m.storagePath === denizen.image;
+          });
+        }
+        
+        // Default to 0 if no match found
         setCurrentMediaIndex(primaryIndex >= 0 ? primaryIndex : 0);
       } catch (error) {
         console.error('Error fetching media:', error);
@@ -262,12 +275,23 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   };
 
   // Get current media from allMedia array, or fallback to denizen's existing media
+  // WHY: Prioritize explicit primary, then original image field, then first in array
+  // This ensures additional media doesn't replace the original in the modal
   const currentMedia = allMedia.length > 0 && currentMediaIndex < allMedia.length 
     ? allMedia[currentMediaIndex]
-    : (displayDenizen.media?.find(m => m.isPrimary) || displayDenizen.media?.[0]);
+    : (displayDenizen.media?.find(m => m.isPrimary) || 
+       (displayDenizen.image ? 
+         displayDenizen.media?.find(m => {
+           const mediaUrl = resolveMediaUrl(m.storagePath);
+           return mediaUrl === displayDenizen.image || m.storagePath === displayDenizen.image;
+         }) || null :
+         displayDenizen.media?.[0]));
   
-  // Use uploaded media if available, otherwise use current media from allMedia
-  const mediaUrl = uploadedMedia?.url || resolveMediaUrl(currentMedia?.storagePath) || displayDenizen.image;
+  // Use uploaded media if available, otherwise use current media from allMedia, then fallback to original image
+  // WHY: Always prefer the original image field if no media array match is found
+  const mediaUrl = uploadedMedia?.url || 
+                   (currentMedia ? resolveMediaUrl(currentMedia.storagePath) : null) || 
+                   displayDenizen.image;
   
   // Get thumbnail URL (for video entities)
   const thumbnailUrl = displayDenizen.thumbnail ? resolveMediaUrl(displayDenizen.thumbnail) : undefined;
