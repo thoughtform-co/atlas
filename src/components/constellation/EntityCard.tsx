@@ -72,6 +72,11 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   // Track if we need to render video instead of image (video without thumbnail)
   const shouldRenderVideo = isVideo && !thumbnailUrl && rawMediaUrl;
 
+  // Check if entity has multiple media for stacked hint
+  const mediaCount = denizen.media?.filter(m => m.mediaType !== 'thumbnail').length || 0;
+  const showStackedHint = mediaCount > 1 && mediaCount <= 5; // Performance limit: only show if <= 5 media
+  const stackedLayers = showStackedHint ? Math.min(3, mediaCount - 1) : 0; // Max 3 stacked hints
+
 
   return (
     <article
@@ -93,6 +98,35 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
           background: 'radial-gradient(ellipse 60% 70% at 50% 45%, rgba(236, 227, 214, 0.08) 0%, rgba(236, 227, 214, 0.03) 40%, transparent 70%)',
         }}
       />
+
+      {/* Stacked cards hint - CSS-only shadows behind main card */}
+      {showStackedHint && (
+        <>
+          {Array.from({ length: stackedLayers }).map((_, layerIdx) => {
+            const offset = (layerIdx + 1) * 2; // 2px, 4px, 6px offsets
+            const rotation = (layerIdx % 2 === 0 ? 1 : -1) * 0.5; // Alternating rotation
+            const opacity = 0.1 - (layerIdx * 0.02); // Decreasing opacity: 0.1, 0.08, 0.06
+            
+            return (
+              <div
+                key={`stacked-${layerIdx}`}
+                className="absolute pointer-events-none"
+                style={{
+                  width: '200px',
+                  aspectRatio: '3/4',
+                  left: `${offset}px`,
+                  top: `${offset}px`,
+                  transform: `rotate(${rotation}deg)`,
+                  border: '1px solid rgba(236, 227, 214, 0.05)',
+                  background: 'transparent',
+                  opacity,
+                  zIndex: -1 - layerIdx,
+                }}
+              />
+            );
+          })}
+        </>
+      )}
 
       {/* Main frame - increased size */}
       <div

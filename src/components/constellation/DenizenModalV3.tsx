@@ -12,6 +12,10 @@ import { Database } from '@/lib/database.types';
 import Image from 'next/image';
 import html2canvas from 'html2canvas';
 import { DenizenCardCanvas, DenizenCardCanvasHandle } from './DenizenCardCanvas';
+import { fetchDenizenMedia } from '@/lib/media';
+import type { DenizenMedia } from '@/lib/types';
+import { FloatingMediaCards } from './FloatingMediaCards';
+import { MediaTendrilCanvas } from './MediaTendrilCanvas';
 
 type DenizenMediaInsert = Database['public']['Tables']['denizen_media']['Insert'];
 
@@ -45,6 +49,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [recordingProgress, setRecordingProgress] = useState(0);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isMenuHovered, setIsMenuHovered] = useState(false);
+  const [allMedia, setAllMedia] = useState<DenizenMedia[]>([]);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const floatingCardRefs = useRef<(React.RefObject<HTMLDivElement | null> | null)[]>([]);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -56,6 +63,34 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   // Update currentDenizen when denizen prop changes
   useEffect(() => {
     setCurrentDenizen(denizen);
+  }, [denizen]);
+
+  // Fetch all media when denizen changes
+  useEffect(() => {
+    if (!denizen) {
+      setAllMedia([]);
+      setCurrentMediaIndex(0);
+      return;
+    }
+
+    const loadMedia = async () => {
+      try {
+        const media = await fetchDenizenMedia(denizen.id);
+        // Filter out thumbnails - only show image/video media
+        const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
+        setAllMedia(filteredMedia);
+        
+        // Find primary media index, or default to 0
+        const primaryIndex = filteredMedia.findIndex(m => m.isPrimary);
+        setCurrentMediaIndex(primaryIndex >= 0 ? primaryIndex : 0);
+      } catch (error) {
+        console.error('Error fetching media:', error);
+        setAllMedia([]);
+        setCurrentMediaIndex(0);
+      }
+    };
+
+    loadMedia();
   }, [denizen]);
 
   useEffect(() => {
@@ -120,6 +155,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         .from('denizen-media')
         .getPublicUrl(fileName);
 
+      // Get existing media count to set display_order
+      const existingMediaCount = allMedia.filter(m => m.mediaType !== 'thumbnail').length;
+      
       const mediaInsert: DenizenMediaInsert = {
         denizen_id: denizen.id,
         media_type: file.type.startsWith('video/') ? 'video' : 'image',
@@ -127,8 +165,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         file_name: file.name,
         file_size: file.size,
         mime_type: file.type,
-        display_order: 0,
-        is_primary: !denizen.media?.length,
+        display_order: existingMediaCount, // Set order based on existing count
+        is_primary: false, // Additional media is never primary
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbError } = await (supabase as any).from('denizen_media').insert(mediaInsert);
@@ -142,6 +180,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           // Notify parent component of the update
           onDenizenUpdate?.(updatedDenizen);
         }
+        
+        // Reload media list
+        const media = await fetchDenizenMedia(denizen.id);
+        const filteredMedia = media.filter(m => m.mediaType !== 'thumbnail');
+        setAllMedia(filteredMedia);
       }
 
       // Update local state to show the uploaded media immediately
@@ -166,6 +209,35 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     router.push(`/admin/edit/${displayDenizen.id}`);
   };
 
+  // Handle media navigation
+  const handleNextMedia = () => {
+    if (allMedia.length > 0) {
+      setCurrentMediaIndex((prev) => (prev + 1) % allMedia.filter(m => m.mediaType !== 'thumbnail').length);
+    }
+  };
+
+  const handlePrevMedia = () => {
+    if (allMedia.length > 0) {
+      const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail');
+      setCurrentMediaIndex((prev) => (prev - 1 + filteredMedia.length) % filteredMedia.length);
+    }
+  };
+
+  // Initialize floating card refs when media changes
+  useEffect(() => {
+    const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
+    const floatingIndices = filteredMedia
+      .map((_, idx) => idx)
+      .filter(idx => idx !== currentMediaIndex)
+      .slice(0, 3);
+    
+    // Ensure array is the right size
+    while (floatingCardRefs.current.length < floatingIndices.length) {
+      floatingCardRefs.current.push(null);
+    }
+    floatingCardRefs.current = floatingCardRefs.current.slice(0, floatingIndices.length);
+  }, [allMedia, currentMediaIndex]);
+
   const signalStrength = ((displayDenizen.coordinates.geometry + 1) / 2).toFixed(3);
   const epoch = displayDenizen.firstObserved || '4.2847';
   const tempValue = ((displayDenizen.coordinates.dynamics + 1) / 2).toFixed(2);
@@ -180,15 +252,19 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     return getMediaPublicUrl(path) || undefined;
   };
 
-  // Use uploaded media if available, otherwise use denizen's existing media
-  const primaryMedia = displayDenizen.media?.find(m => m.isPrimary) || displayDenizen.media?.[0];
-  const mediaUrl = uploadedMedia?.url || resolveMediaUrl(primaryMedia?.storagePath) || displayDenizen.image;
+  // Get current media from allMedia array, or fallback to denizen's existing media
+  const currentMedia = allMedia.length > 0 && currentMediaIndex < allMedia.length 
+    ? allMedia[currentMediaIndex]
+    : (displayDenizen.media?.find(m => m.isPrimary) || displayDenizen.media?.[0]);
+  
+  // Use uploaded media if available, otherwise use current media from allMedia
+  const mediaUrl = uploadedMedia?.url || resolveMediaUrl(currentMedia?.storagePath) || displayDenizen.image;
   
   // Get thumbnail URL (for video entities)
   const thumbnailUrl = displayDenizen.thumbnail ? resolveMediaUrl(displayDenizen.thumbnail) : undefined;
   
   // Check if media is video based on multiple sources
-  const isVideoFromMedia = uploadedMedia?.type === 'video' || primaryMedia?.mediaType === 'video';
+  const isVideoFromMedia = uploadedMedia?.type === 'video' || currentMedia?.mediaType === 'video';
   const isVideoFromUrl = displayDenizen.videoUrl != null;
   // Also check file extension of image field (for entities created before denizen_media table)
   const isVideoFromExtension = mediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)$/i) != null;
@@ -687,6 +763,24 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     }
   };
 
+  // Handle floating card refs
+  const handleFloatingCardRef = useCallback((index: number, ref: React.RefObject<HTMLDivElement | null>) => {
+    const filteredMedia = allMedia.filter(m => m.mediaType !== 'thumbnail').slice(0, 4);
+    const floatingIndices = filteredMedia
+      .map((_, idx) => idx)
+      .filter(idx => idx !== currentMediaIndex)
+      .slice(0, 3);
+    
+    const cardIdx = floatingIndices.indexOf(index);
+    if (cardIdx >= 0) {
+      if (cardIdx >= floatingCardRefs.current.length) {
+        floatingCardRefs.current.push(ref);
+      } else {
+        floatingCardRefs.current[cardIdx] = ref;
+      }
+    }
+  }, [allMedia, currentMediaIndex]);
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
@@ -705,6 +799,41 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         />
       </div>
       
+      {/* Floating background cards */}
+      {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
+        <FloatingMediaCards
+          denizen={displayDenizen}
+          allMedia={allMedia}
+          currentIndex={currentMediaIndex}
+          cardRef={cardRef}
+          onCardRef={handleFloatingCardRef}
+        />
+      )}
+
+      {/* Tendril particle connections */}
+      {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
+        <MediaTendrilCanvas
+          allMedia={allMedia}
+          currentIndex={currentMediaIndex}
+          mainCardRef={cardRef}
+          floatingCardRefs={floatingCardRefs.current.filter((ref): ref is React.RefObject<HTMLDivElement> => ref !== null)}
+        />
+      )}
+
+      {/* Blur overlay between floating cards and main card */}
+      {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 35,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
       {/* Card — 4:5 Aspect */}
       <div
         ref={cardRef}
@@ -719,6 +848,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           gridTemplateRows: '32px 1fr 110px',
           gap: '1px',
           border: '1px solid rgba(236, 227, 214, 0.08)',
+          zIndex: 50, // Main card on top
         }}
       >
         {/* Full-bleed Media Background */}
@@ -811,8 +941,109 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               [<span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formatTime(elapsedTime)}</span>]
             </span>
             
+            {/* Media navigation (if multiple media) */}
+            {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
+                <button
+                  onClick={handlePrevMedia}
+                  title="Previous media"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: 'rgba(236, 227, 214, 0.5)',
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M7.5 9L4.5 6L7.5 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <span style={{ 
+                  color: 'rgba(236, 227, 214, 0.4)', 
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8px',
+                  minWidth: '30px',
+                  textAlign: 'center',
+                }}>
+                  {currentMediaIndex + 1} / {allMedia.filter(m => m.mediaType !== 'thumbnail').length}
+                </span>
+                <button
+                  onClick={handleNextMedia}
+                  title="Next media"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: 'rgba(236, 227, 214, 0.5)',
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 3L7.5 6L4.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            )}
+            
             {/* Action buttons - consistent sizing, tighter spacing */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '4px' }}>
+              {/* Add Media button (admin only) */}
+              {isAdmin && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    title="Add media"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      width: '24px',
+                      height: '24px',
+                      padding: 0,
+                      cursor: isUploading ? 'wait' : 'pointer',
+                      color: 'rgba(236, 227, 214, 0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'color 150ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isUploading) e.currentTarget.style.color = '#CAA554';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isUploading) e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)';
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </>
+              )}
+              
               {/* Edit button (admin only) */}
               {isAdmin && (
                 <button
