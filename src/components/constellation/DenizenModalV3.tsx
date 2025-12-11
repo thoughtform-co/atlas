@@ -210,26 +210,36 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       // Get exact card dimensions for proper capture
       const cardRect = card.getBoundingClientRect();
       
-      // For videos: capture current frame and temporarily swap DOM
+      // For videos: use thumbnail if available, otherwise capture current frame
       if (isVideo && video) {
         video.pause();
         videoElement = video;
         originalVideoDisplay = video.style.display;
         
         try {
-          // Create canvas from video frame
-          const frameCanvas = document.createElement('canvas');
-          frameCanvas.width = video.videoWidth || 1280;
-          frameCanvas.height = video.videoHeight || 720;
-          const ctx = frameCanvas.getContext('2d');
+          let imageSrc: string | null = null;
           
-          if (ctx) {
-            ctx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-            const frameDataUrl = frameCanvas.toDataURL('image/jpeg', 0.95);
+          // Prefer thumbnail URL if available
+          if (thumbnailUrl) {
+            imageSrc = thumbnailUrl;
+          } else {
+            // Fallback: capture current video frame
+            const frameCanvas = document.createElement('canvas');
+            frameCanvas.width = video.videoWidth || 1280;
+            frameCanvas.height = video.videoHeight || 720;
+            const ctx = frameCanvas.getContext('2d');
             
-            // Create an img element with the frame
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+              imageSrc = frameCanvas.toDataURL('image/jpeg', 0.95);
+            }
+          }
+          
+          if (imageSrc) {
+            // Create an img element with the thumbnail/frame
             frameImg = document.createElement('img');
-            frameImg.src = frameDataUrl;
+            frameImg.src = imageSrc;
+            frameImg.crossOrigin = 'anonymous';
             // Match exact video styling for full-bleed coverage
             frameImg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;';
             
@@ -241,8 +251,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             await new Promise<void>((resolve) => {
               if (frameImg) {
                 frameImg.onload = () => resolve();
+                frameImg.onerror = () => resolve(); // Resolve even on error to not block
                 // Ensure we wait long enough for render
-                setTimeout(() => resolve(), 300);
+                setTimeout(() => resolve(), 500);
               } else {
                 resolve();
               }
@@ -301,6 +312,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     const frameInterval = 1000 / fps;
     const totalFrames = Math.ceil(duration / frameInterval);
     
+    // Ensure video is playing if it exists
+    const video = videoRef.current;
+    if (isVideo && video) {
+      video.play().catch((e) => {
+        console.warn('Could not play video for recording:', e);
+      });
+    }
+    
     try {
       // Create a canvas for recording
       const recordCanvas = document.createElement('canvas');
@@ -312,13 +331,25 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         throw new Error('Could not create canvas context');
       }
       
-      // Setup MediaRecorder
+      // Setup MediaRecorder - try MP4 first, fallback to WebM
       const stream = recordCanvas.captureStream(fps);
       if (typeof MediaRecorder === 'undefined') {
         throw new Error('MediaRecorder not supported in this browser');
       }
+      
+      // Try MP4 (H.264), fallback to WebM
+      let mimeType = 'video/mp4';
+      let fileExtension = 'mp4';
+      if (!MediaRecorder.isTypeSupported('video/mp4')) {
+        mimeType = 'video/webm;codecs=vp9';
+        fileExtension = 'webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'video/webm';
+        }
+      }
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType: mimeType,
         videoBitsPerSecond: 8000000, // 8 Mbps for good quality
       });
       
@@ -330,10 +361,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       };
       
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.webm`;
+        link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.${fileExtension}`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
@@ -356,18 +387,40 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         }
         
         try {
-          // Capture current state with html2canvas
+          // Clear canvas
+          recordCtx.fillStyle = '#050403';
+          recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
+          
+          // If video exists, draw it as background first
+          if (isVideo && video && video.readyState >= 2) {
+            try {
+              // Draw video frame scaled to canvas
+              recordCtx.drawImage(
+                video,
+                0, 0, video.videoWidth, video.videoHeight,
+                0, 0, recordCanvas.width, recordCanvas.height
+              );
+            } catch (e) {
+              console.warn('Could not draw video frame:', e);
+            }
+          }
+          
+          // Capture UI elements with html2canvas (this will include everything except video)
           const frameCanvas = await html2canvas(card, {
-            backgroundColor: '#050403',
+            backgroundColor: 'transparent',
             scale: 2,
             logging: false,
             useCORS: true,
             width: cardRect.width,
             height: cardRect.height,
+            ignoreElements: (element) => {
+              // Ignore the video element since we're drawing it separately
+              return element.tagName === 'VIDEO';
+            },
           });
           
-          // Draw to record canvas
-          recordCtx.drawImage(frameCanvas, 0, 0);
+          // Composite UI on top of video background
+          recordCtx.drawImage(frameCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
           
           frameCount++;
           setRecordingProgress(Math.round((elapsed / duration) * 100));
