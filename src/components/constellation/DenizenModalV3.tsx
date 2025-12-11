@@ -43,11 +43,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [recordingProgress, setRecordingProgress] = useState(0);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [isMenuHovered, setIsMenuHovered] = useState(false);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const downloadMenuRef = useRef<HTMLDivElement>(null);
+  const closeMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update currentDenizen when denizen prop changes
   useEffect(() => {
@@ -549,6 +551,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                   title="Download"
                   onMouseEnter={() => {
                     if (!isExporting && !isRecordingVideo && downloadButtonRef.current) {
+                      if (closeMenuTimeoutRef.current) {
+                        clearTimeout(closeMenuTimeoutRef.current);
+                        closeMenuTimeoutRef.current = null;
+                      }
                       const rect = downloadButtonRef.current.getBoundingClientRect();
                       const dropdownWidth = 140; // minWidth from styles
                       const position = {
@@ -557,6 +563,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                       };
                       setMenuPosition(position);
                       setShowDownloadMenu(true);
+                      setIsMenuHovered(true);
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -565,7 +572,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                       const menuElement = relatedTarget.closest('[data-download-menu]');
                       if (menuElement) return;
                     }
-                    setShowDownloadMenu(false);
+                    setIsMenuHovered(false);
+                    if (closeMenuTimeoutRef.current) clearTimeout(closeMenuTimeoutRef.current);
+                    closeMenuTimeoutRef.current = setTimeout(() => {
+                      if (!isMenuHovered) setShowDownloadMenu(false);
+                    }, 120);
                   }}
                   style={{
                     background: 'none',
@@ -604,8 +615,21 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                       }
                       // #endregion
                     }}
-                    onMouseEnter={() => setShowDownloadMenu(true)}
-                    onMouseLeave={() => setShowDownloadMenu(false)}
+                    onMouseEnter={() => {
+                      if (closeMenuTimeoutRef.current) {
+                        clearTimeout(closeMenuTimeoutRef.current);
+                        closeMenuTimeoutRef.current = null;
+                      }
+                      setShowDownloadMenu(true);
+                      setIsMenuHovered(true);
+                    }}
+                    onMouseLeave={() => {
+                      setIsMenuHovered(false);
+                      if (closeMenuTimeoutRef.current) clearTimeout(closeMenuTimeoutRef.current);
+                      closeMenuTimeoutRef.current = setTimeout(() => {
+                        if (!isMenuHovered) setShowDownloadMenu(false);
+                      }, 120);
+                    }}
                     style={{
                       position: 'fixed',
                       top: `${menuPosition.top}px`,
