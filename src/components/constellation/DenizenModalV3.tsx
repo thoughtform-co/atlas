@@ -73,6 +73,15 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showDownloadMenu]);
 
+  // Debug: Log dropdown state changes
+  useEffect(() => {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:useEffect-dropdown-state',message:'Dropdown state changed',data:{showDownloadMenu,isExporting,isRecordingVideo,menuPosition,shouldRender:showDownloadMenu && !isExporting && !isRecordingVideo && menuPosition.top > 0},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
+    }
+    // #endregion
+  }, [showDownloadMenu, isExporting, isRecordingVideo, menuPosition]);
+
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
@@ -532,27 +541,43 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               <div 
                 ref={downloadMenuRef}
                 style={{ position: 'relative' }}
-                onMouseEnter={() => {
-                  if (!isExporting && !isRecordingVideo && downloadButtonRef.current) {
-                    const rect = downloadButtonRef.current.getBoundingClientRect();
-                    setMenuPosition({
-                      top: rect.bottom + 4,
-                      right: window.innerWidth - rect.right,
-                    });
-                    setShowDownloadMenu(true);
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  // Don't close if moving to the dropdown menu
-                  const relatedTarget = e.relatedTarget as HTMLElement;
-                  if (relatedTarget?.closest('[data-download-menu]')) return;
-                  setShowDownloadMenu(false);
-                }}
               >
                 <button
                   ref={downloadButtonRef}
                   disabled={isExporting || isRecordingVideo}
                   title="Download"
+                  onMouseEnter={() => {
+                    // #region agent log
+                    if (typeof window !== 'undefined') {
+                      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:button-onMouseEnter',message:'Download button hover',data:{isExporting,isRecordingVideo,hasButtonRef:!!downloadButtonRef.current},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+                    }
+                    // #endregion
+                    if (!isExporting && !isRecordingVideo && downloadButtonRef.current) {
+                      const rect = downloadButtonRef.current.getBoundingClientRect();
+                      const position = {
+                        top: rect.bottom + 4,
+                        right: window.innerWidth - rect.right,
+                      };
+                      // #region agent log
+                      if (typeof window !== 'undefined') {
+                        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:button-onMouseEnter',message:'Setting menu position',data:{position,buttonRect:{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,width:rect.width,height:rect.height},windowWidth:window.innerWidth},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+                      }
+                      // #endregion
+                      setMenuPosition(position);
+                      setShowDownloadMenu(true);
+                      // #region agent log
+                      if (typeof window !== 'undefined') {
+                        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:button-onMouseEnter',message:'Menu state set to true',data:{showDownloadMenu:true},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+                      }
+                      // #endregion
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    // Don't close if moving to the dropdown menu
+                    const relatedTarget = e.relatedTarget as HTMLElement;
+                    if (relatedTarget?.closest('[data-download-menu]')) return;
+                    setShowDownloadMenu(false);
+                  }}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -579,15 +604,23 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                 </button>
                 
                 {/* Dropdown menu - using fixed position to escape stacking context */}
-                {showDownloadMenu && !isExporting && !isRecordingVideo && (
+                {showDownloadMenu && !isExporting && !isRecordingVideo && menuPosition.top > 0 && (
                   <div
                     data-download-menu
+                    ref={(el) => {
+                      // #region agent log
+                      if (el && typeof window !== 'undefined') {
+                        const rect = el.getBoundingClientRect();
+                        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:dropdown-ref',message:'Dropdown mounted to DOM',data:{menuPosition,actualRect:{top:rect.top,right:rect.right,bottom:rect.bottom,left:rect.left,width:rect.width,height:rect.height},computedStyle:window.getComputedStyle(el).position},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H6'})}).catch(()=>{});
+                      }
+                      // #endregion
+                    }}
                     onMouseEnter={() => setShowDownloadMenu(true)}
                     onMouseLeave={() => setShowDownloadMenu(false)}
                     style={{
                       position: 'fixed',
-                      top: menuPosition.top,
-                      right: menuPosition.right,
+                      top: `${menuPosition.top}px`,
+                      right: `${menuPosition.right}px`,
                       background: 'rgba(10, 9, 8, 0.35)',
                       backdropFilter: 'blur(16px)',
                       WebkitBackdropFilter: 'blur(16px)',
