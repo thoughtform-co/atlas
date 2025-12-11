@@ -326,10 +326,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         }
       }
       
-      // Use html2canvas with exact dimensions
+      // Use html2canvas with exact dimensions - capture only the card content
       // If we couldn't capture the frame (CORS issue), try to let html2canvas capture the video
       const canvas = await html2canvas(card, {
-        backgroundColor: '#050403',
+        backgroundColor: null, // Let card's own background show through
         scale: 2,
         logging: false,
         useCORS: true,
@@ -337,6 +337,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         height: cardRect.height,
         windowWidth: cardRect.width,
         windowHeight: cardRect.height,
+        x: 0, // Start from top-left of element
+        y: 0,
+        foreignObjectRendering: false, // Better rendering for borders/styling
+        allowTaint: false, // Prevent tainted canvas
         onclone: (clonedDoc) => {
           // If we have a frame image, ensure video is hidden
           if (frameImg && video) {
@@ -355,10 +359,23 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         },
       });
       
+      // Create final canvas with card background to match popup exactly
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width = canvas.width;
+      finalCanvas.height = canvas.height;
+      const finalCtx = finalCanvas.getContext('2d');
+      if (finalCtx) {
+        // Fill with card background color (#050403)
+        finalCtx.fillStyle = '#050403';
+        finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+        // Draw the captured card on top (this preserves borders and styling)
+        finalCtx.drawImage(canvas, 0, 0);
+      }
+      
       // Download
       const link = document.createElement('a');
       link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = (finalCtx ? finalCanvas : canvas).toDataURL('image/png');
       link.click();
     } catch (error) {
       console.error('Failed to export PNG:', error);
@@ -395,18 +412,23 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     const video = videoRef.current;
     // #region agent log
     if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:start',message:'Video export started',data:{isVideo,hasVideo:!!video,videoReadyState:video?.readyState,videoWidth:video?.videoWidth,videoHeight:video?.videoHeight},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-1'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:start',message:'Video export started',data:{isVideo,hasVideo:!!video,videoReadyState:video?.readyState,videoWidth:video?.videoWidth,videoHeight:video?.videoHeight,videoPaused:video?.paused},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-1'})}).catch(()=>{});
     }
     // #endregion
     if (isVideo && video) {
-      video.play().catch((e) => {
-        console.warn('Could not play video for recording:', e);
-        // #region agent log
-        if (typeof window !== 'undefined') {
-          fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:play-error',message:'Video play failed',data:{error:String(e)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-2'})}).catch(()=>{});
-        }
-        // #endregion
-      });
+      // Ensure video is playing and ready
+      if (video.paused) {
+        video.play().catch((e) => {
+          console.warn('Could not play video for recording:', e);
+          // #region agent log
+          if (typeof window !== 'undefined') {
+            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:play-error',message:'Video play failed',data:{error:String(e)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-2'})}).catch(()=>{});
+          }
+          // #endregion
+        });
+      }
+      // Wait a bit for video to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     try {
@@ -426,22 +448,61 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         throw new Error('MediaRecorder not supported in this browser');
       }
       
-      // Use WebM (MediaRecorder API doesn't reliably support MP4 in most browsers)
-      let mimeType = 'video/webm;codecs=vp9';
-      let fileExtension = 'webm';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm';
+      // Try MP4 (H.264) first for better compatibility, fallback to WebM
+      // Note: MP4 support in MediaRecorder is limited to Chrome/Edge and may not work in all cases
+      let mimeType = 'video/mp4';
+      let fileExtension = 'mp4';
+      let mp4Supported = false;
+      
+      // Check for MP4 support with H.264 codec
+      if (MediaRecorder.isTypeSupported('video/mp4')) {
+        mp4Supported = true;
+        mimeType = 'video/mp4';
+      } else if (MediaRecorder.isTypeSupported('video/mp4; codecs=avc1.42E01E')) {
+        mp4Supported = true;
+        mimeType = 'video/mp4; codecs=avc1.42E01E';
+      } else {
+        // Fallback to WebM
+        mimeType = 'video/webm;codecs=vp9';
+        fileExtension = 'webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'video/webm';
+        }
       }
       // #region agent log
       if (typeof window !== 'undefined') {
-        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:mime-type',message:'MimeType selection',data:{mimeType,fileExtension},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-3'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:mime-type',message:'MimeType selection',data:{mimeType,fileExtension,mp4Supported},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-3'})}).catch(()=>{});
       }
       // #endregion
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: mimeType,
-        videoBitsPerSecond: 8000000, // 8 Mbps for good quality
-      });
+      // Try to create MediaRecorder with selected mimeType, fallback to WebM if it fails
+      let mediaRecorder: MediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: mimeType,
+          videoBitsPerSecond: 8000000, // 8 Mbps for good quality
+        });
+      } catch (e) {
+        // If MP4 fails, fallback to WebM
+        if (mp4Supported) {
+          // #region agent log
+          if (typeof window !== 'undefined') {
+            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:mp4-fallback',message:'MP4 creation failed, falling back to WebM',data:{error:String(e)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-8'})}).catch(()=>{});
+          }
+          // #endregion
+          mimeType = 'video/webm;codecs=vp9';
+          fileExtension = 'webm';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/webm';
+          }
+          mediaRecorder = new MediaRecorder(stream, {
+            mimeType: mimeType,
+            videoBitsPerSecond: 8000000,
+          });
+        } else {
+          throw e; // Re-throw if it wasn't an MP4 attempt
+        }
+      }
       
       const chunks: Blob[] = [];
       mediaRecorder.ondataavailable = (e) => {
@@ -482,7 +543,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
           
           // If video exists, draw it as background first
-          if (isVideo && video && video.readyState >= 2) {
+          // Ensure video is ready and has valid dimensions
+          if (isVideo && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
             try {
               // Draw video frame scaled to canvas
               recordCtx.drawImage(
@@ -498,15 +560,15 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             } catch (e) {
               console.warn('Could not draw video frame:', e);
               // #region agent log
-              if (frameCount === 0 && typeof window !== 'undefined') {
-                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-draw-error',message:'Video frame draw failed',data:{error:String(e),readyState:video.readyState},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-5'})}).catch(()=>{});
+              if (frameCount < 3 && typeof window !== 'undefined') {
+                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-draw-error',message:'Video frame draw failed',data:{error:String(e),readyState:video.readyState,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-5'})}).catch(()=>{});
               }
               // #endregion
             }
-          } else if (frameCount === 0) {
+          } else {
             // #region agent log
-            if (typeof window !== 'undefined') {
-              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-skipped',message:'Video not drawn (condition check)',data:{isVideo,hasVideo:!!video,readyState:video?.readyState},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-6'})}).catch(()=>{});
+            if (frameCount < 10 && typeof window !== 'undefined') {
+              fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-skipped',message:'Video not drawn (condition check)',data:{isVideo,hasVideo:!!video,readyState:video?.readyState,videoWidth:video?.videoWidth,videoHeight:video?.videoHeight,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-6'})}).catch(()=>{});
             }
             // #endregion
           }
