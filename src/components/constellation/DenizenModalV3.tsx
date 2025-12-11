@@ -548,97 +548,28 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         }
         
         try {
-          // Clear canvas with card background
-          recordCtx.fillStyle = '#050403';
-          recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
-          
-          // ALWAYS draw video first if it exists (on every frame to prevent flickering)
-          // This ensures the video background is present even if html2canvas captures an opaque background
-          if (isVideo && video) {
-            // Check if video is ready, but try to draw even if not fully ready
-            if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-              try {
-                // Draw video frame scaled to canvas - use cover mode to match card styling
-                recordCtx.drawImage(
-                  video,
-                  0, 0, video.videoWidth, video.videoHeight,
-                  0, 0, recordCanvas.width, recordCanvas.height
-                );
-                // #region agent log
-                if (frameCount < 3 && typeof window !== 'undefined') {
-                  fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-drawn',message:'Video frame drawn to canvas',data:{videoWidth:video.videoWidth,videoHeight:video.videoHeight,canvasWidth:recordCanvas.width,canvasHeight:recordCanvas.height,readyState:video.readyState,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-4'})}).catch(()=>{});
-                }
-                // #endregion
-              } catch (e) {
-                console.warn('Could not draw video frame:', e);
-                // #region agent log
-                if (frameCount < 3 && typeof window !== 'undefined') {
-                  fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-draw-error',message:'Video frame draw failed',data:{error:String(e),readyState:video.readyState,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-5'})}).catch(()=>{});
-                }
-                // #endregion
-              }
-            } else {
-              // #region agent log
-              if (frameCount < 5 && typeof window !== 'undefined') {
-                fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:video-not-ready',message:'Video not ready for frame',data:{readyState:video.readyState,videoWidth:video.videoWidth,videoHeight:video.videoHeight,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-F2'})}).catch(()=>{});
-              }
-              // #endregion
-            }
-          }
-          
-          // Capture UI elements with html2canvas (this will include everything except video)
-          // Use destination-over to composite UI on top of video, preserving video background
+          // Simply capture the entire card with html2canvas - it includes the video as background
+          // The video element already has crossOrigin="anonymous" set, so html2canvas can capture it
+          // The UI elements (parameter panels, text, etc.) are already layered on top in the DOM
           const frameCanvas = await html2canvas(card, {
-            backgroundColor: 'transparent', // Must be transparent so video shows through
+            backgroundColor: '#050403', // Match card background
             scale: 2,
             logging: false,
             useCORS: true,
             width: cardRect.width,
             height: cardRect.height,
-            x: cardRect.left, // Use absolute position
+            x: cardRect.left, // Use absolute position for precise capture
             y: cardRect.top,
-            ignoreElements: (element) => {
-              // Ignore the video element and its container since we're drawing it separately
-              if (element.tagName === 'VIDEO') return true;
-              if (element.classList?.contains('media-background-container')) return true;
-              return false;
-            },
             onclone: (clonedDoc) => {
-              // Hide video element and its container in cloned DOM
+              // Ensure video has crossOrigin set in cloned DOM (it should already, but be safe)
               const clonedVideo = clonedDoc.querySelector('video');
               if (clonedVideo) {
-                clonedVideo.style.display = 'none';
-                // Make the parent container completely transparent
-                const parent = clonedVideo.parentElement;
-                if (parent) {
-                  parent.style.backgroundColor = 'transparent';
-                  parent.style.background = 'none';
-                  parent.style.opacity = '0';
-                }
-              }
-              // Also hide any media background containers
-              const mediaContainers = clonedDoc.querySelectorAll('.media-background-container');
-              mediaContainers.forEach((container) => {
-                if (container instanceof HTMLElement) {
-                  container.style.display = 'none';
-                  container.style.backgroundColor = 'transparent';
-                  container.style.background = 'none';
-                  container.style.opacity = '0';
-                }
-              });
-              // Make the card's background transparent so video shows through
-              const clonedCard = clonedDoc.querySelector('[data-atlas-card="true"]');
-              if (clonedCard instanceof HTMLElement) {
-                clonedCard.style.backgroundColor = 'transparent';
-                clonedCard.style.background = 'none';
+                clonedVideo.crossOrigin = 'anonymous';
               }
             },
           });
           
-          // Composite UI on top of video using source-over (default)
-          // The video was drawn first, now draw UI on top
-          // html2canvas should have captured transparently, so video shows through
-          recordCtx.globalCompositeOperation = 'source-over';
+          // Draw the captured frame (video + UI) directly to the recording canvas
           recordCtx.drawImage(frameCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
           
           // #region agent log
@@ -646,7 +577,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             // Check if video is visible by sampling a pixel from the canvas
             const imageData = recordCtx.getImageData(recordCanvas.width / 2, recordCanvas.height / 2, 1, 1);
             const pixel = imageData.data;
-            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:frame-composited',message:'Frame composited',data:{centerPixel:[pixel[0],pixel[1],pixel[2],pixel[3]],isDark:pixel[0]<10&&pixel[1]<10&&pixel[2]<10,frameCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-7'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DenizenModalV3.tsx:handleExportVideo:frame-captured',message:'Frame captured with html2canvas',data:{centerPixel:[pixel[0],pixel[1],pixel[2],pixel[3]],isDark:pixel[0]<10&&pixel[1]<10&&pixel[2]<10,frameCount,canvasWidth:frameCanvas.width,canvasHeight:frameCanvas.height},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'VID-SIMPLIFIED'})}).catch(()=>{});
           }
           // #endregion
           
