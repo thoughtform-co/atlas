@@ -167,11 +167,39 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   };
 
   // Handle media upload and analysis
-  const handleMediaAnalyzed = (analysisResult: Partial<EntityFormData> & { visualNotes?: string }) => {
+  const handleMediaAnalyzed = async (analysisResult: Partial<EntityFormData> & { visualNotes?: string }) => {
     const { visualNotes, ...entityData } = analysisResult;
     setFormData(prev => ({ ...prev, ...entityData }));
     if (visualNotes) {
       setAnalysisNotes(visualNotes);
+    }
+
+    // If thumbnail was uploaded, save it immediately to database so it appears in ConstellationView
+    // WHY: Thumbnails should update in the constellation view immediately when media is replaced,
+    // not just when the entity is saved
+    if (entityData.thumbnailUrl) {
+      try {
+        const response = await fetch(`/api/admin/denizens/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            thumbnail: entityData.thumbnailUrl,
+            // Also update image if mediaUrl was provided
+            ...(entityData.mediaUrl && { image: entityData.mediaUrl }),
+          }),
+        });
+
+        if (!response.ok) {
+          console.warn('[EditPage] Failed to update thumbnail immediately:', await response.json());
+        } else {
+          console.log('[EditPage] Thumbnail updated in database');
+        }
+      } catch (error) {
+        console.error('[EditPage] Error updating thumbnail:', error);
+        // Don't throw - this is a background update, main upload already succeeded
+      }
     }
   };
 
@@ -453,28 +481,11 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
                 {uploadMediaError}
               </span>
             )}
-            <span style={{ 
-              fontSize: '0.5rem', 
-              color: 'rgba(236, 227, 214, 0.4)',
-              fontFamily: 'var(--font-mono, "PT Mono", monospace)',
-            }}>
-              Additional media will appear in the modal view
-            </span>
           </div>
 
           {/* Additional Media Preview */}
           {additionalMedia.length > 0 && (
             <div style={{ marginTop: '1.5rem' }}>
-              <div style={{ 
-                fontSize: '0.5rem', 
-                color: 'rgba(236, 227, 214, 0.5)',
-                fontFamily: 'var(--font-mono, "PT Mono", monospace)',
-                letterSpacing: '0.05em',
-                marginBottom: '0.75rem',
-                textTransform: 'uppercase',
-              }}>
-                Additional Media ({additionalMedia.length})
-              </div>
               <div style={{ 
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
