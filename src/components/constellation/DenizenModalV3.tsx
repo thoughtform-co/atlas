@@ -829,11 +829,27 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
-      onClick={handleBackdropClick}
-      style={{ padding: '16px', background: 'rgba(5, 4, 3, 0.95)', backdropFilter: 'blur(20px)' }}
-    >
+    <>
+      <style>{`
+        .denizen-description-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .denizen-description-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .denizen-description-scroll::-webkit-scrollbar-thumb {
+          background: rgba(236, 227, 214, 0.15);
+          border-radius: 3px;
+        }
+        .denizen-description-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(236, 227, 214, 0.25);
+        }
+      `}</style>
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center"
+        onClick={handleBackdropClick}
+        style={{ padding: '16px', background: 'rgba(5, 4, 3, 0.95)', backdropFilter: 'blur(20px)' }}
+      >
       {/* Hidden canvas component for export */}
       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
         <DenizenCardCanvas
@@ -1431,14 +1447,37 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', borderLeft: '1px solid rgba(236, 227, 214, 0.08)', paddingLeft: '24px' }}>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', color: 'rgba(236, 227, 214, 0.5)', lineHeight: 1.7 }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'flex-start', 
+            borderLeft: '1px solid rgba(236, 227, 214, 0.08)', 
+            paddingLeft: '24px',
+            paddingTop: '8px',
+            paddingBottom: '8px',
+          }}>
+            <div 
+              className="denizen-description-scroll"
+              style={{ 
+                fontFamily: 'var(--font-sans)', 
+                fontSize: '13px', 
+                color: 'rgba(236, 227, 214, 0.5)', 
+                lineHeight: 1.7,
+                maxHeight: '120px',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                paddingRight: '8px',
+                // Subtle transparent scrollbar (Firefox)
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(236, 227, 214, 0.15) transparent',
+              }}
+            >
               {displayDenizen.description}
             </div>
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 }
 
