@@ -98,6 +98,10 @@ export function MediaUploadZone({
     const isVideo = file.type.startsWith('video/');
     const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
     
+    // Declare these outside try block so they're available in catch
+    let urlData: { publicUrl: string } | null = null;
+    let thumbnailUrl: string | undefined = undefined;
+    
     if (file.size > maxSize) {
       const maxMB = maxSize / (1024 * 1024);
       setError(`File too large. Maximum: ${maxMB}MB`);
@@ -114,7 +118,6 @@ export function MediaUploadZone({
       }
 
       // For videos, extract thumbnail first
-      let thumbnailUrl: string | undefined;
       if (isVideo) {
         setUploadProgress(15);
         const thumbnailBlob = await extractVideoThumbnail(file);
@@ -168,9 +171,10 @@ export function MediaUploadZone({
       }
 
       // Get public URL
-      const { data: urlData } = supabase.storage
+      const { data: urlDataResult } = supabase.storage
         .from('entity-media')
         .getPublicUrl(uploadData.path);
+      urlData = urlDataResult;
 
       setUploadProgress(60);
       
@@ -214,9 +218,41 @@ export function MediaUploadZone({
       setUploadProgress(90);
 
       if (!analyzeResponse.ok) {
-        const error = await analyzeResponse.json();
-        console.error('[MediaUpload] Analysis API failed:', analyzeResponse.status, error);
-        // Don't throw - analysis is optional
+        // Handle different error response types
+        let errorMessage = 'Analysis failed';
+        
+        // Check if response is JSON
+        const contentType = analyzeResponse.headers.get('content-type');
+        const isJson = contentType?.includes('application/json');
+        
+        try {
+          if (isJson) {
+            const error = await analyzeResponse.json();
+            errorMessage = error.error || error.message || 'Analysis failed';
+          } else {
+            // Try to get text response (e.g., for 413 errors)
+            const errorText = await analyzeResponse.text();
+            
+            // Handle specific status codes
+            if (analyzeResponse.status === 413) {
+              errorMessage = 'File too large for analysis. The file has been uploaded, but analysis was skipped. You can still save the entity and add details manually.';
+            } else {
+              errorMessage = errorText || `Analysis failed (${analyzeResponse.status})`;
+            }
+          }
+        } catch (parseError) {
+          // If we can't parse the error, use status-based message
+          if (analyzeResponse.status === 413) {
+            errorMessage = 'File too large for analysis. The file has been uploaded, but analysis was skipped.';
+          } else {
+            errorMessage = `Analysis failed (${analyzeResponse.status})`;
+          }
+        }
+        
+        console.error('[MediaUpload] Analysis API failed:', analyzeResponse.status, errorMessage);
+        
+        // Show error but don't block - analysis is optional
+        setError(errorMessage);
         setIsAnalyzing(false);
         setUploadProgress(100);
         
@@ -229,7 +265,26 @@ export function MediaUploadZone({
         return;
       }
 
-      const analysisResult = await analyzeResponse.json();
+      // Parse JSON response - handle parsing errors gracefully
+      let analysisResult;
+      try {
+        analysisResult = await analyzeResponse.json();
+      } catch (jsonError) {
+        // If JSON parsing fails, the server likely returned a non-JSON error
+        console.error('[MediaUpload] Failed to parse analysis response as JSON:', jsonError);
+        setError('Server returned an invalid response. The file may be too large for analysis. The file has been uploaded, but analysis was skipped. You can still save the entity and add details manually.');
+        setIsAnalyzing(false);
+        setUploadProgress(100);
+        
+        // Still update with the media URL and thumbnail since upload succeeded
+        onMediaAnalyzed({
+          mediaUrl: urlData.publicUrl,
+          mediaMimeType: file.type,
+          thumbnailUrl,
+        });
+        return;
+      }
+
       setUploadProgress(100);
       setIsAnalyzing(false);
 
@@ -255,9 +310,29 @@ export function MediaUploadZone({
 
     } catch (err) {
       console.error('Upload/analysis error:', err);
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      
+      // Handle different error types
+      let errorMessage = 'Upload failed';
+      if (err instanceof SyntaxError && err.message.includes('JSON')) {
+        errorMessage = 'Server returned an invalid response. The file may be too large for analysis.';
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       setUploadProgress(0);
       setIsAnalyzing(false);
+      
+      // If upload succeeded but analysis failed, still update with media URL
+      // This allows the user to proceed even if analysis fails
+      if (urlData) {
+        console.log('[MediaUpload] Upload succeeded but analysis failed, still updating with media URL');
+        onMediaAnalyzed({
+          mediaUrl: urlData.publicUrl,
+          mediaMimeType: file.type,
+          thumbnailUrl,
+        });
+      }
     }
   }, [onMediaAnalyzed, setIsAnalyzing, user, skipAnalysis]);
 
