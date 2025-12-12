@@ -1,6 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { EntityFormData } from '@/app/admin/new-entity/page';
+import { fetchEntityClasses } from '@/lib/data';
+import { parseMidjourneyPrompt } from '@/lib/midjourney-parser';
 import styles from './ParameterForm.module.css';
 
 interface ParameterFormProps {
