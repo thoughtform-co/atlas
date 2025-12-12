@@ -123,13 +123,41 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
     const manifoldStateRef = useRef({ time: 0, particles: [] as { baseX: number; baseY: number }[] });
     const spectralStateRef = useRef({ time: 0, signature: [] as { base: number; variance: number }[] });
     const superStateRef = useRef({ time: 0 });
-    // Cache text measurements to prevent jumping between frames
-    const textMetricsRef = useRef<{
-      atlasResearchWidth?: number;
-      modeWidth?: number;
-      activeScanWidth?: number;
-      sigWidth?: number;
-      epochWidth?: number;
+    
+    // Comprehensive text layout cache - all positions calculated once, reused every frame
+    const textLayoutRef = useRef<{
+      header: {
+        atlasResearchX: number;
+        modeLabelX: number;
+        modeValueX: number;
+        sigLabelX: number;
+        sigValueX: number;
+        epochX: number; // Fixed anchor for epoch (right-aligned)
+        timeX: number; // Fixed anchor for time (right-aligned)
+        timeMaxWidth: number; // Max width for time string (e.g., '[00:00:00]')
+      };
+      params: {
+        leftColX: number;
+        rightColX: number;
+        phaseStateLabelY: number;
+        superpositionLabelY: number;
+        hallucinationLabelY: number;
+        tempValueY: number;
+        highValueY: number;
+        coordsValueY: number;
+        zValueY: number;
+        manifoldValueY: number;
+      };
+      footer: {
+        nameX: number;
+        classLabelX: number;
+        classValueX: number;
+        threatLabelX: number;
+        threatValueX: number;
+        coordX: number;
+        descX: number;
+        descMaxWidth: number;
+      };
     } | null>(null);
 
     /**
@@ -259,6 +287,121 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         }
       },
     }));
+
+    /**
+     * Initialize text layout cache once fonts are loaded.
+     * 
+     * WHY separate effect: Text measurements must happen after fonts are loaded
+     * to get accurate widths. We calculate all text positions once and cache them,
+     * preventing frame-by-frame measurement variations that cause text jumping.
+     */
+    useEffect(() => {
+      let cancelled = false;
+
+      const initTextLayout = async () => {
+        // Wait for fonts to be fully loaded
+        if (typeof document !== 'undefined' && (document as any).fonts) {
+          await (document as any).fonts.ready;
+        }
+
+        const canvas = canvasRef.current;
+        if (!canvas || cancelled) return;
+
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return;
+
+        // Set up canvas context with same settings as render loop
+        const dpr = window.devicePixelRatio || 1;
+        ctx.save();
+        ctx.scale(dpr, dpr);
+
+        // Measure all text once with correct font settings
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'left';
+
+        // Header measurements
+        ctx.font = '9px monospace';
+        const atlasResearchWidth = ctx.measureText('ATLAS RESEARCH').width;
+        const modeLabelWidth = ctx.measureText('MODE: ').width;
+        const modeValueWidth = ctx.measureText('ACTIVE SCAN').width;
+        const sigLabelWidth = ctx.measureText('SIG: ').width;
+        const sigValueWidth = ctx.measureText('0.000').width; // Max width for signal
+        const epochMaxWidth = ctx.measureText('EPOCH: 9999.9999').width; // Max width for epoch
+        const timeMaxWidth = ctx.measureText('[00:00:00]').width; // Max width for time
+
+        // Calculate header positions (left-to-right chaining)
+        const headerStartX = 12;
+        const headerGap = 16;
+        const atlasResearchX = headerStartX;
+        const modeLabelX = atlasResearchX + atlasResearchWidth + headerGap;
+        const modeValueX = modeLabelX + modeLabelWidth;
+        const sigLabelX = modeValueX + modeValueWidth + headerGap;
+        const sigValueX = sigLabelX + sigLabelWidth;
+
+        // Right side of header (right-aligned anchors)
+        const headerRightMargin = 12;
+        const headerRightGap = 60;
+        const timeX = CARD_WIDTH - headerRightMargin; // Right-aligned anchor
+        const epochX = timeX - timeMaxWidth - headerRightGap; // Fixed anchor for epoch
+
+        // Parameter column positions (fixed anchors)
+        const leftColX = 8;
+        const rightColX = CARD_WIDTH - 150 + 8; // 150px wide column, 8px padding
+
+        // Footer positions
+        const footerY = 790;
+        const footerLeftX = 28;
+        ctx.font = '9px monospace';
+        const classLabelWidth = ctx.measureText('CLASS ').width;
+        const threatLabelWidth = ctx.measureText('THREAT ').width;
+        const descX = 180 + 28 + 24; // Fixed position for description
+        const descMaxWidth = CARD_WIDTH - descX - 28;
+
+        // Build layout cache
+        textLayoutRef.current = {
+          header: {
+            atlasResearchX,
+            modeLabelX,
+            modeValueX,
+            sigLabelX,
+            sigValueX,
+            epochX,
+            timeX,
+            timeMaxWidth,
+          },
+          params: {
+            leftColX,
+            rightColX,
+            phaseStateLabelY: 48,
+            superpositionLabelY: 68,
+            hallucinationLabelY: 88,
+            tempValueY: 60,
+            highValueY: 88,
+            coordsValueY: 60,
+            zValueY: 72,
+            manifoldValueY: 88,
+          },
+          footer: {
+            nameX: footerLeftX,
+            classLabelX: footerLeftX,
+            classValueX: footerLeftX + classLabelWidth,
+            threatLabelX: footerLeftX,
+            threatValueX: footerLeftX + threatLabelWidth,
+            coordX: footerLeftX,
+            descX,
+            descMaxWidth,
+          },
+        };
+
+        ctx.restore();
+      };
+
+      initTextLayout();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [denizen.firstObserved]); // Re-initialize if epoch changes
 
     /**
      * Load media (video or image) for canvas rendering.
@@ -426,6 +569,13 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
         // Phase 3: Text rendering
+        // Skip if text layout not initialized yet
+        const layout = textLayoutRef.current;
+        if (!layout) {
+          requestAnimationFrame(render);
+          return;
+        }
+
         ctx.textBaseline = 'top';
         ctx.textAlign = 'left';
 
@@ -435,129 +585,98 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         const tempValue = ((denizen.coordinates.dynamics + 1) / 2).toFixed(2);
         const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
 
-        // Header text (32px tall)
-        // Cache text measurements on first render to prevent jumping
+        // Header text (32px tall) - use cached positions, no measureText calls
         ctx.font = '9px monospace';
-        if (!textMetricsRef.current) {
-          textMetricsRef.current = {
-            atlasResearchWidth: ctx.measureText('ATLAS RESEARCH').width,
-            modeWidth: ctx.measureText('MODE: ').width,
-            activeScanWidth: ctx.measureText('ACTIVE SCAN').width,
-            sigWidth: ctx.measureText('SIG: ').width,
-            epochWidth: ctx.measureText(`EPOCH: ${epoch}`).width,
-          };
-        }
-        
         ctx.fillStyle = '#CAA554';
-        ctx.fillText('ATLAS RESEARCH', 12, 11);
-        
-        // Use cached measurements for stable positioning
-        let x = 12 + (textMetricsRef.current.atlasResearchWidth || 0) + 16;
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('MODE: ', x, 11);
-        x += textMetricsRef.current.modeWidth || 0;
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        ctx.fillText('ACTIVE SCAN', x, 11);
-        x += (textMetricsRef.current.activeScanWidth || 0) + 16;
+        ctx.fillText('ATLAS RESEARCH', layout.header.atlasResearchX, 11);
         
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('SIG: ', x, 11);
-        x += textMetricsRef.current.sigWidth || 0;
+        ctx.fillText('MODE: ', layout.header.modeLabelX, 11);
         ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        ctx.fillText(signalStrength, x, 11);
+        ctx.fillText('ACTIVE SCAN', layout.header.modeValueX, 11);
         
-        // Right side of header - use fixed positions for epoch, measure time dynamically
+        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
+        ctx.fillText('SIG: ', layout.header.sigLabelX, 11);
+        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+        ctx.fillText(signalStrength, layout.header.sigValueX, 11);
+        
+        // Right side of header - use fixed anchors with right alignment
+        ctx.textAlign = 'right';
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
         const epochText = `EPOCH: ${epoch}`;
-        // Update epoch width if epoch changed, otherwise use cached
-        const currentEpochWidth = ctx.measureText(epochText).width;
-        if (Math.abs(currentEpochWidth - (textMetricsRef.current.epochWidth || 0)) > 1) {
-          textMetricsRef.current.epochWidth = currentEpochWidth;
-        }
-        ctx.fillText(epochText, CARD_WIDTH - 12 - (textMetricsRef.current.epochWidth || currentEpochWidth) - 60, 11);
+        ctx.fillText(epochText, layout.header.epochX, 11);
         
         const timeText = `[${formatTime(elapsedTime)}]`;
-        // Time text changes every second, so measure it dynamically but use consistent positioning
-        const timeWidth = ctx.measureText(timeText).width;
-        ctx.fillText(timeText, CARD_WIDTH - 12 - timeWidth, 11);
+        ctx.fillText(timeText, layout.header.timeX, 11);
+        ctx.textAlign = 'left'; // Reset to left for rest of rendering
 
-        // Left column labels (150px wide, starts at y=32)
-        const leftColX = 8;
-        let leftColY = 48;
+        // Parameter labels - use fixed column positions
         ctx.font = '9px monospace';
         ctx.fillStyle = 'rgba(236, 227, 214, 0.4)';
-        ctx.fillText('PHASE STATE', leftColX, leftColY);
-        leftColY += 20;
-        ctx.fillText('SUPERPOSITION', leftColX, leftColY);
-        leftColY += 20;
-        ctx.fillText('HALLUCINATION INDEX', leftColX, leftColY);
+        ctx.fillText('PHASE STATE', layout.params.leftColX, layout.params.phaseStateLabelY);
+        ctx.fillText('SUPERPOSITION', layout.params.leftColX, layout.params.superpositionLabelY);
+        ctx.fillText('HALLUCINATION INDEX', layout.params.leftColX, layout.params.hallucinationLabelY);
 
-        // Left column values
+        // Left column values - fixed positions
         ctx.fillStyle = '#CAA554';
-        ctx.fillText(`TEMP: ${tempValue}`, leftColX, 60);
+        ctx.fillText(`TEMP: ${tempValue}`, layout.params.leftColX, layout.params.tempValueY);
         ctx.fillStyle = '#C17F59';
-        ctx.fillText(`HIGH [${hallucinationScore}/5]`, leftColX, 88);
+        ctx.fillText(`HIGH [${hallucinationScore}/5]`, layout.params.leftColX, layout.params.highValueY);
 
-        // Right column labels (150px wide, starts at x=570, y=32)
-        const rightColX = CARD_WIDTH - 150 + 8;
-        let rightColY = 48;
+        // Right column labels - fixed positions
         ctx.fillStyle = 'rgba(236, 227, 214, 0.4)';
-        ctx.fillText('LATENT POSITION', rightColX, rightColY);
-        rightColY += 20;
-        ctx.fillText('MANIFOLD CURVATURE', rightColX, rightColY);
-        rightColY += 20;
-        ctx.fillText('EMBEDDING SIGNATURE', rightColX, rightColY);
+        ctx.fillText('LATENT POSITION', layout.params.rightColX, layout.params.phaseStateLabelY);
+        ctx.fillText('MANIFOLD CURVATURE', layout.params.rightColX, layout.params.superpositionLabelY);
+        ctx.fillText('EMBEDDING SIGNATURE', layout.params.rightColX, layout.params.hallucinationLabelY);
 
-        // Right column values
+        // Right column values - fixed positions
         ctx.font = '8px monospace';
         ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
         const coordsText = `X:${denizen.coordinates.geometry.toFixed(3)} Y:${denizen.coordinates.alterity.toFixed(3)}`;
-        ctx.fillText(coordsText, rightColX, 60);
-        ctx.fillText(`Z:${denizen.coordinates.dynamics.toFixed(3)}`, rightColX, 72);
+        ctx.fillText(coordsText, layout.params.rightColX, layout.params.coordsValueY);
+        ctx.fillText(`Z:${denizen.coordinates.dynamics.toFixed(3)}`, layout.params.rightColX, layout.params.zValueY);
         
         ctx.font = '9px monospace';
         const manifoldValue = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? 'SEVERE' : 'NOMINAL';
         ctx.fillStyle = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : '#5B8A7A';
-        ctx.fillText(manifoldValue, rightColX, 88);
+        ctx.fillText(manifoldValue, layout.params.rightColX, layout.params.manifoldValueY);
 
-        // Footer text (starts at y=790, 110px tall)
+        // Footer text (starts at y=790, 110px tall) - use cached positions
         const footerY = 790;
         ctx.font = '24px monospace';
         ctx.fillStyle = '#CAA554';
         const displayName = (denizen.entityClass || denizen.entityName || denizen.name).toUpperCase();
-        ctx.fillText(displayName, 28, footerY + 16);
+        ctx.fillText(displayName, layout.footer.nameX, footerY + 16);
         
         ctx.font = '9px monospace';
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('CLASS ', 28, footerY + 48);
+        ctx.fillText('CLASS ', layout.footer.classLabelX, footerY + 48);
         ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        ctx.fillText(denizen.type.toUpperCase(), 28 + ctx.measureText('CLASS ').width, footerY + 48);
+        ctx.fillText(denizen.type.toUpperCase(), layout.footer.classValueX, footerY + 48);
         
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('THREAT ', 28, footerY + 60);
+        ctx.fillText('THREAT ', layout.footer.threatLabelX, footerY + 60);
         const threatColor = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)';
         ctx.fillStyle = threatColor;
-        ctx.fillText(denizen.threatLevel.toUpperCase(), 28 + ctx.measureText('THREAT ').width, footerY + 60);
+        ctx.fillText(denizen.threatLevel.toUpperCase(), layout.footer.threatValueX, footerY + 60);
         
         // Coordinates in footer
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
         const coordText = `◆ ${denizen.coordinates.geometry.toFixed(3)} ○ ${denizen.coordinates.alterity.toFixed(3)} ◇ ${denizen.coordinates.dynamics.toFixed(3)}`;
-        ctx.fillText(coordText, 28, footerY + 72);
+        ctx.fillText(coordText, layout.footer.coordX, footerY + 72);
         
-        // Description in footer (right side)
-        const descX = 180 + 28 + 24;
+        // Description in footer (right side) - use cached position and width
         ctx.font = '13px sans-serif';
         ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        // Word wrap description (simplified - just draw first line for now)
-        const maxDescWidth = CARD_WIDTH - descX - 28;
+        // Word wrap description - measureText only for wrapping, not positioning
         const words = denizen.description.split(' ');
         let line = '';
         let y = footerY + 16;
         for (const word of words) {
           const testLine = line + word + ' ';
           const metrics = ctx.measureText(testLine);
-          if (metrics.width > maxDescWidth && line.length > 0) {
-            ctx.fillText(line, descX, y);
+          if (metrics.width > layout.footer.descMaxWidth && line.length > 0) {
+            ctx.fillText(line, layout.footer.descX, y);
             line = word + ' ';
             y += 20;
           } else {
@@ -565,7 +684,7 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           }
         }
         if (line.length > 0) {
-          ctx.fillText(line, descX, y);
+          ctx.fillText(line, layout.footer.descX, y);
         }
 
         // Phase 4: Glassmorphism panels
@@ -935,4 +1054,3 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
 );
 
 DenizenCardCanvas.displayName = 'DenizenCardCanvas';
-

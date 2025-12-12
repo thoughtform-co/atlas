@@ -20,6 +20,19 @@ These files are copied here for easy sharing with developers working on this iss
 
 ## Current State
 
-- Partial fix applied: Header text measurements are cached
-- Issue persists: Parameter text (PHASE STATE, LATENT POSITION, etc.) still jumps
-- Need to investigate: All text measurements should be cached, not just header
+- **Attempt 1 (Partial Fix)**: Header text measurements cached - issue persisted
+- **Attempt 2 (Comprehensive Fix)**: All text positions pre-calculated once after fonts load, stored in `textLayoutRef` cache
+  - Fixed column anchors for parameter sections
+  - Right-aligned anchors for dynamic text (time, epoch)
+  - No `measureText()` calls in render loop (except description word-wrapping)
+  - Issue still persists: Text still jumps in exported videos despite comprehensive caching
+
+## Investigation Needed
+
+Possible root causes to investigate:
+1. Canvas context state variations between frames (transform, font rendering hints)
+2. Font rendering inconsistencies even with same measurements
+3. DevicePixelRatio handling mismatch between initialization and render loop
+4. Export canvas (captureStream) using different rendering pipeline
+5. Text baseline/alignment state not consistently set between frames
+6. Description word-wrapping still uses `measureText()` in render loop (though x position is fixed)

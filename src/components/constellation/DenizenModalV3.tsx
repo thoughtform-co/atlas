@@ -847,11 +847,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           background: rgba(236, 227, 214, 0.15);
         }
       `}</style>
-      <div
-        className="fixed inset-0 z-[100] flex items-center justify-center"
-        onClick={handleBackdropClick}
-        style={{ padding: '16px', background: 'rgba(5, 4, 3, 0.95)', backdropFilter: 'blur(20px)' }}
-      >
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+      onClick={handleBackdropClick}
+      style={{ padding: '16px', background: 'rgba(5, 4, 3, 0.95)', backdropFilter: 'blur(20px)' }}
+    >
       {/* Hidden canvas component for export */}
       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
         <DenizenCardCanvas
@@ -1472,8 +1472,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 THREAT <span style={{ color: displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.threatLevel.toUpperCase()}</span>
               </div>
+              </div>
             </div>
-          </div>
           <div style={{ 
             display: 'flex', 
             alignItems: 'flex-start', 

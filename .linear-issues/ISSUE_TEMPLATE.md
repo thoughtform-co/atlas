@@ -22,7 +22,7 @@
 
 ---
 
-## Root Causes
+## Root Causes  
 
 [Investigation findings - what is causing the problem?]
 

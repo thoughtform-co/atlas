@@ -81,6 +81,40 @@ This issue is related to ATL-006 (Canvas-Based Card Export), which implemented t
 
 **Current Status:** Partial fix applied, but issue not fully resolved. Parameter text still jumps.
 
+### Attempt 2: Comprehensive Text Layout Cache with Fixed Anchors
+
+**What was tried:** Pre-calculate all text positions once after fonts load, store in comprehensive `textLayoutRef` cache, and use fixed column anchors with `textAlign` for all text elements. Eliminate all `measureText()` calls from render loop.
+
+**Implementation:**
+- Created comprehensive `textLayoutRef` type storing all x/y positions for header, parameters, and footer
+- Added `useEffect` that waits for `document.fonts.ready` before measuring text
+- Measured all text once with correct font settings and canvas context (including devicePixelRatio scaling)
+- Calculated fixed positions for:
+  - Header: Fixed x positions instead of chaining widths
+  - Parameters: Fixed column anchors (`leftColX`, `rightColX`) with fixed y positions
+  - Footer: Fixed x positions for all elements
+  - Dynamic text: Time and epoch use fixed right-aligned anchors
+- Render loop skips drawing if layout not initialized
+- All text rendering uses cached positions - no `measureText()` calls in render loop (except description word-wrapping which uses fixed x anchor)
+
+**Files changed:**
+- `src/components/constellation/DenizenCardCanvas.tsx` (lines ~127-161: textLayoutRef type, lines ~291-397: initialization effect, lines ~571-677: render loop updates)
+
+**Commits:**
+- `1babdcb` - Fix text positioning jumps in video exports by pre-calculating all text layout
+
+**Why it didn't work:**
+- Despite pre-calculating all positions and eliminating measureText from render loop, text still jumps in exported videos
+- Possible causes:
+  1. **Canvas context state variations**: Even with same coordinates, canvas context state (transform, font rendering hints) may vary between frames
+  2. **Font rendering inconsistencies**: Browser font rendering may still produce subpixel variations even with same measurements
+  3. **DevicePixelRatio handling**: The initialization effect scales context with `dpr`, but render loop also scales - potential mismatch
+  4. **Export canvas differences**: The export path (captureStream) may use a different canvas context or rendering pipeline
+  5. **Text baseline/alignment state**: Canvas text alignment state may not be consistently set between frames
+  6. **Description word-wrapping**: Still uses `measureText()` in render loop for wrapping logic (though x position is fixed)
+
+**Current Status:** Comprehensive fix attempted but issue persists. Text still jumps in exported videos.
+
 ---
 
 ## Relevant Components
