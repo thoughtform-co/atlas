@@ -1,6 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
+import { Denizen, Position } from '@/lib/types';
+import { getDomainColor, getDomainStyle } from '@/lib/constants';
+
+// Grid size for pixel snapping (matches particle system GRID=3)
+const GRID = 3;
 
 interface Star {
   x: number;
@@ -19,11 +24,122 @@ interface NoisePoint {
   radius: number;
 }
 
-export function BackgroundCanvas() {
+interface NebulaParticle {
+  x: number;
+  y: number;
+  baseX: number;
+  baseY: number;
+  vx: number;
+  vy: number;
+  alpha: number;
+  size: number;
+  phase: number;
+}
+
+interface DomainCluster {
+  domain: string;
+  color: { r: number; g: number; b: number };
+  style: ReturnType<typeof getDomainStyle>;
+  entities: Denizen[];
+  center: Position;
+  radius: number;
+  particles: NebulaParticle[];
+}
+
+interface BackgroundCanvasProps {
+  denizens?: Denizen[];
+  offset?: Position;
+  scale?: number;
+}
+
+export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale = 1 }: BackgroundCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
   const noisePointsRef = useRef<NoisePoint[]>([]);
+  const clustersRef = useRef<DomainCluster[]>([]);
   const animationRef = useRef<number | undefined>(undefined);
+
+  // Calculate domain clusters from denizens
+  const domainClusters = useMemo(() => {
+    if (denizens.length === 0) return [];
+
+    // Group entities by domain
+    const domainGroups = new Map<string, Denizen[]>();
+    denizens.forEach(d => {
+      const domain = d.domain || 'default';
+      const group = domainGroups.get(domain) || [];
+      group.push(d);
+      domainGroups.set(domain, group);
+    });
+
+    // Create clusters for each domain
+    const clusters: Omit<DomainCluster, 'particles'>[] = [];
+    domainGroups.forEach((entities, domain) => {
+      if (entities.length === 0) return;
+
+      // Calculate center (average position)
+      const centerX = entities.reduce((sum, e) => sum + e.position.x, 0) / entities.length;
+      const centerY = entities.reduce((sum, e) => sum + e.position.y, 0) / entities.length;
+
+      // Calculate radius (max distance from center + padding)
+      let maxDist = 0;
+      entities.forEach(e => {
+        const dist = Math.sqrt(
+          Math.pow(e.position.x - centerX, 2) + 
+          Math.pow(e.position.y - centerY, 2)
+        );
+        maxDist = Math.max(maxDist, dist);
+      });
+      // Add padding based on entity count, minimum 150px
+      const radius = Math.max(150, maxDist + 100 + entities.length * 20);
+
+      clusters.push({
+        domain,
+        color: getDomainColor(domain),
+        style: getDomainStyle(domain),
+        entities,
+        center: { x: centerX, y: centerY },
+        radius,
+      });
+    });
+
+    return clusters;
+  }, [denizens]);
+
+  // Initialize nebula particles when clusters change
+  useEffect(() => {
+    clustersRef.current = domainClusters.map(cluster => {
+      // Calculate particle count based on area and density
+      const area = Math.PI * cluster.radius * cluster.radius;
+      const baseCount = Math.floor(area / 8000); // Base density
+      const particleCount = Math.floor(baseCount * cluster.style.particleDensity);
+      
+      const particles: NebulaParticle[] = [];
+      for (let i = 0; i < Math.min(particleCount, 200); i++) { // Cap at 200 per cluster
+        // Distribute in a circular pattern with falloff
+        const angle = Math.random() * Math.PI * 2;
+        const distRatio = Math.pow(Math.random(), 0.6); // Bias towards center
+        const dist = distRatio * cluster.radius;
+        
+        const x = cluster.center.x + Math.cos(angle) * dist;
+        const y = cluster.center.y + Math.sin(angle) * dist;
+        
+        particles.push({
+          x,
+          y,
+          baseX: x,
+          baseY: y,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.15,
+          alpha: 0.02 + Math.random() * (cluster.style.maxAlpha - 0.02),
+          size: GRID,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+      
+      return { ...cluster, particles };
+    });
+  }, [domainClusters]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -129,6 +245,97 @@ export function BackgroundCanvas() {
       });
     };
 
+    let time = 0;
+
+    // Convert world position to screen position
+    const worldToScreen = (worldX: number, worldY: number): Position => {
+      const centerX = width / 2 + offset.x;
+      const centerY = height / 2 + offset.y;
+      return {
+        x: centerX + worldX * scale,
+        y: centerY + worldY * scale,
+      };
+    };
+
+    const drawDomainNebulae = () => {
+      clustersRef.current.forEach(cluster => {
+        const { color, style, particles } = cluster;
+        
+        particles.forEach(p => {
+          // Update particle position (gentle drift)
+          p.x += p.vx;
+          p.y += p.vy;
+          
+          // Soft boundary - pull back towards base position
+          const dx = p.baseX - p.x;
+          const dy = p.baseY - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > 30) {
+            p.vx += dx * 0.001;
+            p.vy += dy * 0.001;
+          }
+          
+          // Dampen velocity
+          p.vx *= 0.995;
+          p.vy *= 0.995;
+          
+          // Convert to screen position
+          const screenPos = worldToScreen(p.x, p.y);
+          
+          // Skip if off screen
+          if (screenPos.x < -50 || screenPos.x > width + 50 ||
+              screenPos.y < -50 || screenPos.y > height + 50) {
+            return;
+          }
+          
+          // Breathing alpha
+          const breathe = Math.sin(time * style.pulseSpeed + p.phase) * 0.3 + 0.7;
+          const alpha = p.alpha * breathe;
+          
+          // Pixel-snapped rendering (GRID=3)
+          const px = Math.floor(screenPos.x / GRID) * GRID;
+          const py = Math.floor(screenPos.y / GRID) * GRID;
+          
+          // Draw main particle
+          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+          ctx.fillRect(px, py, GRID - 1, GRID - 1);
+          
+          // Occasional glitch effect for Lattice domain
+          if (style.glitchChance > 0.2 && Math.random() < 0.01) {
+            // Horizontal glitch line
+            const glitchWidth = 10 + Math.random() * 30;
+            ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`;
+            ctx.fillRect(px - glitchWidth / 2, py, glitchWidth, 1);
+            
+            // Chromatic aberration
+            if (Math.random() < 0.3) {
+              ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.2})`;
+              ctx.fillRect(px - glitchWidth / 2 - 2, py, glitchWidth, 1);
+              ctx.fillStyle = `rgba(255, 0, 128, ${alpha * 0.2})`;
+              ctx.fillRect(px - glitchWidth / 2 + 2, py, glitchWidth, 1);
+            }
+          }
+        });
+
+        // Draw subtle radial gradient for cluster region (very faint)
+        const screenCenter = worldToScreen(cluster.center.x, cluster.center.y);
+        const screenRadius = cluster.radius * scale;
+        
+        const gradient = ctx.createRadialGradient(
+          screenCenter.x, screenCenter.y, 0,
+          screenCenter.x, screenCenter.y, screenRadius
+        );
+        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.02)`);
+        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, 0.01)`);
+        gradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(screenCenter.x, screenCenter.y, screenRadius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    };
+
     const draw = () => {
       // Clear with void color
       ctx.fillStyle = '#050403';
@@ -138,10 +345,14 @@ export function BackgroundCanvas() {
       updateNoise();
       drawNoise();
 
+      // Draw domain nebulae (behind stars)
+      drawDomainNebulae();
+
       // Draw stars
       updateStars();
       drawStars();
 
+      time++;
       animationRef.current = requestAnimationFrame(draw);
     };
 
@@ -153,7 +364,7 @@ export function BackgroundCanvas() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [offset, scale]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 z-[1]" />;
 }

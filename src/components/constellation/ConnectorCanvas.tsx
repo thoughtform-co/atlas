@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Connection, Position } from '@/lib/types';
+import { useEffect, useRef, useMemo } from 'react';
+import { Connection, Position, Denizen } from '@/lib/types';
+import { getDomainColor } from '@/lib/constants';
 
 interface Particle {
   t: number;
@@ -17,17 +18,31 @@ interface ConnectorState {
   particles: Particle[];
   pulsePhase: number;
   pulseSpeed: number;
+  domainColor?: { r: number; g: number; b: number } | null; // null = cross-domain (use neutral)
 }
 
 interface ConnectorCanvasProps {
   connections: Connection[];
   getPosition: (id: string) => Position | null;
+  denizens?: Denizen[];
 }
 
-export function ConnectorCanvas({ connections, getPosition }: ConnectorCanvasProps) {
+// Neutral color for cross-domain connections (dawn color)
+const NEUTRAL_COLOR = { r: 236, g: 227, b: 214 };
+
+export function ConnectorCanvas({ connections, getPosition, denizens = [] }: ConnectorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const connectorsRef = useRef<ConnectorState[]>([]);
   const animationRef = useRef<number | undefined>(undefined);
+
+  // Create a lookup map for denizen domains
+  const domainLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    denizens.forEach(d => {
+      lookup.set(d.id, d.domain || 'default');
+    });
+    return lookup;
+  }, [denizens]);
 
   useEffect(() => {
     // Initialize connectors
@@ -45,6 +60,13 @@ export function ConnectorCanvas({ connections, getPosition }: ConnectorCanvasPro
         });
       }
 
+      // Determine domain color: use domain color if both entities are in same domain, otherwise null (neutral)
+      const fromDomain = domainLookup.get(conn.from);
+      const toDomain = domainLookup.get(conn.to);
+      const domainColor = (fromDomain && toDomain && fromDomain === toDomain)
+        ? getDomainColor(fromDomain)
+        : null;
+
       return {
         from: conn.from,
         to: conn.to,
@@ -52,9 +74,10 @@ export function ConnectorCanvas({ connections, getPosition }: ConnectorCanvasPro
         particles,
         pulsePhase: Math.random() * Math.PI * 2,
         pulseSpeed: 0.015 + Math.random() * 0.01,
+        domainColor: domainColor ? { r: domainColor.r, g: domainColor.g, b: domainColor.b } : null,
       };
     });
-  }, [connections]);
+  }, [connections, domainLookup]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -95,6 +118,9 @@ export function ConnectorCanvas({ connections, getPosition }: ConnectorCanvasPro
       // Global pulse factor
       const globalPulse = 0.5 + Math.sin(connector.pulsePhase) * 0.35;
 
+      // Use domain color if same domain, otherwise neutral
+      const color = connector.domainColor || NEUTRAL_COLOR;
+
       connector.particles.forEach((p) => {
         const x = fromPos.x + dx * p.t + nx * p.baseOffset;
         const y = fromPos.y + dy * p.t + ny * p.baseOffset;
@@ -110,7 +136,8 @@ export function ConnectorCanvas({ connections, getPosition }: ConnectorCanvasPro
         const px = Math.floor(x / gridSize) * gridSize;
         const py = Math.floor(y / gridSize) * gridSize;
 
-        ctx.fillStyle = `rgba(236, 227, 214, ${alpha * 0.7})`;
+        // Use domain color for same-domain connections, neutral for cross-domain
+        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.7})`;
         ctx.fillRect(px, py, gridSize, gridSize);
       });
     };

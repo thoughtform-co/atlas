@@ -177,11 +177,19 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       onWheel={handleWheel}
       style={{ cursor: isDragging ? 'grabbing' : 'default' }}
     >
-      {/* Background canvas layer */}
-      <BackgroundCanvas />
+      {/* Background canvas layer - with domain nebulae */}
+      <BackgroundCanvas 
+        denizens={currentDenizens} 
+        offset={offset} 
+        scale={scale} 
+      />
 
       {/* Connector canvas layer */}
-      <ConnectorCanvas connections={connections} getPosition={getScreenPosition} />
+      <ConnectorCanvas 
+        connections={connections} 
+        getPosition={getScreenPosition}
+        denizens={currentDenizens}
+      />
 
       {/* Cards container */}
       <div className="absolute inset-0 z-[3]">

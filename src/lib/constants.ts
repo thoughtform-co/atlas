@@ -1,0 +1,61 @@
+/**
+ * Domain color definitions for the Atlas constellation view
+ * Each domain has a distinct visual aesthetic expressed through particle colors
+ */
+
+export const DOMAIN_COLORS = {
+  // Starhaven Reaches: Gold-umber, warm desert tones, cosmic backdrops
+  'Starhaven Reaches': { r: 202, g: 165, b: 84, hex: '#CAA554' },
+  
+  // The Lattice: White/pale, glitch aesthetics, data corruption, scanlines
+  'The Lattice': { r: 184, g: 196, b: 208, hex: '#B8C4D0' },
+  
+  // The Threshold: Mixed elements, mid-transition states, unstable
+  'The Threshold': { r: 139, g: 115, b: 85, hex: '#8B7355' },
+  
+  // Default fallback - Dawn color
+  'default': { r: 236, g: 227, b: 214, hex: '#ECE3D6' },
+} as const;
+
+export type DomainName = keyof typeof DOMAIN_COLORS;
+
+/**
+ * Get domain color by name, with fallback to default
+ */
+export function getDomainColor(domain: string): { r: number; g: number; b: number; hex: string } {
+  return DOMAIN_COLORS[domain as DomainName] || DOMAIN_COLORS['default'];
+}
+
+/**
+ * Domain visual characteristics for particle rendering
+ */
+export const DOMAIN_STYLES = {
+  'Starhaven Reaches': {
+    particleDensity: 0.8,      // Relative density of nebula particles
+    glitchChance: 0.05,        // Low glitch - warm and stable
+    pulseSpeed: 0.003,         // Slow, gentle breathing
+    maxAlpha: 0.12,            // Subtle but visible
+  },
+  'The Lattice': {
+    particleDensity: 1.2,      // Denser - more data-like
+    glitchChance: 0.25,        // High glitch - data corruption aesthetic
+    pulseSpeed: 0.008,         // Faster, more erratic
+    maxAlpha: 0.08,            // Pale, ethereal
+  },
+  'The Threshold': {
+    particleDensity: 0.6,      // Sparse - transitional
+    glitchChance: 0.15,        // Medium glitch - unstable
+    pulseSpeed: 0.005,         // Variable
+    maxAlpha: 0.10,            // Medium visibility
+  },
+  'default': {
+    particleDensity: 0.7,
+    glitchChance: 0.1,
+    pulseSpeed: 0.004,
+    maxAlpha: 0.10,
+  },
+} as const;
+
+export function getDomainStyle(domain: string) {
+  return DOMAIN_STYLES[domain as keyof typeof DOMAIN_STYLES] || DOMAIN_STYLES['default'];
+}
