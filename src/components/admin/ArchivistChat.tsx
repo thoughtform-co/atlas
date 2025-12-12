@@ -233,7 +233,8 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
           // Store extracted fields as suggestion instead of auto-applying
           if (data.extractedFields && Object.keys(data.extractedFields).length > 0) {
             const updates: Partial<EntityFormData> = {};
-            if (data.extractedFields.name) updates.name = data.extractedFields.name;
+            // Map 'name' from extractedFields to 'entityClass' in EntityFormData
+            if (data.extractedFields.name) updates.entityClass = data.extractedFields.name;
             if (data.extractedFields.type) updates.type = data.extractedFields.type;
             if (data.extractedFields.domain) updates.domain = data.extractedFields.domain;
             if (data.extractedFields.description) updates.description = data.extractedFields.description;
@@ -271,7 +272,7 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
     let responseContent = '';
     
     if (messageText.toLowerCase().includes('name') || messageText.toLowerCase().includes('designation')) {
-      responseContent = `**${formData.name || 'The entity'}** — a fitting designation. I shall note this in the archive.`;
+      responseContent = `**${formData.entityClass || formData.entityName || 'The entity'}** — a fitting designation. I shall note this in the archive.`;
     } else if (messageText.toLowerCase().includes('threat') || messageText.toLowerCase().includes('danger')) {
       responseContent = `The threat assessment of **${formData.threatLevel}** has been noted. ${formData.threatLevel === 'Existential' ? 'Approach with extreme caution.' : 'Standard cataloging protocols apply.'}`;
     } else if (messageText.toLowerCase().includes('confirm') || messageText.toLowerCase().includes('save')) {
