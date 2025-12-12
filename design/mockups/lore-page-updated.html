@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas - Lore Archive (Updated Design)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Mono&family=IBM+Plex+Sans:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --void: #050403;
+      --surface-0: #0A0908;
+      --surface-1: #0F0E0C;
+      --dawn: #ECE3D6;
+      --dawn-70: rgba(236, 227, 214, 0.7);
+      --dawn-50: rgba(236, 227, 214, 0.5);
+      --dawn-30: rgba(236, 227, 214, 0.3);
+      --dawn-15: rgba(236, 227, 214, 0.15);
+      --dawn-08: rgba(236, 227, 214, 0.08);
+      --gold: #CAA554;
+      --gold-dim: rgba(202, 165, 84, 0.4);
+      --threat-benign: #5B8A7A;
+      --threat-cautious: #7A7868;
+      --threat-volatile: #CAA554;
+      --threat-existential: #8B5A5A;
+      --cardinal-dynamics: #5B8A7A;
+      
+      --font-mono: 'PT Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--dawn);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       PARTICLE EFFECTS BACKGROUND
+       ═══════════════════════════════════════════════════════════════ */
+    .particles-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.3;
+    }
+    
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--dawn-30);
+      border-radius: 50%;
+      animation: float 8s infinite ease-in-out;
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.3;
+      }
+      50% {
+        transform: translate(20px, -30px) scale(1.2);
+        opacity: 0.6;
+      }
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       NAVIGATION
+       ═══════════════════════════════════════════════════════════════ */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 9, 8, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--dawn-08);
+      padding: 1rem 3rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+    
+    .nav-item {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    
+    .nav-item:hover {
+      color: var(--dawn);
+    }
+    
+    .nav-item.active {
+      color: var(--gold);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════════════ */
+    .main {
+      position: relative;
+      z-index: 1;
+      padding: 6rem 3rem 3rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       PAGE HEADER (GLASS EFFECT)
+       ═══════════════════════════════════════════════════════════════ */
+    .page-header {
+      padding: 2rem 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+    }
+    
+    .page-title {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .title-prefix {
+      color: var(--dawn-15);
+    }
+    
+    .title-highlight {
+      color: var(--gold);
+    }
+    
+    .page-stats {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--dawn-30);
+      letter-spacing: 0.1em;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       TABS (GLASS EFFECT)
+       ═══════════════════════════════════════════════════════════════ */
+    .tabs-container {
+      border-bottom: 1px solid var(--dawn-08);
+      margin-bottom: 0;
+      background: rgba(10, 9, 8, 0.3);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 0;
+    }
+    
+    .tab {
+      padding: 1rem 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    
+    .tab:hover {
+      color: var(--dawn-70);
+      background: rgba(236, 227, 214, 0.03);
+    }
+    
+    .tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+    
+    .tab-count {
+      margin-left: 0.5rem;
+      padding: 0.125rem 0.375rem;
+      background: var(--dawn-08);
+      font-size: 0.5625rem;
+      color: var(--dawn-30);
+    }
+    
+    .tab.active .tab-count {
+      background: rgba(202, 165, 84, 0.3);
+      color: var(--gold);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       FILTERS BAR (GLASS EFFECT)
+       ═══════════════════════════════════════════════════════════════ */
+    .filters-bar {
+      padding: 1.5rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--dawn-08);
+      background: rgba(10, 9, 8, 0.2);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      margin: 0 -3rem;
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+    
+    .filters-left {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .filter-label {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .filter-select {
+      padding: 0.375rem 0.75rem;
+      background: rgba(20, 19, 16, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--dawn-08);
+      color: var(--dawn-50);
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      cursor: pointer;
+      min-width: 120px;
+      transition: all 0.2s ease;
+    }
+    
+    .filter-select:focus {
+      outline: none;
+      border-color: rgba(202, 165, 84, 0.3);
+      background: rgba(20, 19, 16, 0.8);
+    }
+    
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: rgba(20, 19, 16, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--dawn-08);
+      padding: 0 0.75rem;
+      transition: all 0.2s ease;
+    }
+    
+    .search-box:focus-within {
+      border-color: rgba(202, 165, 84, 0.3);
+      background: rgba(20, 19, 16, 0.8);
+    }
+    
+    .search-icon {
+      color: var(--dawn-30);
+      font-size: 0.75rem;
+    }
+    
+    .search-input {
+      padding: 0.5rem 0.75rem;
+      background: transparent;
+      border: none;
+      color: var(--dawn);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      width: 200px;
+    }
+    
+    .search-input::placeholder {
+      color: var(--dawn-30);
+    }
+    
+    .search-input:focus {
+      outline: none;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       ENTITIES GRID
+       ═══════════════════════════════════════════════════════════════ */
+    .entities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 2rem;
+      padding: 2rem 0;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       ENTITY CARD (MATCHES CONSTELLATION VIEW STYLE)
+       ═══════════════════════════════════════════════════════════════ */
+    .entity-card {
+      position: relative;
+      width: 200px;
+      aspect-ratio: 3/4;
+      background: var(--surface-0);
+      border: 1px solid var(--dawn-08);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      overflow: hidden;
+      /* Glass-like effect on hover */
+      backdrop-filter: blur(0px);
+      -webkit-backdrop-filter: blur(0px);
+    }
+    
+    .entity-card:hover {
+      border-color: var(--dawn-30);
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 1px rgba(236, 227, 214, 0.03), 0 20px 50px -15px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    
+    /* Outer glow on hover */
+    .entity-card::before {
+      content: '';
+      position: absolute;
+      inset: -30px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      background: radial-gradient(ellipse 60% 70% at 50% 45%, rgba(236, 227, 214, 0.08) 0%, rgba(236, 227, 214, 0.03) 40%, transparent 70%);
+    }
+    
+    .entity-card:hover::before {
+      opacity: 1;
+    }
+    
+    /* Corner accents */
+    .entity-card::after {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 12px;
+      height: 12px;
+      border-top: 1px solid var(--dawn-15);
+      border-left: 1px solid var(--dawn-15);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+    
+    .entity-card:hover::after {
+      opacity: 1;
+    }
+    
+    .corner-bottom {
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 12px;
+      height: 12px;
+      border-bottom: 1px solid var(--dawn-15);
+      border-right: 1px solid var(--dawn-15);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+    
+    .entity-card:hover .corner-bottom {
+      opacity: 1;
+    }
+    
+    /* Card image container */
+    .card-image-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 3/4;
+      background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%);
+      overflow: hidden;
+    }
+    
+    .card-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    
+    .entity-card:hover .card-image {
+      transform: scale(1.03);
+    }
+    
+    /* Gradient overlay for readability */
+    .card-gradient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(to bottom, rgba(5, 4, 3, 0.1) 0%, transparent 30%, transparent 50%, rgba(5, 4, 3, 0.4) 80%, rgba(5, 4, 3, 0.85) 100%);
+    }
+    
+    /* Scanlines on hover */
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+    }
+    
+    .entity-card:hover .scanlines {
+      opacity: 1;
+    }
+    
+    /* Threat indicator */
+    .threat-indicator {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .threat-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--threat-cautious);
+      opacity: 0.8;
+      transition: transform 0.3s ease;
+    }
+    
+    .entity-card:hover .threat-dot {
+      transform: scale(1.2);
+    }
+    
+    .threat-label {
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: all 0.25s ease;
+      font-family: var(--font-mono);
+      font-size: 6px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+    
+    .entity-card:hover .threat-label {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    /* Alien glyphs */
+    .glyphs {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+      font-family: var(--font-mono);
+      font-size: 7px;
+      line-height: 1.6;
+      color: var(--dawn-30);
+      letter-spacing: 0.1em;
+      writing-mode: vertical-rl;
+    }
+    
+    .entity-card:hover .glyphs {
+      opacity: 0.75;
+    }
+    
+    /* Info overlay with glassmorphism */
+    .card-info-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 14px;
+      background: rgba(10, 9, 8, 0.4);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(236, 227, 214, 0.1);
+    }
+    
+    .card-name {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--dawn);
+      line-height: 1.35;
+      transition: color 0.2s ease;
+    }
+    
+    .entity-card:hover .card-name {
+      color: white;
+    }
+    
+    .card-subtitle {
+      margin-top: 2px;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+      opacity: 0.8;
+    }
+    
+    .card-meta {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--dawn-08);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      column-gap: 16px;
+    }
+    
+    .card-type {
+      font-family: var(--font-mono);
+      font-size: 7px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      flex-shrink: 0;
+    }
+    
+    .card-coords {
+      display: flex;
+      flex-shrink: 0;
+      column-gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 7px;
+      letter-spacing: 0.03em;
+      color: var(--dawn-30);
+    }
+    
+    .coord-item {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+    }
+    
+    .coord-symbol {
+      font-size: 8px;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 5rem 2.5rem;
+      color: var(--dawn-30);
+    }
+    
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+    
+    .empty-title {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    
+    .empty-description {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      max-width: 400px;
+      margin: 0 auto 1.5rem;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      padding: 0.625rem 1.25rem;
+      background: var(--gold);
+      border: none;
+      color: var(--void);
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .cta-button:hover {
+      background: var(--dawn);
+    }
+  </style>
+</head>
+<body>
+  <!-- Particle Effects Background -->
+  <div class="particles-background" id="particles"></div>
+  
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="#" class="nav-item">+</a>
+    <a href="#" class="nav-item active">ATLAS</a>
+    <a href="#" class="nav-item">LORE</a>
+    <a href="#" class="nav-item">VINCE ▼</a>
+  </nav>
+  
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Page Header -->
+    <header class="page-header">
+      <h1 class="page-title">
+        <span class="title-prefix">//</span> <span class="title-highlight">Lore</span> Archive
+      </h1>
+      <div class="page-stats">
+        3 entities · 3 domains · 11 classes
+      </div>
+    </header>
+    
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button class="tab active">
+          Bestiary <span class="tab-count">3</span>
+        </button>
+        <button class="tab">
+          Domains <span class="tab-count">3</span>
+        </button>
+        <button class="tab">
+          Classes <span class="tab-count">11</span>
+        </button>
+        <button class="tab">
+          Codex <span class="tab-count">8</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Filters Bar -->
+    <div class="filters-bar">
+      <div class="filters-left">
+        <div class="filter-group">
+          <span class="filter-label">Domain</span>
+          <select class="filter-select">
+            <option>All Domains</option>
+            <option>Starhaven Reaches</option>
+            <option>The Lattice</option>
+            <option>The Threshold</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Threat</span>
+          <select class="filter-select">
+            <option>All Levels</option>
+            <option>Benign</option>
+            <option>Cautious</option>
+            <option>Volatile</option>
+            <option>Existential</option>
+          </select>
+        </div>
+      </div>
+      <div class="filters-right">
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" class="search-input" placeholder="Search entities...">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Entities Grid -->
+    <div class="entities-grid">
+      <!-- Entity Card 1 -->
+      <article class="entity-card">
+        <div class="card-image-container">
+          <img src="https://via.placeholder.com/200x267/1a1a1a/ECE3D6?text=EIGENSAGE" alt="Eigensage" class="card-image">
+          <div class="card-gradient"></div>
+          <div class="scanlines"></div>
+          
+          <div class="threat-indicator">
+            <div class="threat-dot"></div>
+            <span class="threat-label">Cautious</span>
+          </div>
+          
+          <div class="glyphs">◊◈❋</div>
+          
+          <div class="card-info-overlay">
+            <h3 class="card-name">Eigensage</h3>
+            <div class="card-subtitle">Custodian of the Glitch-Sea</div>
+            <div class="card-meta">
+              <span class="card-type">Architect</span>
+              <div class="card-coords">
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--gold);">◆</span>
+                  <span>.700</span>
+                </span>
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--dawn-50);">○</span>
+                  <span>.800</span>
+                </span>
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--cardinal-dynamics);">◇</span>
+                  <span>-.200</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="corner-bottom"></div>
+      </article>
+      
+      <!-- Entity Card 2 -->
+      <article class="entity-card">
+        <div class="card-image-container">
+          <img src="https://via.placeholder.com/200x267/1a1a1a/ECE3D6?text=VOIDWALKER" alt="Voidwalker" class="card-image">
+          <div class="card-gradient"></div>
+          <div class="scanlines"></div>
+          
+          <div class="threat-indicator">
+            <div class="threat-dot" style="background: var(--threat-benign);"></div>
+            <span class="threat-label">Benign</span>
+          </div>
+          
+          <div class="glyphs">◊◈</div>
+          
+          <div class="card-info-overlay">
+            <h3 class="card-name">Voidwalker</h3>
+            <div class="card-subtitle">Pathfinder of the Unknown</div>
+            <div class="card-meta">
+              <span class="card-type">Wanderer</span>
+              <div class="card-coords">
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--gold);">◆</span>
+                  <span>.450</span>
+                </span>
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--dawn-50);">○</span>
+                  <span>.600</span>
+                </span>
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--cardinal-dynamics);">◇</span>
+                  <span>.100</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="corner-bottom"></div>
+      </article>
+      
+      <!-- Entity Card 3 -->
+      <article class="entity-card">
+        <div class="card-image-container">
+          <img src="https://via.placeholder.com/200x267/1a1a1a/ECE3D6?text=ALGORAPH" alt="Algoraph" class="card-image">
+          <div class="card-gradient"></div>
+          <div class="scanlines"></div>
+          
+          <div class="threat-indicator">
+            <div class="threat-dot" style="background: var(--threat-volatile);"></div>
+            <span class="threat-label">Volatile</span>
+          </div>
+          
+          <div class="glyphs">◇❋</div>
+          
+          <div class="card-info-overlay">
+            <h3 class="card-name">Algoraph</h3>
+            <div class="card-subtitle">Preserver of Silence</div>
+            <div class="card-meta">
+              <span class="card-type">Guardian</span>
+              <div class="card-coords">
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--gold);">◆</span>
+                  <span>-.300</span>
+                </span>
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--dawn-50);">○</span>
+                  <span>.200</span>
+                </span>
+                <span class="coord-item">
+                  <span class="coord-symbol" style="color: var(--cardinal-dynamics);">◇</span>
+                  <span>.750</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="corner-bottom"></div>
+      </article>
+    </div>
+  </main>
+  
+  <script>
+    // Generate particle effects
+    const particlesContainer = document.getElementById('particles');
+    const particleCount = 30;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 8 + 's';
+      particle.style.animationDuration = (6 + Math.random() * 4) + 's';
+      particlesContainer.appendChild(particle);
+    }
+  </script>
+</body>
+</html>

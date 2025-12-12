@@ -3,24 +3,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { EntityCard } from '@/components/constellation/EntityCard';
+import { fetchDenizens } from '@/lib/data';
+import { Denizen } from '@/lib/types';
 import styles from './page.module.css';
 
-// Types
-interface Denizen {
-  id: string;
-  name: string;
-  subtitle: string | null;
-  type: 'Guardian' | 'Wanderer' | 'Architect' | 'Void-Born' | 'Hybrid';
-  allegiance: 'Liminal Covenant' | 'Nomenclate' | 'Unaligned' | 'Unknown';
-  threat_level: 'Benign' | 'Cautious' | 'Volatile' | 'Existential';
-  domain: string;
-  description: string;
-  image: string | null;
-  coord_geometry: number;
-  coord_alterity: number;
-  coord_dynamics: number;
-  created_at: string;
-}
+// Note: Using Denizen type from @/lib/types instead of local interface
 
 type TabId = 'bestiary' | 'domains' | 'classes' | 'codex';
 
@@ -85,22 +73,19 @@ export default function LorePage() {
   const [threatFilter, setThreatFilter] = useState('all');
   const [activeCodexDoc, setActiveCodexDoc] = useState('The Manifold');
 
-  // Fetch denizens
+  // Fetch denizens using the same function as the main page
   useEffect(() => {
-    const fetchDenizens = async () => {
+    const loadDenizens = async () => {
       try {
-        const response = await fetch('/api/admin/denizens');
-        if (response.ok) {
-          const data = await response.json();
-          setDenizens(data.denizens || []);
-        }
+        const fetchedDenizens = await fetchDenizens();
+        setDenizens(fetchedDenizens);
       } catch (err) {
         console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDenizens();
+    loadDenizens();
   }, []);
 
   // Get domain from entity
@@ -110,6 +95,12 @@ export default function LorePage() {
     if (lower.includes('lattice')) return 'lattice';
     if (lower.includes('threshold')) return 'threshold';
     return 'starhaven'; // default
+  };
+  
+  // Handle entity click - navigate to constellation view or open modal
+  const handleEntityClick = (denizen: Denizen) => {
+    // For now, just scroll to top - can be enhanced to navigate or open modal
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Filter denizens
@@ -129,7 +120,7 @@ export default function LorePage() {
     }
     
     if (threatFilter !== 'all') {
-      result = result.filter(d => d.threat_level.toLowerCase() === threatFilter);
+      result = result.filter(d => d.threatLevel.toLowerCase() === threatFilter);
     }
     
     return result;
@@ -270,51 +261,32 @@ export default function LorePage() {
                 )}
               </div>
             ) : (
-              filteredDenizens.map((denizen) => {
-                const domainId = getDomainId(denizen.domain);
-                return (
-                  <article 
-                    key={denizen.id} 
-                    className={`${styles.entityCard} ${styles[domainId]}`}
-                  >
-                    <div className={styles.cardImagePlaceholder}>
-                      {denizen.image ? (
-                        <img src={denizen.image} alt={denizen.name} className={styles.cardImage} />
-                      ) : (
-                        '[ENTITY IMAGE]'
-                      )}
+              filteredDenizens.map((denizen) => (
+                <div key={denizen.id} style={{ position: 'relative' }}>
+                  <EntityCard
+                    denizen={denizen}
+                    style={{
+                      position: 'relative',
+                      width: '200px',
+                      margin: '0 auto',
+                    }}
+                    onClick={handleEntityClick}
+                  />
+                  {isAdmin && (
+                    <div className={styles.cardActions}>
+                      <button 
+                        className={styles.actionBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(denizen.id);
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <div className={styles.cardContent}>
-                      <div className={styles.cardHeader}>
-                        <h3 className={styles.cardName}>{denizen.name}</h3>
-                        <span className={`${styles.cardDomain} ${styles[domainId]}`}>
-                          {domainId === 'starhaven' ? 'Starhaven' : domainId === 'lattice' ? 'Lattice' : 'Threshold'}
-                        </span>
-                      </div>
-                      <div className={styles.cardClass}>{denizen.type}</div>
-                      <p className={styles.cardDescription}>{denizen.description}</p>
-                    </div>
-                    <div className={styles.cardFooter}>
-                      <span className={styles.cardCoords}>
-                        ◆ {denizen.coord_geometry.toFixed(2)} ○ {denizen.coord_alterity.toFixed(2)} ◇ {denizen.coord_dynamics.toFixed(2)}
-                      </span>
-                      <span className={`${styles.cardThreat} ${styles[denizen.threat_level.toLowerCase()]}`}>
-                        {denizen.threat_level}
-                      </span>
-                    </div>
-                    {isAdmin && (
-                      <div className={styles.cardActions}>
-                        <button 
-                          className={styles.actionBtn}
-                          onClick={() => handleDelete(denizen.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </article>
-                );
-              })
+                  )}
+                </div>
+              ))
             )}
           </div>
         )}
