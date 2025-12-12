@@ -1448,10 +1448,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             borderTop: '1px solid rgba(236, 227, 214, 0.12)',
-            padding: '16px 28px',
+            padding: '12px 28px',
             display: 'grid',
             gridTemplateColumns: '180px 1fr',
-            gap: '24px',
+            gap: '20px',
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -1461,11 +1461,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             </div>
             {/* Entity Name if provided (smaller, below class) */}
             {displayDenizen.entityName && (
-              <div style={{ marginTop: '6px', fontFamily: 'var(--font-mono)', fontSize: '14px', color: 'rgba(236, 227, 214, 0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>
+              <div style={{ marginTop: '4px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'rgba(236, 227, 214, 0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>
                 {displayDenizen.entityName.toUpperCase()}
               </div>
             )}
-            <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', fontSize: '9px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ marginTop: '6px', fontFamily: 'var(--font-mono)', fontSize: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 CLASS <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.type.toUpperCase()}</span>
               </div>
@@ -1476,28 +1476,24 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           </div>
           <div style={{ 
             display: 'flex', 
-            alignItems: 'center', 
+            alignItems: 'flex-start', 
             borderLeft: '1px solid rgba(236, 227, 214, 0.08)', 
             paddingLeft: '24px',
-            minHeight: '120px',
+            paddingTop: '4px',
+            paddingBottom: '4px',
           }}>
             <div 
-              className="denizen-description-scroll"
               style={{ 
                 fontFamily: 'var(--font-sans)', 
-                fontSize: '13px', 
+                fontSize: '12px', 
                 color: 'rgba(236, 227, 214, 0.5)', 
-                lineHeight: 1.7,
-                maxHeight: '120px',
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                paddingTop: '8px',
-                paddingBottom: '8px',
-                paddingRight: '8px',
+                lineHeight: 1.6,
                 width: '100%',
-                // Subtle transparent scrollbar (Firefox)
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(236, 227, 214, 0.08) transparent',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 6,
+                WebkitBoxOrient: 'vertical',
               }}
             >
               {displayDenizen.description}

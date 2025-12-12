@@ -133,15 +133,24 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
-          Description
+          Description <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontSize: '0.5rem', fontWeight: 'normal' }}>(max 200 characters)</span>
         </label>
         <textarea
           className={`${styles.fieldInput} ${styles.fieldTextarea}`}
           value={formData.description}
-          onChange={(e) => onChange({ description: e.target.value })}
+          onChange={(e) => {
+            const value = e.target.value.slice(0, 200);
+            onChange({ description: value });
+          }}
           placeholder="Describe the entity..."
           rows={3}
+          maxLength={200}
         />
+        {formData.description.length >= 200 && (
+          <div style={{ fontSize: '0.4rem', color: 'rgba(236, 227, 214, 0.3)', marginTop: '0.25rem' }}>
+            Character limit reached (200)
+          </div>
+        )}
       </div>
 
       {/* Type (Guardian/Wanderer/etc) / Threat Row */}
