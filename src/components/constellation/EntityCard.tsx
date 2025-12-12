@@ -130,9 +130,10 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
       {showStackedHint && (
         <>
           {Array.from({ length: stackedLayers }).map((_, layerIdx) => {
-            const offset = (layerIdx + 1) * 2; // 2px, 4px, 6px offsets
-            const rotation = (layerIdx % 2 === 0 ? 1 : -1) * 0.5; // Alternating rotation
-            const opacity = 0.1 - (layerIdx * 0.02); // Decreasing opacity: 0.1, 0.08, 0.06
+            const offset = (layerIdx + 1) * 3; // 3px, 6px, 9px offsets for better visibility
+            const rotation = (layerIdx % 2 === 0 ? 1 : -1) * 0.8; // Slightly more rotation: 0.8deg
+            const opacity = 0.35 - (layerIdx * 0.08); // More visible: 0.35, 0.27, 0.19
+            const borderOpacity = 0.15 - (layerIdx * 0.03); // More visible border: 0.15, 0.12, 0.09
             
             return (
               <div
@@ -144,10 +145,11 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
                   left: `${offset}px`,
                   top: `${offset}px`,
                   transform: `rotate(${rotation}deg)`,
-                  border: '1px solid rgba(236, 227, 214, 0.05)',
-                  background: 'transparent',
+                  border: `1px solid rgba(236, 227, 214, ${borderOpacity})`,
+                  background: 'var(--surface-0)', // Match main card background
                   opacity,
                   zIndex: -1 - layerIdx,
+                  boxShadow: '0 0 0 1px rgba(236, 227, 214, 0.02) inset', // Subtle inner glow
                 }}
               />
             );
