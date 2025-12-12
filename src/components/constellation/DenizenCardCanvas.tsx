@@ -123,6 +123,14 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
     const manifoldStateRef = useRef({ time: 0, particles: [] as { baseX: number; baseY: number }[] });
     const spectralStateRef = useRef({ time: 0, signature: [] as { base: number; variance: number }[] });
     const superStateRef = useRef({ time: 0 });
+    // Cache text measurements to prevent jumping between frames
+    const textMetricsRef = useRef<{
+      atlasResearchWidth?: number;
+      modeWidth?: number;
+      activeScanWidth?: number;
+      sigWidth?: number;
+      epochWidth?: number;
+    } | null>(null);
 
     /**
      * Expose export methods via ref so parent component can trigger exports.
@@ -428,32 +436,50 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
 
         // Header text (32px tall)
+        // Cache text measurements on first render to prevent jumping
         ctx.font = '9px monospace';
+        if (!textMetricsRef.current) {
+          textMetricsRef.current = {
+            atlasResearchWidth: ctx.measureText('ATLAS RESEARCH').width,
+            modeWidth: ctx.measureText('MODE: ').width,
+            activeScanWidth: ctx.measureText('ACTIVE SCAN').width,
+            sigWidth: ctx.measureText('SIG: ').width,
+            epochWidth: ctx.measureText(`EPOCH: ${epoch}`).width,
+          };
+        }
+        
         ctx.fillStyle = '#CAA554';
         ctx.fillText('ATLAS RESEARCH', 12, 11);
         
-        let x = 12 + ctx.measureText('ATLAS RESEARCH').width + 16;
+        // Use cached measurements for stable positioning
+        let x = 12 + (textMetricsRef.current.atlasResearchWidth || 0) + 16;
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
         ctx.fillText('MODE: ', x, 11);
-        x += ctx.measureText('MODE: ').width;
+        x += textMetricsRef.current.modeWidth || 0;
         ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
         ctx.fillText('ACTIVE SCAN', x, 11);
-        x += ctx.measureText('ACTIVE SCAN').width + 16;
+        x += (textMetricsRef.current.activeScanWidth || 0) + 16;
         
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
         ctx.fillText('SIG: ', x, 11);
-        x += ctx.measureText('SIG: ').width;
+        x += textMetricsRef.current.sigWidth || 0;
         ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
         ctx.fillText(signalStrength, x, 11);
         
-        // Right side of header
+        // Right side of header - use fixed positions for epoch, measure time dynamically
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
         const epochText = `EPOCH: ${epoch}`;
-        const epochWidth = ctx.measureText(epochText).width;
-        ctx.fillText(epochText, CARD_WIDTH - 12 - epochWidth - 60, 11);
+        // Update epoch width if epoch changed, otherwise use cached
+        const currentEpochWidth = ctx.measureText(epochText).width;
+        if (Math.abs(currentEpochWidth - (textMetricsRef.current.epochWidth || 0)) > 1) {
+          textMetricsRef.current.epochWidth = currentEpochWidth;
+        }
+        ctx.fillText(epochText, CARD_WIDTH - 12 - (textMetricsRef.current.epochWidth || currentEpochWidth) - 60, 11);
         
         const timeText = `[${formatTime(elapsedTime)}]`;
-        ctx.fillText(timeText, CARD_WIDTH - 12 - ctx.measureText(timeText).width, 11);
+        // Time text changes every second, so measure it dynamically but use consistent positioning
+        const timeWidth = ctx.measureText(timeText).width;
+        ctx.fillText(timeText, CARD_WIDTH - 12 - timeWidth, 11);
 
         // Left column labels (150px wide, starts at y=32)
         const leftColX = 8;
