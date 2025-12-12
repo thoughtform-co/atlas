@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { EntityCard } from '@/components/constellation/EntityCard';
+import { DenizenModalV3 } from '@/components/constellation/DenizenModalV3';
 import { fetchDenizens } from '@/lib/data';
 import { Denizen } from '@/lib/types';
 import styles from './page.module.css';
@@ -72,6 +73,7 @@ export default function LorePage() {
   const [classFilter, setClassFilter] = useState('all');
   const [threatFilter, setThreatFilter] = useState('all');
   const [activeCodexDoc, setActiveCodexDoc] = useState('The Manifold');
+  const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
 
   // Fetch denizens using the same function as the main page
   useEffect(() => {
@@ -97,10 +99,19 @@ export default function LorePage() {
     return 'starhaven'; // default
   };
   
-  // Handle entity click - navigate to constellation view or open modal
+  // Handle entity click - open modal (same as Constellation view)
   const handleEntityClick = (denizen: Denizen) => {
-    // For now, just scroll to top - can be enhanced to navigate or open modal
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setSelectedDenizen(denizen);
+  };
+  
+  // Handle denizen update from modal
+  const handleDenizenUpdate = (updatedDenizen: Denizen) => {
+    setDenizens((prev) =>
+      prev.map((d) => (d.id === updatedDenizen.id ? updatedDenizen : d))
+    );
+    if (selectedDenizen?.id === updatedDenizen.id) {
+      setSelectedDenizen(updatedDenizen);
+    }
   };
 
   // Filter denizens
@@ -161,7 +172,18 @@ export default function LorePage() {
   }
 
   return (
-    <main className={styles.main}>
+    <>
+      {/* Entity Modal (same as Constellation view) */}
+      {selectedDenizen && (
+        <DenizenModalV3
+          denizen={selectedDenizen}
+          onClose={() => setSelectedDenizen(null)}
+          allDenizens={denizens}
+          onDenizenUpdate={handleDenizenUpdate}
+        />
+      )}
+      
+      <main className={styles.main}>
       {/* Page Header */}
       <header className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>
@@ -426,6 +448,7 @@ export default function LorePage() {
         )}
       </div>
     </main>
+    </>
   );
 }
 
