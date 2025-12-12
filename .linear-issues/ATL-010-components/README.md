@@ -11,28 +11,56 @@ This folder contains copies of relevant components for issue ATL-010 (Text Posit
 
 These files are copied here for easy sharing with developers working on this issue. Once the issue is resolved, this folder and its contents will be removed.
 
+## Current State (2024-12-13)
+
+### What's Fixed
+- **Export rendering**: Canvas export now shows full UI overlay (not just background image)
+- **Text jumping**: Static text layer eliminates frame-to-frame text variations
+- **Visualization jumping**: Cached visualization positions prevent floating-point precision issues
+
+### What's Still Broken
+- **Parameter label positioning**: The labels for HALLUCINATION INDEX, SUPERPOSITION, EMBEDDING SIGNATURE, and MANIFOLD CURVATURE are all stacked near the top of their columns instead of being distributed across their respective sections.
+
 ## Key Areas to Investigate
 
-1. **Text Measurement Caching**: Lines ~440-456 in `DenizenCardCanvas.tsx` - Header text positioning
-2. **Parameter Text Rendering**: Lines ~458-495 in `DenizenCardCanvas.tsx` - Parameter labels and values
-3. **Render Loop**: Lines ~350-380 in `DenizenCardCanvas.tsx` - Main animation loop
-4. **Export Trigger**: Lines ~565-580 in `DenizenModalV3.tsx` - Video export function
+1. **Static Text Layer Building**: `buildStaticTextLayer()` function in `DenizenCardCanvas.tsx`
+   - Check Y coordinates for parameter section labels
+   - Verify `layout.params` contains correct Y values
 
-## Current State
+2. **Layout Cache Initialization**: Text layout effect that populates `textLayoutRef.current`
+   - Verify Y positions are correctly calculated for each parameter label
+   - Check if section heights are properly used in Y calculations
 
-- **Attempt 1 (Partial Fix)**: Header text measurements cached - issue persisted
-- **Attempt 2 (Comprehensive Fix)**: All text positions pre-calculated once after fonts load, stored in `textLayoutRef` cache
-  - Fixed column anchors for parameter sections
-  - Right-aligned anchors for dynamic text (time, epoch)
-  - No `measureText()` calls in render loop (except description word-wrapping)
-  - Issue still persists: Text still jumps in exported videos despite comprehensive caching
+3. **Parameter Label Y Positions**: Look for these in the layout cache:
+   - `phaseStateLabelY` - should be ~48 (top of left column)
+   - `superpositionLabelY` - should be in middle section of left column
+   - `hallucinationLabelY` - should be in bottom section of left column
+   - Similar for right column labels
 
-## Investigation Needed
+## Fixes Applied
 
-Possible root causes to investigate:
-1. Canvas context state variations between frames (transform, font rendering hints)
-2. Font rendering inconsistencies even with same measurements
-3. DevicePixelRatio handling mismatch between initialization and render loop
-4. Export canvas (captureStream) using different rendering pipeline
-5. Text baseline/alignment state not consistently set between frames
-6. Description word-wrapping still uses `measureText()` in render loop (though x position is fixed)
+### Fix 1: Remove `visibility: hidden`
+```tsx
+// Before (broken - browser throttles RAF for hidden elements)
+<div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
+
+// After (working)
+<div style={{ position: 'absolute', left: '-9999px', top: '-9999px', pointerEvents: 'none' }}>
+```
+
+### Fix 2: Add missing `spectralCenterY`
+```tsx
+// Added this definition in text layout initialization
+const spectralCenterY = spectralY + spectralHeight / 2;
+```
+
+## Log Evidence (from debugging session)
+
+**Before fix:**
+- `staticTextBuilt: false` when export called
+- Pixel sample: `[8,9,7,255]` (dark background only)
+
+**After fix:**
+- `staticTextBuilt: true` when export called  
+- Pixel sample: `[27,25,15,255]` (actual UI content)
+- `layoutReady: true` in text layout init

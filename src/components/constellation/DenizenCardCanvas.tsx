@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Denizen } from '@/lib/types';
 import { getMediaPublicUrl } from '@/lib/media';
 
@@ -106,6 +106,14 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
     const imageRef = useRef<HTMLImageElement | null>(null);
     const mediaLoadedRef = useRef(false);
     
+    // Track elapsedTime in ref to avoid restarting render loop every second
+    const elapsedTimeRef = useRef(elapsedTime);
+    
+    // Update elapsedTime ref without restarting render loop
+    useEffect(() => {
+      elapsedTimeRef.current = elapsedTime;
+    }, [elapsedTime]);
+    
     /**
      * Visualization state stored in refs to persist across renders without triggering re-renders.
      * 
@@ -124,6 +132,10 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
     const spectralStateRef = useRef({ time: 0, signature: [] as { base: number; variance: number }[] });
     const superStateRef = useRef({ time: 0 });
     
+    // Offscreen canvas for static text layer - rendered once, composited every frame
+    const staticTextCanvasRef = useRef<HTMLCanvasElement | null>(null);
+    const staticTextBuiltRef = useRef(false);
+    
     // Comprehensive text layout cache - all positions calculated once, reused every frame
     const textLayoutRef = useRef<{
       header: {
@@ -139,11 +151,16 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
       params: {
         leftColX: number;
         rightColX: number;
+        // Left column labels
         phaseStateLabelY: number;
         superpositionLabelY: number;
         hallucinationLabelY: number;
         tempValueY: number;
         highValueY: number;
+        // Right column labels (explicit, no assumptions about symmetry)
+        latentPositionLabelY: number;
+        manifoldLabelY: number;
+        embeddingLabelY: number;
         coordsValueY: number;
         zValueY: number;
         manifoldValueY: number;
@@ -157,6 +174,39 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         coordX: number;
         descX: number;
         descMaxWidth: number;
+      };
+      visualizations: {
+        sectionHeight: number; // Cached: 758 / 3
+        leftVizX: number;
+        leftVizWidth: number;
+        rightVizX: number;
+        rightVizWidth: number;
+        phaseY: number;
+        phaseHeight: number;
+        phaseCx: number;
+        phaseCy: number;
+        superY: number;
+        superHeight: number;
+        superCx: number;
+        superCy: number;
+        superWidth: number;
+        hallucY: number;
+        hallucHeight: number;
+        hallucCx: number;
+        hallucCy: number;
+        coordsY: number;
+        coordsHeight: number;
+        coordsCx: number;
+        coordsCy: number;
+        manifoldY: number;
+        manifoldHeight: number;
+        manifoldCx: number;
+        manifoldCy: number;
+        spectralY: number; // Embedding signature Y position - this was jumping!
+        spectralHeight: number;
+        spectralCx: number;
+        spectralWidth: number;
+        spectralBaseY: number; // Bottom baseline for bars - anchored to bottom of panel for UI consistency
       };
     } | null>(null);
 
@@ -310,10 +360,9 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return;
 
-        // Set up canvas context with same settings as render loop
-        const dpr = window.devicePixelRatio || 1;
+        // Ensure clean transform for measuring (transform-agnostic)
         ctx.save();
-        ctx.scale(dpr, dpr);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         // Measure all text once with correct font settings
         ctx.textBaseline = 'top';
@@ -348,6 +397,41 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         const leftColX = 8;
         const rightColX = CARD_WIDTH - 150 + 8; // 150px wide column, 8px padding
 
+        // Visualization positions (cache to prevent floating point precision issues)
+        const sectionHeight = 758 / 3; // Cache this calculation
+        const leftVizX = 0;
+        const leftVizWidth = 150;
+        const rightVizX = 570;
+        const rightVizWidth = 150;
+        const phaseY = 32;
+        const phaseHeight = sectionHeight;
+        const phaseCx = leftVizX + leftVizWidth / 2;
+        const phaseCy = phaseY + phaseHeight / 2;
+        const superY = phaseY + sectionHeight;
+        const superHeight = sectionHeight;
+        const superCx = leftVizX + leftVizWidth / 2;
+        const superCy = superY + superHeight / 2;
+        const superWidth = leftVizWidth * 0.7;
+        const hallucY = superY + sectionHeight;
+        const hallucHeight = sectionHeight;
+        const hallucCx = leftVizX + leftVizWidth / 2;
+        const hallucCy = hallucY + hallucHeight / 2;
+        const coordsY = 32;
+        const coordsHeight = sectionHeight;
+        const coordsCx = rightVizX + rightVizWidth / 2;
+        const coordsCy = coordsY + coordsHeight / 2;
+        const manifoldY = coordsY + sectionHeight;
+        const manifoldHeight = sectionHeight;
+        const manifoldCx = rightVizX + rightVizWidth / 2;
+        const manifoldCy = manifoldY + manifoldHeight / 2;
+        const spectralY = manifoldY + sectionHeight; // This was being recalculated every frame!
+        const spectralHeight = sectionHeight;
+        const spectralCx = rightVizX + rightVizWidth / 2;
+        const spectralWidth = rightVizWidth * 0.7;
+        // Anchor bars to bottom of panel (matches UI) - snap to pixel grid for stability
+        const SPECTRAL_BASE_PADDING = 12;
+        const spectralBaseY = Math.floor((spectralY + spectralHeight - SPECTRAL_BASE_PADDING) / GRID) * GRID;
+
         // Footer positions
         const footerY = 790;
         const footerLeftX = 28;
@@ -372,14 +456,19 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           params: {
             leftColX,
             rightColX,
-            phaseStateLabelY: 48,
-            superpositionLabelY: 68,
-            hallucinationLabelY: 88,
-            tempValueY: 60,
-            highValueY: 88,
-            coordsValueY: 60,
-            zValueY: 72,
-            manifoldValueY: 88,
+            // Left column labels - derived from section anchors
+            phaseStateLabelY: Math.round(phaseY + 16),
+            superpositionLabelY: Math.round(superY + 16),
+            hallucinationLabelY: Math.round(hallucY + 16),
+            tempValueY: Math.round(phaseY + 28),
+            highValueY: Math.round(hallucY + 28),
+            // Right column labels - explicit, no assumptions about symmetry
+            latentPositionLabelY: Math.round(coordsY + 16),
+            manifoldLabelY: Math.round(manifoldY + 16),
+            embeddingLabelY: Math.round(spectralY + 16),
+            coordsValueY: Math.round(coordsY + 28),
+            zValueY: Math.round(coordsY + 40),
+            manifoldValueY: Math.round(manifoldY + 28),
           },
           footer: {
             nameX: footerLeftX,
@@ -391,9 +480,45 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
             descX,
             descMaxWidth,
           },
+          visualizations: {
+            sectionHeight,
+            leftVizX,
+            leftVizWidth,
+            rightVizX,
+            rightVizWidth,
+            phaseY,
+            phaseHeight,
+            phaseCx,
+            phaseCy,
+            superY,
+            superHeight,
+            superCx,
+            superCy,
+            superWidth,
+            hallucY,
+            hallucHeight,
+            hallucCx,
+            hallucCy,
+            coordsY,
+            coordsHeight,
+            coordsCx,
+            coordsCy,
+            manifoldY,
+            manifoldHeight,
+            manifoldCx,
+            manifoldCy,
+            spectralY,
+            spectralHeight,
+            spectralCx,
+            spectralWidth,
+            spectralBaseY,
+          },
         };
 
         ctx.restore();
+        
+        // Build static text layer once layout is ready
+        buildStaticTextLayer();
       };
 
       initTextLayout();
@@ -402,6 +527,149 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         cancelled = true;
       };
     }, [denizen.firstObserved]); // Re-initialize if epoch changes
+
+    /**
+     * Build static text layer - render all static text once to offscreen canvas.
+     * This eliminates frame-by-frame text rendering variations.
+     * 
+     * WHY offscreen canvas: By rendering static text once and compositing it every frame,
+     * we eliminate any possibility of browser font rendering variations between frames.
+     * The same bitmap is reused, ensuring pixel-perfect consistency in video exports.
+     */
+    const buildStaticTextLayer = useCallback(() => {
+      const layout = textLayoutRef.current;
+      if (!layout) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const canvas = staticTextCanvasRef.current || (staticTextCanvasRef.current = document.createElement('canvas'));
+      canvas.width = CARD_WIDTH * dpr;
+      canvas.height = CARD_HEIGHT * dpr;
+
+      const tctx = canvas.getContext('2d');
+      if (!tctx) return;
+
+      // Set transform to match main canvas
+      tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      
+      // Clear canvas
+      tctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+      // Set text rendering state
+      tctx.textBaseline = 'top';
+      tctx.textAlign = 'left';
+
+      // Header static text
+      tctx.font = '9px monospace';
+      tctx.fillStyle = '#CAA554';
+      tctx.fillText('ATLAS RESEARCH', layout.header.atlasResearchX, 11);
+      
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
+      tctx.fillText('MODE: ', layout.header.modeLabelX, 11);
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+      tctx.fillText('ACTIVE SCAN', layout.header.modeValueX, 11);
+      
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
+      tctx.fillText('SIG: ', layout.header.sigLabelX, 11);
+      // Signal strength is static for a given denizen, so render it here
+      const signalStrength = ((denizen.coordinates.geometry + 1) / 2).toFixed(3);
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+      tctx.fillText(signalStrength, layout.header.sigValueX, 11);
+      
+      // Epoch (static)
+      tctx.textAlign = 'right';
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
+      const epoch = denizen.firstObserved || '4.2847';
+      const epochText = `EPOCH: ${epoch}`;
+      tctx.fillText(epochText, layout.header.epochX, 11);
+      tctx.textAlign = 'left';
+
+      // Parameter labels
+      tctx.font = '9px monospace';
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.4)';
+      tctx.fillText('PHASE STATE', layout.params.leftColX, layout.params.phaseStateLabelY);
+      tctx.fillText('SUPERPOSITION', layout.params.leftColX, layout.params.superpositionLabelY);
+      tctx.fillText('HALLUCINATION INDEX', layout.params.leftColX, layout.params.hallucinationLabelY);
+
+      // Parameter values (static for a given denizen)
+      const tempValue = ((denizen.coordinates.dynamics + 1) / 2).toFixed(2);
+      const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
+      tctx.fillStyle = '#CAA554';
+      tctx.fillText(`TEMP: ${tempValue}`, layout.params.leftColX, layout.params.tempValueY);
+      tctx.fillStyle = '#C17F59';
+      tctx.fillText(`HIGH [${hallucinationScore}/5]`, layout.params.leftColX, layout.params.highValueY);
+
+      // Right column labels - use explicit right-column Y positions
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.4)';
+      tctx.fillText('LATENT POSITION', layout.params.rightColX, layout.params.latentPositionLabelY);
+      tctx.fillText('MANIFOLD CURVATURE', layout.params.rightColX, layout.params.manifoldLabelY);
+      tctx.fillText('EMBEDDING SIGNATURE', layout.params.rightColX, layout.params.embeddingLabelY);
+
+      // Right column values (static)
+      tctx.font = '8px monospace';
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+      const coordsText = `X:${denizen.coordinates.geometry.toFixed(3)} Y:${denizen.coordinates.alterity.toFixed(3)}`;
+      tctx.fillText(coordsText, layout.params.rightColX, layout.params.coordsValueY);
+      tctx.fillText(`Z:${denizen.coordinates.dynamics.toFixed(3)}`, layout.params.rightColX, layout.params.zValueY);
+      
+      tctx.font = '9px monospace';
+      const manifoldValue = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? 'SEVERE' : 'NOMINAL';
+      tctx.fillStyle = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : '#5B8A7A';
+      tctx.fillText(manifoldValue, layout.params.rightColX, layout.params.manifoldValueY);
+
+      // Footer static text
+      const footerY = 790;
+      tctx.font = '24px monospace';
+      tctx.fillStyle = '#CAA554';
+      const displayName = (denizen.entityClass || denizen.entityName || denizen.name).toUpperCase();
+      tctx.fillText(displayName, layout.footer.nameX, footerY + 16);
+      
+      tctx.font = '9px monospace';
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
+      tctx.fillText('CLASS ', layout.footer.classLabelX, footerY + 48);
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+      tctx.fillText(denizen.type.toUpperCase(), layout.footer.classValueX, footerY + 48);
+      
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
+      tctx.fillText('THREAT ', layout.footer.threatLabelX, footerY + 60);
+      const threatColor = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)';
+      tctx.fillStyle = threatColor;
+      tctx.fillText(denizen.threatLevel.toUpperCase(), layout.footer.threatValueX, footerY + 60);
+      
+      // Coordinates in footer
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
+      const coordText = `◆ ${denizen.coordinates.geometry.toFixed(3)} ○ ${denizen.coordinates.alterity.toFixed(3)} ◇ ${denizen.coordinates.dynamics.toFixed(3)}`;
+      tctx.fillText(coordText, layout.footer.coordX, footerY + 72);
+      
+      // Description in footer (static)
+      tctx.font = '13px sans-serif';
+      tctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+      const words = denizen.description.split(' ');
+      let line = '';
+      let y = footerY + 16;
+      for (const word of words) {
+        const testLine = line + word + ' ';
+        const metrics = tctx.measureText(testLine);
+        if (metrics.width > layout.footer.descMaxWidth && line.length > 0) {
+          tctx.fillText(line, layout.footer.descX, y);
+          line = word + ' ';
+          y += 20;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line.length > 0) {
+        tctx.fillText(line, layout.footer.descX, y);
+      }
+
+      staticTextBuiltRef.current = true;
+    }, [denizen]);
+
+    // Rebuild static text layer when denizen changes
+    useEffect(() => {
+      if (textLayoutRef.current) {
+        buildStaticTextLayer();
+      }
+    }, [denizen, buildStaticTextLayer]);
 
     /**
      * Load media (video or image) for canvas rendering.
@@ -516,8 +784,8 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) return;
 
-      // Scale context to match CSS pixels - coordinates now match design dimensions
-      ctx.scale(dpr, dpr);
+      timeRef.current = 0;
+      staticTextBuiltRef.current = false; // Reset static text flag when canvas is recreated
 
       /**
        * Rendering loop - draws all layers in correct order (bottom to top).
@@ -527,8 +795,14 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
        * 
        * WHY requestAnimationFrame: Synchronizes with browser repaint (60fps),
        * ensures smooth animations, and pauses when tab is hidden (saves CPU).
+       * 
+       * WHY setTransform every frame: Ensures transform state is identical every frame,
+       * preventing subpixel differences from leaking between frames.
        */
       const render = () => {
+        // Always start from the same transform - hard reset every frame
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
         // Clear canvas with card background color - must be first to reset previous frame
         ctx.fillStyle = '#050403';
         ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
@@ -576,116 +850,18 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           return;
         }
 
+        // Composite static text layer (rendered once, reused every frame)
+        if (staticTextCanvasRef.current && staticTextBuiltRef.current) {
+          ctx.drawImage(staticTextCanvasRef.current, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+        }
+
+        // Only draw dynamic text (time) - everything else is in static layer
         ctx.textBaseline = 'top';
-        ctx.textAlign = 'left';
-
-        // Calculate values
-        const signalStrength = ((denizen.coordinates.geometry + 1) / 2).toFixed(3);
-        const epoch = denizen.firstObserved || '4.2847';
-        const tempValue = ((denizen.coordinates.dynamics + 1) / 2).toFixed(2);
-        const hallucinationScore = Math.round((denizen.coordinates.dynamics + 1) * 2.5);
-
-        // Header text (32px tall) - use cached positions, no measureText calls
-        ctx.font = '9px monospace';
-        ctx.fillStyle = '#CAA554';
-        ctx.fillText('ATLAS RESEARCH', layout.header.atlasResearchX, 11);
-        
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('MODE: ', layout.header.modeLabelX, 11);
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        ctx.fillText('ACTIVE SCAN', layout.header.modeValueX, 11);
-        
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('SIG: ', layout.header.sigLabelX, 11);
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        ctx.fillText(signalStrength, layout.header.sigValueX, 11);
-        
-        // Right side of header - use fixed anchors with right alignment
         ctx.textAlign = 'right';
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        const epochText = `EPOCH: ${epoch}`;
-        ctx.fillText(epochText, layout.header.epochX, 11);
-        
-        const timeText = `[${formatTime(elapsedTime)}]`;
+        ctx.font = '9px monospace';
+        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+        const timeText = `[${formatTime(elapsedTimeRef.current)}]`;
         ctx.fillText(timeText, layout.header.timeX, 11);
-        ctx.textAlign = 'left'; // Reset to left for rest of rendering
-
-        // Parameter labels - use fixed column positions
-        ctx.font = '9px monospace';
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.4)';
-        ctx.fillText('PHASE STATE', layout.params.leftColX, layout.params.phaseStateLabelY);
-        ctx.fillText('SUPERPOSITION', layout.params.leftColX, layout.params.superpositionLabelY);
-        ctx.fillText('HALLUCINATION INDEX', layout.params.leftColX, layout.params.hallucinationLabelY);
-
-        // Left column values - fixed positions
-        ctx.fillStyle = '#CAA554';
-        ctx.fillText(`TEMP: ${tempValue}`, layout.params.leftColX, layout.params.tempValueY);
-        ctx.fillStyle = '#C17F59';
-        ctx.fillText(`HIGH [${hallucinationScore}/5]`, layout.params.leftColX, layout.params.highValueY);
-
-        // Right column labels - fixed positions
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.4)';
-        ctx.fillText('LATENT POSITION', layout.params.rightColX, layout.params.phaseStateLabelY);
-        ctx.fillText('MANIFOLD CURVATURE', layout.params.rightColX, layout.params.superpositionLabelY);
-        ctx.fillText('EMBEDDING SIGNATURE', layout.params.rightColX, layout.params.hallucinationLabelY);
-
-        // Right column values - fixed positions
-        ctx.font = '8px monospace';
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        const coordsText = `X:${denizen.coordinates.geometry.toFixed(3)} Y:${denizen.coordinates.alterity.toFixed(3)}`;
-        ctx.fillText(coordsText, layout.params.rightColX, layout.params.coordsValueY);
-        ctx.fillText(`Z:${denizen.coordinates.dynamics.toFixed(3)}`, layout.params.rightColX, layout.params.zValueY);
-        
-        ctx.font = '9px monospace';
-        const manifoldValue = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? 'SEVERE' : 'NOMINAL';
-        ctx.fillStyle = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : '#5B8A7A';
-        ctx.fillText(manifoldValue, layout.params.rightColX, layout.params.manifoldValueY);
-
-        // Footer text (starts at y=790, 110px tall) - use cached positions
-        const footerY = 790;
-        ctx.font = '24px monospace';
-        ctx.fillStyle = '#CAA554';
-        const displayName = (denizen.entityClass || denizen.entityName || denizen.name).toUpperCase();
-        ctx.fillText(displayName, layout.footer.nameX, footerY + 16);
-        
-        ctx.font = '9px monospace';
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('CLASS ', layout.footer.classLabelX, footerY + 48);
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        ctx.fillText(denizen.type.toUpperCase(), layout.footer.classValueX, footerY + 48);
-        
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        ctx.fillText('THREAT ', layout.footer.threatLabelX, footerY + 60);
-        const threatColor = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)';
-        ctx.fillStyle = threatColor;
-        ctx.fillText(denizen.threatLevel.toUpperCase(), layout.footer.threatValueX, footerY + 60);
-        
-        // Coordinates in footer
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-        const coordText = `◆ ${denizen.coordinates.geometry.toFixed(3)} ○ ${denizen.coordinates.alterity.toFixed(3)} ◇ ${denizen.coordinates.dynamics.toFixed(3)}`;
-        ctx.fillText(coordText, layout.footer.coordX, footerY + 72);
-        
-        // Description in footer (right side) - use cached position and width
-        ctx.font = '13px sans-serif';
-        ctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
-        // Word wrap description - measureText only for wrapping, not positioning
-        const words = denizen.description.split(' ');
-        let line = '';
-        let y = footerY + 16;
-        for (const word of words) {
-          const testLine = line + word + ' ';
-          const metrics = ctx.measureText(testLine);
-          if (metrics.width > layout.footer.descMaxWidth && line.length > 0) {
-            ctx.fillText(line, layout.footer.descX, y);
-            line = word + ' ';
-            y += 20;
-          } else {
-            line = testLine;
-          }
-        }
-        if (line.length > 0) {
-          ctx.fillText(line, layout.footer.descX, y);
-        }
 
         // Phase 4: Glassmorphism panels
         // WHY simple translucent fill: Canvas doesn't support backdrop-filter CSS property.
@@ -808,29 +984,27 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           }
         }
 
-        // Left column visualizations
-        const leftVizX = 0;
-        const leftVizWidth = 150;
-        const sectionHeight = 758 / 3;
+        // Left column visualizations - use cached positions
+        if (!layout.visualizations) {
+          requestAnimationFrame(render);
+          return;
+        }
+        const viz = layout.visualizations;
 
         // Phase State (top left, ~252px tall)
-        const phaseY = 32;
-        const phaseHeight = sectionHeight;
-        const phaseCx = leftVizX + leftVizWidth / 2;
-        const phaseCy = phaseY + phaseHeight / 2;
         const temp = (denizen.coordinates.geometry + 1) / 2;
         const freqRatio = 1 + temp * 2.5;
         
         ctx.fillStyle = 'rgba(5, 4, 3, 0.05)';
-        ctx.fillRect(leftVizX, phaseY, leftVizWidth, phaseHeight);
+        ctx.fillRect(viz.leftVizX, viz.phaseY, viz.leftVizWidth, viz.phaseHeight);
         
-        drawParticleLine(ctx, phaseCx, phaseY, phaseCx, phaseY + phaseHeight, GOLD, 0.08, 0.15);
-        drawParticleLine(ctx, leftVizX, phaseCy, leftVizX + leftVizWidth, phaseCy, GOLD, 0.08, 0.15);
+        drawParticleLine(ctx, viz.phaseCx, viz.phaseY, viz.phaseCx, viz.phaseY + viz.phaseHeight, GOLD, 0.08, 0.15);
+        drawParticleLine(ctx, viz.leftVizX, viz.phaseCy, viz.leftVizX + viz.leftVizWidth, viz.phaseCy, GOLD, 0.08, 0.15);
         
         phaseStateRef.current.particles.forEach(p => {
           const noise = temp * Math.sin(p.t * 8 + phaseStateRef.current.time) * 0.08;
-          const x = phaseCx + Math.sin(p.t + phaseStateRef.current.time) * (leftVizWidth * 0.38) * (1 + noise);
-          const y = phaseCy + Math.sin(p.t * freqRatio + phaseStateRef.current.time * 0.7) * (phaseHeight * 0.38) * (1 + noise);
+          const x = viz.phaseCx + Math.sin(p.t + phaseStateRef.current.time) * (viz.leftVizWidth * 0.38) * (1 + noise);
+          const y = viz.phaseCy + Math.sin(p.t * freqRatio + phaseStateRef.current.time * 0.7) * (viz.phaseHeight * 0.38) * (1 + noise);
           drawPixel(ctx, x, y, GOLD, p.life * 0.45);
           p.t += 0.015;
           p.life -= p.decay;
@@ -840,8 +1014,8 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           }
         });
         
-        const headX = phaseCx + Math.sin(phaseStateRef.current.time) * (leftVizWidth * 0.38);
-        const headY = phaseCy + Math.sin(phaseStateRef.current.time * freqRatio) * (phaseHeight * 0.38);
+        const headX = viz.phaseCx + Math.sin(phaseStateRef.current.time) * (viz.leftVizWidth * 0.38);
+        const headY = viz.phaseCy + Math.sin(phaseStateRef.current.time * freqRatio) * (viz.phaseHeight * 0.38);
         for (let i = 0; i < 3; i++) {
           const angle = Math.random() * Math.PI * 2;
           const dist = Math.random() * 5;
@@ -851,14 +1025,8 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         phaseStateRef.current.time += 0.004;
 
         // Superposition (middle left, ~252px tall)
-        const superY = phaseY + sectionHeight;
-        const superHeight = sectionHeight;
-        const superCx = leftVizX + leftVizWidth / 2;
-        const superCy = superY + superHeight / 2;
-        const superWidth = leftVizWidth * 0.7;
-        
         ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
-        ctx.fillRect(leftVizX, superY, leftVizWidth, superHeight);
+        ctx.fillRect(viz.leftVizX, viz.superY, viz.leftVizWidth, viz.superHeight);
         
         const waves = [
           { weight: 0.34, freq: 1.0, color: DYNAMICS },
@@ -867,43 +1035,39 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         ];
         
         waves.forEach((wave, idx) => {
-          const offsetY = superCy + (idx - 1) * (superHeight * 0.25);
-          for (let x = 0; x < superWidth; x += 2) {
-            const t = (x / superWidth) * Math.PI * 4 + superStateRef.current.time * wave.freq;
-            const y = offsetY + Math.sin(t) * (superHeight * 0.15) * wave.weight;
-            drawPixel(ctx, superCx - superWidth / 2 + x, y, wave.color, 0.4 + Math.sin(t) * 0.2);
+          const offsetY = viz.superCy + (idx - 1) * (viz.superHeight * 0.25);
+          for (let x = 0; x < viz.superWidth; x += 2) {
+            const t = (x / viz.superWidth) * Math.PI * 4 + superStateRef.current.time * wave.freq;
+            const y = offsetY + Math.sin(t) * (viz.superHeight * 0.15) * wave.weight;
+            drawPixel(ctx, viz.superCx - viz.superWidth / 2 + x, y, wave.color, 0.4 + Math.sin(t) * 0.2);
           }
         });
         superStateRef.current.time += 0.008;
 
         // Hallucination Index (bottom left, ~252px tall)
-        const hallucY = superY + sectionHeight;
-        const hallucHeight = sectionHeight;
-        const hallucCx = leftVizX + leftVizWidth / 2;
-        const hallucCy = hallucY + hallucHeight / 2;
-        const maxR = Math.min(leftVizWidth, hallucHeight) * 0.45;
+        const maxR = Math.min(viz.leftVizWidth, viz.hallucHeight) * 0.45;
         
         ctx.fillStyle = 'rgba(5, 4, 3, 0.08)';
-        ctx.fillRect(leftVizX, hallucY, leftVizWidth, hallucHeight);
+        ctx.fillRect(viz.leftVizX, viz.hallucY, viz.leftVizWidth, viz.hallucHeight);
         
         [0.33, 0.66, 1.0].forEach(r => {
-          drawParticleCircle(ctx, hallucCx, hallucCy, maxR * r, GOLD, 0.2, 0.12);
+          drawParticleCircle(ctx, viz.hallucCx, viz.hallucCy, maxR * r, GOLD, 0.2, 0.12);
         });
         
         const sweepAngle = hallucStateRef.current.time * 0.5;
         for (let i = 0; i < 20; i++) {
           const r = (i / 20) * maxR;
           const fade = 1 - (i / 20) * 0.5;
-          const x = hallucCx + Math.cos(sweepAngle) * r;
-          const y = hallucCy + Math.sin(sweepAngle) * r;
+          const x = viz.hallucCx + Math.cos(sweepAngle) * r;
+          const y = viz.hallucCy + Math.sin(sweepAngle) * r;
           drawPixel(ctx, x, y, GOLD, 0.6 * fade);
         }
         
         hallucStateRef.current.ghosts.forEach(ghost => {
           ghost.angle += ghost.drift;
           const flicker = 0.4 + Math.sin(hallucStateRef.current.time * 1.5 + ghost.flicker) * 0.2;
-          const gx = hallucCx + Math.cos(ghost.angle) * maxR * ghost.dist;
-          const gy = hallucCy + Math.sin(ghost.angle) * maxR * ghost.dist;
+          const gx = viz.hallucCx + Math.cos(ghost.angle) * maxR * ghost.dist;
+          const gy = viz.hallucCy + Math.sin(ghost.angle) * maxR * ghost.dist;
           for (let i = 0; i < 4; i++) {
             const ox = (Math.random() - 0.5) * 6;
             const oy = (Math.random() - 0.5) * 6;
@@ -911,21 +1075,14 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           }
         });
         
-        drawPixel(ctx, hallucCx, hallucCy, GOLD, 0.9, 4);
+        drawPixel(ctx, viz.hallucCx, viz.hallucCy, GOLD, 0.9, 4);
         hallucStateRef.current.time += 0.006;
 
-        // Right column visualizations
-        const rightVizX = 570;
-        const rightVizWidth = 150;
+        // Right column visualizations - use cached positions
 
         // Latent Position (top right, ~252px tall)
-        const coordsY = 32;
-        const coordsHeight = sectionHeight;
-        const coordsCx = rightVizX + rightVizWidth / 2;
-        const coordsCy = coordsY + coordsHeight / 2;
-        
         ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
-        ctx.fillRect(rightVizX, coordsY, rightVizWidth, coordsHeight);
+        ctx.fillRect(viz.rightVizX, viz.coordsY, viz.rightVizWidth, viz.coordsHeight);
         
         coordsStateRef.current.particles.forEach(p => {
           p.x += p.vx;
@@ -938,8 +1095,8 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           p.y = Math.max(0, Math.min(1, p.y));
           p.z = Math.max(0, Math.min(1, p.z));
           
-          const x = rightVizX + p.x * rightVizWidth;
-          const y = coordsY + p.y * coordsHeight;
+          const x = viz.rightVizX + p.x * viz.rightVizWidth;
+          const y = viz.coordsY + p.y * viz.coordsHeight;
           const alpha = 0.3 + p.z * 0.4;
           drawPixel(ctx, x, y, GOLD, alpha * p.life);
           p.life = Math.max(0.3, p.life - 0.001);
@@ -947,24 +1104,20 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         });
 
         // Manifold Curvature (middle right, ~252px tall)
-        const manifoldY = coordsY + sectionHeight;
-        const manifoldHeight = sectionHeight;
-        const manifoldCx = rightVizX + rightVizWidth / 2;
-        const manifoldCy = manifoldY + manifoldHeight / 2;
         const strength = 30 + Math.sin(manifoldStateRef.current.time * 0.5) * 5;
         
         ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
-        ctx.fillRect(rightVizX, manifoldY, rightVizWidth, manifoldHeight);
+        ctx.fillRect(viz.rightVizX, viz.manifoldY, viz.rightVizWidth, viz.manifoldHeight);
         
         manifoldStateRef.current.particles.forEach(p => {
-          const x = p.baseX * rightVizWidth;
-          const y = p.baseY * manifoldHeight;
-          const dx = x - rightVizWidth / 2;
-          const dy = y - manifoldHeight / 2;
+          const x = p.baseX * viz.rightVizWidth;
+          const y = p.baseY * viz.manifoldHeight;
+          const dx = x - viz.rightVizWidth / 2;
+          const dy = y - viz.manifoldHeight / 2;
           const dist = Math.sqrt(dx * dx + dy * dy);
           const pull = Math.max(0, 1 - dist / 70) * strength;
-          const warpedX = rightVizX + x + (dx / (dist || 1)) * pull;
-          const warpedY = manifoldY + y + (dy / (dist || 1)) * pull;
+          const warpedX = viz.rightVizX + x + (dx / (dist || 1)) * pull;
+          const warpedY = viz.manifoldY + y + (dy / (dist || 1)) * pull;
           const alpha = 0.3 + (dist / 100) * 0.4;
           drawPixel(ctx, warpedX, warpedY, GOLD, alpha);
         });
@@ -973,27 +1126,24 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           const angle = Math.random() * Math.PI * 2;
           const dist = Math.random() * 20;
           const alpha = 0.3 * (1 - dist / 20);
-          drawPixel(ctx, manifoldCx + Math.cos(angle) * dist, manifoldCy + Math.sin(angle) * dist, VOLATILE, alpha);
+          drawPixel(ctx, viz.manifoldCx + Math.cos(angle) * dist, viz.manifoldCy + Math.sin(angle) * dist, VOLATILE, alpha);
         }
         
-        drawPixel(ctx, manifoldCx, manifoldCy, VOLATILE, 0.9, 4);
+        drawPixel(ctx, viz.manifoldCx, viz.manifoldCy, VOLATILE, 0.9, 4);
         manifoldStateRef.current.time += 0.008;
 
-        // Embedding Signature (bottom right, ~252px tall)
-        const spectralY = manifoldY + sectionHeight;
-        const spectralHeight = sectionHeight;
-        const spectralCx = rightVizX + rightVizWidth / 2;
-        const spectralWidth = rightVizWidth * 0.7;
+        // Embedding Signature (bottom right, ~252px tall) - use cached positions to prevent jumping
         const barCount = spectralStateRef.current.signature.length;
-        const barWidth = spectralWidth / barCount;
+        const barWidth = viz.spectralWidth / barCount;
         
         ctx.fillStyle = 'rgba(5, 4, 3, 0.12)';
-        ctx.fillRect(rightVizX, spectralY, rightVizWidth, spectralHeight);
+        ctx.fillRect(viz.rightVizX, viz.spectralY, viz.rightVizWidth, viz.spectralHeight);
         
         spectralStateRef.current.signature.forEach((sig, i) => {
-          const height = (sig.base + Math.sin(spectralStateRef.current.time * 2 + i) * sig.variance) * spectralHeight * 0.6;
-          const x = spectralCx - spectralWidth / 2 + i * barWidth;
-          const y = spectralY + spectralHeight / 2;
+          const height = (sig.base + Math.sin(spectralStateRef.current.time * 2 + i) * sig.variance) * viz.spectralHeight * 0.6;
+          const x = viz.spectralCx - viz.spectralWidth / 2 + i * barWidth;
+          // Use cached bottom baseline - bars grow upward from bottom of panel (matches UI)
+          const y = viz.spectralBaseY;
           const color = i % 3 === 0 ? DYNAMICS : GOLD;
           for (let h = 0; h < height; h += GRID) {
             drawPixel(ctx, x + barWidth / 2, y - h, color, 0.5 + Math.sin(spectralStateRef.current.time * 3 + i + h) * 0.3);
@@ -1028,6 +1178,7 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         ctx.strokeRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
         timeRef.current += 0.016; // ~60fps
+        
         animationFrameRef.current = requestAnimationFrame(render);
       };
 
@@ -1038,7 +1189,7 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
-    }, [denizen, mediaUrl, thumbnailUrl, isVideo, elapsedTime]);
+    }, [denizen, mediaUrl, thumbnailUrl, isVideo]); // Removed elapsedTime - render loop is now continuous
 
     return (
       <canvas

@@ -853,7 +853,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       style={{ padding: '16px', background: 'rgba(5, 4, 3, 0.95)', backdropFilter: 'blur(20px)' }}
     >
       {/* Hidden canvas component for export */}
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
+      {/* WHY no visibility:hidden: Browser throttles requestAnimationFrame for hidden elements,
+          preventing the canvas from rendering. Position off-screen is sufficient to hide it. */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', pointerEvents: 'none' }}>
         <DenizenCardCanvas
           ref={canvasCardRef}
           denizen={displayDenizen}
