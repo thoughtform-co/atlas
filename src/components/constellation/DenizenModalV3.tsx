@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Denizen } from '@/lib/types';
@@ -246,6 +246,36 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
   // Use currentDenizen (which may be updated after upload) or fallback to denizen prop
   const displayDenizen = currentDenizen || denizen;
+  
+  // Generate manifestation-varied coordinates for additional media
+  // WHY: Each additional media represents a different manifestation of the same entity
+  // The parameters should be related but slightly different
+  // NOTE: Must be called before early return to comply with Rules of Hooks
+  const getManifestationCoords = useMemo(() => {
+    if (!displayDenizen) {
+      return { geometry: 0, alterity: 0, dynamics: 0 };
+    }
+    if (currentMediaIndex === 0) {
+      // Primary media uses original coordinates
+      return displayDenizen.coordinates;
+    }
+    
+    // Use media index as seed for deterministic variation
+    // Each manifestation has slightly different readings
+    const seed = currentMediaIndex * 0.1;
+    const variation = (base: number, offset: number) => {
+      // Create subtle variation (-0.15 to +0.15) based on seed
+      const delta = Math.sin(seed * 7 + offset) * 0.15;
+      return Math.max(-1, Math.min(1, base + delta)); // Clamp to -1..1
+    };
+    
+    return {
+      geometry: variation(displayDenizen.coordinates.geometry, 1),
+      alterity: variation(displayDenizen.coordinates.alterity, 2),
+      dynamics: variation(displayDenizen.coordinates.dynamics, 3),
+    };
+  }, [displayDenizen?.coordinates, currentMediaIndex]);
+
   if (!displayDenizen) return null;
 
   // Handle edit navigation
@@ -282,11 +312,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     }
   };
 
-
-  const signalStrength = ((displayDenizen.coordinates.geometry + 1) / 2).toFixed(3);
+  const signalStrength = ((getManifestationCoords.geometry + 1) / 2).toFixed(3);
   const epoch = displayDenizen.firstObserved || '4.2847';
-  const tempValue = ((displayDenizen.coordinates.dynamics + 1) / 2).toFixed(2);
-  const hallucinationScore = Math.round((displayDenizen.coordinates.dynamics + 1) * 2.5);
+  const tempValue = ((getManifestationCoords.dynamics + 1) / 2).toFixed(2);
+  const hallucinationScore = Math.round((getManifestationCoords.dynamics + 1) * 2.5);
 
   // Helper to convert storage path to public URL
   const resolveMediaUrl = (path: string | undefined): string | undefined => {
@@ -533,7 +562,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       
       // Download directly - no need for final canvas since we set backgroundColor
       const link = document.createElement('a');
-      const displayName = (displayDenizen.entityClass || displayDenizen.entityName || displayDenizen.name).toLowerCase().replace(/\s+/g, '-');
+      const displayName = (displayDenizen.entityClass || displayDenizen.name).toLowerCase().replace(/\s+/g, '-');
       link.download = `${displayName}-atlas-card.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
@@ -693,7 +722,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const displayName = (displayDenizen.entityClass || displayDenizen.entityName || displayDenizen.name).toLowerCase().replace(/\s+/g, '-');
+        const displayName = (displayDenizen.entityClass || displayDenizen.name).toLowerCase().replace(/\s+/g, '-');
         link.download = `${displayName}-atlas-card.${fileExtension}`;
         link.href = url;
         link.click();
@@ -921,7 +950,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             ) : (
               <Image
                 src={mediaUrl}
-                alt={displayDenizen.entityClass || displayDenizen.entityName || displayDenizen.name}
+                alt={displayDenizen.entityClass || displayDenizen.name}
                 fill
                 style={{ objectFit: 'cover' }}
               />
@@ -1360,13 +1389,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           borderRight: '1px solid rgba(236, 227, 214, 0.08)',
         }}>
           <Readout label="Phase State" value={`TEMP: ${tempValue}`} valueColor="#CAA554">
-            <PhaseCanvas value={displayDenizen.coordinates.geometry} />
+            <PhaseCanvas value={getManifestationCoords.geometry} />
           </Readout>
           <Readout label="Superposition">
-            <SuperpositionCanvas value={displayDenizen.coordinates.alterity} />
+            <SuperpositionCanvas value={getManifestationCoords.alterity} />
           </Readout>
           <Readout label="Hallucination Index" value={`HIGH [${hallucinationScore}/5]`} valueColor="#C17F59">
-            <HallucinationCanvas value={displayDenizen.coordinates.dynamics} />
+            <HallucinationCanvas value={getManifestationCoords.dynamics} />
           </Readout>
         </div>
 
@@ -1401,11 +1430,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             letterSpacing: '0.08em',
           }}>
             <span style={{ color: '#CAA554' }}>X:</span>
-            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.coordinates.geometry.toFixed(3)}</span>
+            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{getManifestationCoords.geometry.toFixed(3)}</span>
             <span style={{ color: '#ECE3D6', marginLeft: '4px' }}>Y:</span>
-            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.coordinates.alterity.toFixed(3)}</span>
+            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{getManifestationCoords.alterity.toFixed(3)}</span>
             <span style={{ color: '#5B8A7A', marginLeft: '4px' }}>Z:</span>
-            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.coordinates.dynamics.toFixed(3)}</span>
+            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{getManifestationCoords.dynamics.toFixed(3)}</span>
           </div>
         </div>
 
@@ -1421,14 +1450,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           WebkitBackdropFilter: 'blur(12px)',
           borderLeft: '1px solid rgba(236, 227, 214, 0.08)',
         }}>
-          <Readout label="Latent Position" value={`X:${displayDenizen.coordinates.geometry.toFixed(3)} Y:${displayDenizen.coordinates.alterity.toFixed(3)}`} valueSize="8px" value2={`Z:${displayDenizen.coordinates.dynamics.toFixed(3)}`}>
-            <CoordsCanvas value={displayDenizen.coordinates} />
+          <Readout label="Latent Position" value={`X:${getManifestationCoords.geometry.toFixed(3)} Y:${getManifestationCoords.alterity.toFixed(3)}`} valueSize="8px" value2={`Z:${getManifestationCoords.dynamics.toFixed(3)}`}>
+            <CoordsCanvas value={getManifestationCoords} />
           </Readout>
           <Readout label="Manifold Curvature" value={displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? 'SEVERE' : 'NOMINAL'} valueColor={displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? '#C17F59' : '#5B8A7A'}>
-            <ManifoldCanvas value={displayDenizen.coordinates.alterity} />
+            <ManifoldCanvas value={getManifestationCoords.alterity} />
           </Readout>
           <Readout label="Embedding Signature">
-            <SpectralCanvas value={displayDenizen.coordinates.dynamics} />
+            <SpectralCanvas value={getManifestationCoords.dynamics} />
           </Readout>
         </div>
 
@@ -1453,13 +1482,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: '#CAA554', letterSpacing: '0.1em', lineHeight: 1, textTransform: 'uppercase' }}>
               {(displayDenizen.entityClass || displayDenizen.name).toUpperCase()}
             </div>
-            {/* Entity Name if provided (smaller, below class) */}
-            {displayDenizen.entityName && (
-              <div style={{ marginTop: '4px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'rgba(236, 227, 214, 0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>
-                {displayDenizen.entityName.toUpperCase()}
-              </div>
-            )}
-            <div style={{ marginTop: '6px', fontFamily: 'var(--font-mono)', fontSize: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', fontSize: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 TYPE <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.type.toUpperCase()}</span>
               </div>
