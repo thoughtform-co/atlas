@@ -49,9 +49,14 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
   // Handle MidJourney prompt parsing
   const handleMidjourneyChange = (value: string) => {
     setMidjourneyInput(value);
-    const parsed = parseMidjourneyPrompt(value);
+    // Don't auto-parse on every change, only when Extract button is clicked
+  };
+
+  // Extract MidJourney parameters and update form
+  const handleExtractMidjourney = () => {
+    const parsed = parseMidjourneyPrompt(midjourneyInput);
     onChange({
-      midjourneyPrompt: value,
+      midjourneyPrompt: midjourneyInput,
       midjourneySref: parsed.sref,
       midjourneyProfile: parsed.profile,
       midjourneyStylization: parsed.stylization,
@@ -402,24 +407,49 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
 
         {isMidjourneyOpen && (
           <div style={{ marginTop: '1rem' }}>
-            <textarea
-              className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-              value={midjourneyInput}
-              onChange={(e) => {
-                setMidjourneyInput(e.target.value);
-                handleMidjourneyChange(e.target.value);
-              }}
-              onBlur={(e) => {
-                // Re-parse on blur to ensure consistency
-                handleMidjourneyChange(e.target.value);
-              }}
-              placeholder="Paste full MidJourney prompt here..."
-              rows={4}
-              style={{ fontFamily: 'var(--font-mono, "PT Mono", monospace)', fontSize: '0.5rem' }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <textarea
+                className={`${styles.fieldInput} ${styles.fieldTextarea}`}
+                value={midjourneyInput}
+                onChange={(e) => {
+                  setMidjourneyInput(e.target.value);
+                  handleMidjourneyChange(e.target.value);
+                }}
+                placeholder="Paste full MidJourney prompt here..."
+                rows={4}
+                style={{ fontFamily: 'var(--font-mono, "PT Mono", monospace)', fontSize: '0.5rem', width: '100%' }}
+              />
+              <button
+                type="button"
+                onClick={handleExtractMidjourney}
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(202, 165, 84, 0.1)',
+                  border: '1px solid rgba(202, 165, 84, 0.3)',
+                  color: '#CAA554',
+                  fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                  fontSize: '0.625rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(202, 165, 84, 0.2)';
+                  e.currentTarget.style.borderColor = 'rgba(202, 165, 84, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(202, 165, 84, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(202, 165, 84, 0.3)';
+                }}
+              >
+                Extract
+              </button>
+            </div>
 
-            {/* Display parsed components */}
-            {parsedMidjourney && (
+            {/* Display parsed components - only show after extraction */}
+            {formData.midjourneyPrompt && parsedMidjourney && (
               <div style={{
                 marginTop: '0.75rem',
                 padding: '0.75rem',

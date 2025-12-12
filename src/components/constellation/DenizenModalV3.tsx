@@ -840,11 +840,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           background: transparent;
         }
         .denizen-description-scroll::-webkit-scrollbar-thumb {
-          background: rgba(236, 227, 214, 0.15);
+          background: rgba(236, 227, 214, 0.08);
           border-radius: 3px;
         }
         .denizen-description-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(236, 227, 214, 0.25);
+          background: rgba(236, 227, 214, 0.15);
         }
       `}</style>
       <div
@@ -1461,8 +1461,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             </div>
             {/* Entity Name if provided (smaller, below class) */}
             {displayDenizen.entityName && (
-              <div style={{ marginTop: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.6)', letterSpacing: '0.06em' }}>
-                {displayDenizen.entityName}
+              <div style={{ marginTop: '6px', fontFamily: 'var(--font-mono)', fontSize: '14px', color: 'rgba(236, 227, 214, 0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>
+                {displayDenizen.entityName.toUpperCase()}
               </div>
             )}
             <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', fontSize: '9px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1476,11 +1476,10 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           </div>
           <div style={{ 
             display: 'flex', 
-            alignItems: 'flex-start', 
+            alignItems: 'center', 
             borderLeft: '1px solid rgba(236, 227, 214, 0.08)', 
             paddingLeft: '24px',
-            paddingTop: '8px',
-            paddingBottom: '8px',
+            minHeight: '120px',
           }}>
             <div 
               className="denizen-description-scroll"
@@ -1492,10 +1491,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                 maxHeight: '120px',
                 overflowY: 'auto',
                 overflowX: 'hidden',
+                paddingTop: '8px',
+                paddingBottom: '8px',
                 paddingRight: '8px',
+                width: '100%',
                 // Subtle transparent scrollbar (Firefox)
                 scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(236, 227, 214, 0.15) transparent',
+                scrollbarColor: 'rgba(236, 227, 214, 0.08) transparent',
               }}
             >
               {displayDenizen.description}
