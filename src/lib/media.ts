@@ -15,6 +15,7 @@ interface MediaRow {
   media_type: string;
   storage_path: string;
   file_name: string;
+  name: string | null;
   file_size: number | null;
   mime_type: string | null;
   display_order: number;
@@ -32,6 +33,7 @@ function transformMediaRow(row: MediaRow): DenizenMedia {
     mediaType: row.media_type as MediaType,
     storagePath: row.storage_path,
     fileName: row.file_name,
+    name: row.name ?? undefined,
     fileSize: row.file_size ?? undefined,
     mimeType: row.mime_type ?? undefined,
     displayOrder: row.display_order,
@@ -224,6 +226,7 @@ export async function deleteDenizenMedia(mediaId: string): Promise<boolean> {
 export async function updateDenizenMedia(
   mediaId: string,
   updates: {
+    name?: string;
     isPrimary?: boolean;
     caption?: string;
     altText?: string;
@@ -255,15 +258,18 @@ export async function updateDenizenMedia(
       }
     }
 
+    // Build update object with only defined fields
+    const updateData: Record<string, any> = {};
+    if (updates.name !== undefined) updateData.name = updates.name ?? null;
+    if (updates.isPrimary !== undefined) updateData.is_primary = updates.isPrimary;
+    if (updates.caption !== undefined) updateData.caption = updates.caption ?? null;
+    if (updates.altText !== undefined) updateData.alt_text = updates.altText ?? null;
+    if (updates.displayOrder !== undefined) updateData.display_order = updates.displayOrder;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('denizen_media')
-      .update({
-        is_primary: updates.isPrimary,
-        caption: updates.caption,
-        alt_text: updates.altText,
-        display_order: updates.displayOrder,
-      })
+      .update(updateData)
       .eq('id', mediaId)
       .select()
       .single();

@@ -146,7 +146,8 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
           if (blob) {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.download = `${denizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+            const displayName = (denizen.entityClass || denizen.entityName || denizen.name).toLowerCase().replace(/\s+/g, '-');
+            link.download = `${displayName}-atlas-card.png`;
             link.href = url;
             link.click();
             URL.revokeObjectURL(url); // Clean up object URL to prevent memory leak
@@ -224,7 +225,8 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
               const blob = new Blob(chunks, { type: mimeType });
               const url = URL.createObjectURL(blob);
               const link = document.createElement('a');
-              link.download = `${denizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.${fileExtension}`;
+              const displayName = (denizen.entityClass || denizen.entityName || denizen.name).toLowerCase().replace(/\s+/g, '-');
+              link.download = `${displayName}-atlas-card.${fileExtension}`;
               link.href = url;
               link.click();
               URL.revokeObjectURL(url);
@@ -496,7 +498,8 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
         const footerY = 790;
         ctx.font = '24px monospace';
         ctx.fillStyle = '#CAA554';
-        ctx.fillText(denizen.name.toUpperCase(), 28, footerY + 16);
+        const displayName = (denizen.entityClass || denizen.entityName || denizen.name).toUpperCase();
+        ctx.fillText(displayName, 28, footerY + 16);
         
         ctx.font = '9px monospace';
         ctx.fillStyle = 'rgba(236, 227, 214, 0.3)';

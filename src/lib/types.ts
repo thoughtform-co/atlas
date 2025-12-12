@@ -48,7 +48,11 @@ export interface Denizen {
   id: string;
   name: string;
   subtitle?: string;
-  type: DenizenType;
+  type: DenizenType;  // Keep for backward compatibility (Guardian/Wanderer/etc)
+
+  // Entity classification (new system)
+  entityClass?: string;  // Entity class name (e.g., "Eigensage", "Nullseer")
+  entityName?: string;   // Individual entity name (e.g., "Vince")
 
   // Visuals
   image?: string;
@@ -73,6 +77,13 @@ export interface Denizen {
   features?: string[];
   firstObserved?: string;
 
+  // MidJourney parameters
+  midjourneyPrompt?: string;
+  midjourneySref?: string;
+  midjourneyProfile?: string;
+  midjourneyStylization?: number;
+  midjourneyStyleWeight?: number;
+
   // Metaphysical properties
   metaphysical?: MetaphysicalProperties;
 
@@ -91,6 +102,7 @@ export interface DenizenMedia {
   mediaType: MediaType;
   storagePath: string;
   fileName: string;
+  name?: string;  // Editable display name (defaults to fileName)
   fileSize?: number;
   mimeType?: string;
   displayOrder: number;

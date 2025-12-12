@@ -9,6 +9,17 @@ interface ParameterFormProps {
 }
 
 export function ParameterForm({ formData, onChange }: ParameterFormProps) {
+  const [entityClasses, setEntityClasses] = useState<string[]>([]);
+  const [isMidjourneyOpen, setIsMidjourneyOpen] = useState(false);
+  const [midjourneyInput, setMidjourneyInput] = useState(formData.midjourneyPrompt || '');
+
+  // Fetch existing entity classes for dropdown
+  useEffect(() => {
+    fetchEntityClasses().then(classes => {
+      setEntityClasses(classes);
+    });
+  }, []);
+
   // Handle coordinate changes
   const handleCoordinateChange = (axis: 'geometry' | 'alterity' | 'dynamics', value: number) => {
     onChange({
@@ -32,9 +43,55 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
     }
   };
 
+  // Handle MidJourney prompt parsing
+  const handleMidjourneyChange = (value: string) => {
+    setMidjourneyInput(value);
+    const parsed = parseMidjourneyPrompt(value);
+    onChange({
+      midjourneyPrompt: value,
+      midjourneySref: parsed.sref,
+      midjourneyProfile: parsed.profile,
+      midjourneyStylization: parsed.stylization,
+      midjourneyStyleWeight: parsed.styleWeight,
+    });
+  };
+
+  // Parse current MidJourney prompt for display
+  const parsedMidjourney = formData.midjourneyPrompt 
+    ? parseMidjourneyPrompt(formData.midjourneyPrompt)
+    : null;
+
   return (
     <div className={styles.form}>
-      {/* Entity Name */}
+      {/* Class (Entity Class) - Moved to top */}
+      <div className={styles.fieldGroup}>
+        <label className={styles.fieldLabel}>
+          <span className={styles.fieldPrefix}>▸</span>
+          Class
+        </label>
+        <input
+          type="text"
+          list="entity-classes"
+          className={styles.fieldInput}
+          value={formData.entityClass}
+          onChange={(e) => {
+            const value = e.target.value;
+            onChange({ entityClass: value });
+            // If it's a new class, add it to the list
+            if (value && !entityClasses.includes(value)) {
+              setEntityClasses([...entityClasses, value].sort());
+            }
+          }}
+          placeholder="Eigensage, Nullseer, etc..."
+        />
+        <datalist id="entity-classes">
+          {entityClasses.map((cls) => (
+            <option key={cls} value={cls} />
+          ))}
+        </datalist>
+      </div>
+
+      {/* Entity Name - Individual name */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
@@ -43,9 +100,9 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
         <input
           type="text"
           className={styles.fieldInput}
-          value={formData.name}
-          onChange={(e) => onChange({ name: e.target.value })}
-          placeholder="Enter designation..."
+          value={formData.entityName}
+          onChange={(e) => onChange({ entityName: e.target.value })}
+          placeholder="Individual entity name (e.g., Vince)"
         />
       </div>
 
@@ -79,12 +136,12 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
         />
       </div>
 
-      {/* Class / Threat Row */}
+      {/* Type (Guardian/Wanderer/etc) / Threat Row */}
       <div className={styles.fieldRow}>
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel}>
             <span className={styles.fieldPrefix}>▸</span>
-            Class
+            Type
           </label>
           <select
             className={styles.fieldSelect}
@@ -301,6 +358,99 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
           placeholder="Historical context, theories..."
           rows={4}
         />
+      </div>
+
+      <div className={styles.divider} />
+
+      {/* MidJourney Parameters - Collapsible Section */}
+      <div className={styles.fieldGroup}>
+        <button
+          type="button"
+          onClick={() => setIsMidjourneyOpen(!isMidjourneyOpen)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'none',
+            border: 'none',
+            padding: '0.5rem 0',
+            cursor: 'pointer',
+            color: 'rgba(236, 227, 214, 0.7)',
+            fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+            fontSize: '0.5625rem',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'rgba(236, 227, 214, 0.9)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'rgba(236, 227, 214, 0.7)';
+          }}
+        >
+          <span>
+            <span className={styles.fieldPrefix}>▸</span> MidJourney Parameters
+          </span>
+          <span style={{ fontSize: '0.5rem' }}>
+            {isMidjourneyOpen ? '▼' : '▶'}
+          </span>
+        </button>
+
+        {isMidjourneyOpen && (
+          <div style={{ marginTop: '1rem' }}>
+            <textarea
+              className={`${styles.fieldInput} ${styles.fieldTextarea}`}
+              value={midjourneyInput}
+              onChange={(e) => {
+                setMidjourneyInput(e.target.value);
+                handleMidjourneyChange(e.target.value);
+              }}
+              onBlur={(e) => {
+                // Re-parse on blur to ensure consistency
+                handleMidjourneyChange(e.target.value);
+              }}
+              placeholder="Paste full MidJourney prompt here..."
+              rows={4}
+              style={{ fontFamily: 'var(--font-mono, "PT Mono", monospace)', fontSize: '0.5rem' }}
+            />
+
+            {/* Display parsed components */}
+            {parsedMidjourney && (
+              <div style={{
+                marginTop: '0.75rem',
+                padding: '0.75rem',
+                background: 'rgba(236, 227, 214, 0.05)',
+                border: '1px solid rgba(236, 227, 214, 0.1)',
+                borderRadius: '2px',
+                fontSize: '0.4rem',
+                fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                color: 'rgba(236, 227, 214, 0.5)',
+              }}>
+                <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: 'rgba(236, 227, 214, 0.7)' }}>
+                  Parsed Components:
+                </div>
+                {parsedMidjourney.sref && (
+                  <div>--sref: {parsedMidjourney.sref}</div>
+                )}
+                {parsedMidjourney.profile && (
+                  <div>--profile: {parsedMidjourney.profile}</div>
+                )}
+                {parsedMidjourney.stylization !== undefined && (
+                  <div>--s: {parsedMidjourney.stylization}</div>
+                )}
+                {parsedMidjourney.styleWeight !== undefined && (
+                  <div>--sw: {parsedMidjourney.styleWeight}</div>
+                )}
+                {!parsedMidjourney.sref && !parsedMidjourney.profile && 
+                 parsedMidjourney.stylization === undefined && 
+                 parsedMidjourney.styleWeight === undefined && (
+                  <div style={{ fontStyle: 'italic' }}>No parameters detected</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

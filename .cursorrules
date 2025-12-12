@@ -1,5 +1,25 @@
 # Atlas Project Rules
 
+Platform: **Atlas** (dark mode bestiary)
+Design System: `thoughtform://` via MCP server
+
+## Design System
+
+Use the Thoughtform design system for all UI work:
+- Background: Void `#050403`
+- Accent: Gold `#CAA554`
+- Text: Dawn `#ECE3D6`
+- Fonts: PT Mono (headings), IBM Plex Sans (body)
+- Zero border-radius everywhere
+- GRID=3 for particles
+
+Atlas-specific:
+- Entity cards: 4:5 aspect ratio, 620px width
+- Six parameter visualizations per card
+- Threat levels: benign `#5B8A7A`, cautious `#7A7868`, volatile `#C17F59`, existential `#8B5A5A`
+
+Full tokens: See `.thoughtform-brandworld/tokens/platforms/atlas.json`
+
 ## Development Guidelines
 
 Follow the principles documented in `.sentinel.md` for:

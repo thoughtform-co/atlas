@@ -373,7 +373,9 @@ export function EntityCardPreview({
   }, [formData, setupCanvas, drawPixel, drawParticleCircle, initStates, initCenterParticles]);
 
   // Format name for display
-  const displayName = formData.name ? formData.name.toUpperCase().split(' ').join('\n') : 'UNNAMED\nENTITY';
+  // Use entityClass as primary display name, fallback to entityName or name
+  const displayClass = formData.entityClass || formData.entityName || formData.name || 'UNNAMED';
+  const displayName = displayClass.toUpperCase().split(' ').join('\n');
   
   // Get threat color
   const threatColors: Record<string, string> = {
@@ -404,7 +406,7 @@ export function EntityCardPreview({
           ) : (
             <img 
               src={formData.mediaUrl} 
-              alt={formData.name} 
+              alt={formData.entityClass || formData.entityName || 'Entity'} 
               className={styles.backgroundMedia}
             />
           )}
@@ -423,6 +425,29 @@ export function EntityCardPreview({
           <span className={styles.headerData}>EPOCH: <span>4.2847</span></span>
           <span className={styles.headerData}>[00:00:00]</span>
         </div>
+      </div>
+
+      {/* Coordinates display - centered below header, above visual */}
+      <div style={{
+        position: 'absolute',
+        top: '28px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 15,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+        fontSize: '7px',
+        color: 'rgba(236, 227, 214, 0.4)',
+        letterSpacing: '0.08em',
+      }}>
+        <span style={{ color: '#CAA554' }}>X:</span>
+        <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formData.coordinates.geometry.toFixed(3)}</span>
+        <span style={{ color: '#ECE3D6', marginLeft: '4px' }}>Y:</span>
+        <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formData.coordinates.alterity.toFixed(3)}</span>
+        <span style={{ color: '#5B8A7A', marginLeft: '4px' }}>Z:</span>
+        <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formData.coordinates.dynamics.toFixed(3)}</span>
       </div>
 
       {/* Left Column */}
@@ -498,16 +523,24 @@ export function EntityCardPreview({
       <div className={styles.footer}>
         <div className={styles.footerLeft}>
           <div className={styles.footerName} style={{ whiteSpace: 'pre-line' }}>{displayName}</div>
+          {/* Entity Name if provided (smaller, below class) */}
+          {formData.entityName && formData.entityClass && (
+            <div style={{ 
+              marginTop: '4px', 
+              fontFamily: 'var(--font-mono, "PT Mono", monospace)', 
+              fontSize: '8px', 
+              color: 'rgba(236, 227, 214, 0.6)', 
+              letterSpacing: '0.06em' 
+            }}>
+              {formData.entityName}
+            </div>
+          )}
           <div className={styles.footerMeta}>
             <div className={styles.footerMetaLine}>CLASS <span>{formData.type.toUpperCase()}</span></div>
             <div className={styles.footerMetaLine}>
               THREAT <span style={{ color: threatColor }}>{formData.threatLevel.toUpperCase()}</span>
             </div>
-            <div className={styles.footerCardinals}>
-              <span style={{ color: '#CAA554' }}>◆</span> {Math.abs(formData.coordinates.geometry).toFixed(3)}
-              <span style={{ marginLeft: '6px', color: '#ECE3D6' }}>○</span> {Math.abs(formData.coordinates.alterity).toFixed(3)}
-              <span style={{ marginLeft: '6px', color: '#5B8A7A' }}>◇</span> {Math.abs(formData.coordinates.dynamics).toFixed(3)}
-            </div>
+            {/* Coordinates removed - moved to top center in modal */}
           </div>
         </div>
         <div className={styles.footerRight}>

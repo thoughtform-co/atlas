@@ -541,7 +541,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       
       // Download directly - no need for final canvas since we set backgroundColor
       const link = document.createElement('a');
-      link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.png`;
+      const displayName = (displayDenizen.entityClass || displayDenizen.entityName || displayDenizen.name).toLowerCase().replace(/\s+/g, '-');
+      link.download = `${displayName}-atlas-card.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (error) {
@@ -700,7 +701,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `${displayDenizen.name.toLowerCase().replace(/\s+/g, '-')}-atlas-card.${fileExtension}`;
+        const displayName = (displayDenizen.entityClass || displayDenizen.entityName || displayDenizen.name).toLowerCase().replace(/\s+/g, '-');
+        link.download = `${displayName}-atlas-card.${fileExtension}`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
@@ -925,7 +927,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             ) : (
               <Image
                 src={mediaUrl}
-                alt={displayDenizen.name}
+                alt={displayDenizen.entityClass || displayDenizen.entityName || displayDenizen.name}
                 fill
                 style={{ objectFit: 'cover' }}
               />
@@ -1388,6 +1390,29 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
 
           {/* Upload section - hidden in view mode, will show in edit mode future */}
           {/* TODO: Add isEditing prop to control visibility */}
+
+          {/* Coordinates display - centered above visual */}
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 15,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            color: 'rgba(236, 227, 214, 0.4)',
+            letterSpacing: '0.08em',
+          }}>
+            <span style={{ color: '#CAA554' }}>X:</span>
+            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.coordinates.geometry.toFixed(3)}</span>
+            <span style={{ color: '#ECE3D6', marginLeft: '4px' }}>Y:</span>
+            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.coordinates.alterity.toFixed(3)}</span>
+            <span style={{ color: '#5B8A7A', marginLeft: '4px' }}>Z:</span>
+            <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.coordinates.dynamics.toFixed(3)}</span>
+          </div>
         </div>
 
         {/* Right Column - glassmorphism with minimal background */}
@@ -1430,20 +1455,22 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            {/* Entity Class as large title */}
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: '#CAA554', letterSpacing: '0.1em', lineHeight: 1, textTransform: 'uppercase' }}>
-              {displayDenizen.name.toUpperCase()}
+              {(displayDenizen.entityClass || displayDenizen.name).toUpperCase()}
             </div>
+            {/* Entity Name if provided (smaller, below class) */}
+            {displayDenizen.entityName && (
+              <div style={{ marginTop: '4px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(236, 227, 214, 0.6)', letterSpacing: '0.06em' }}>
+                {displayDenizen.entityName}
+              </div>
+            )}
             <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', fontSize: '9px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 CLASS <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.type.toUpperCase()}</span>
               </div>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 THREAT <span style={{ color: displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.threatLevel.toUpperCase()}</span>
-              </div>
-              <div style={{ marginTop: '4px', color: 'rgba(236, 227, 214, 0.3)' }}>
-                <span style={{ color: '#CAA554' }}>◆</span> {displayDenizen.coordinates.geometry.toFixed(3)}
-                <span style={{ color: '#ECE3D6', marginLeft: '8px' }}>○</span> {displayDenizen.coordinates.alterity.toFixed(3)}
-                <span style={{ color: '#5B8A7A', marginLeft: '8px' }}>◇</span> {displayDenizen.coordinates.dynamics.toFixed(3)}
               </div>
             </div>
           </div>

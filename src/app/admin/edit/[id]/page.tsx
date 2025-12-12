@@ -15,7 +15,8 @@ import styles from '../../new-entity/page.module.css';
 
 // Default form values
 const defaultFormData: EntityFormData = {
-  name: '',
+  entityClass: '',
+  entityName: '',
   subtitle: '',
   type: 'Guardian',
   allegiance: 'Unaligned',
@@ -51,7 +52,9 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [uploadMediaError, setUploadMediaError] = useState<string | null>(null);
-  const [additionalMedia, setAdditionalMedia] = useState<Array<{ id: string; url: string; type: 'image' | 'video'; fileName: string }>>([]);
+  const [additionalMedia, setAdditionalMedia] = useState<Array<{ id: string; url: string; type: 'image' | 'video'; fileName: string; name?: string }>>([]);
+  const [editingMediaName, setEditingMediaName] = useState<string | null>(null);
+  const [savingMediaName, setSavingMediaName] = useState<string | null>(null);
   const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,7 +97,8 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
         
         // Map denizen data to form data
         setFormData({
-          name: denizen.name || '',
+          entityClass: denizen.entityClass || denizen.name || '',
+          entityName: denizen.entityName || '',
           subtitle: denizen.subtitle || '',
           type: denizen.type || 'Guardian',
           allegiance: denizen.allegiance || 'Unaligned',
@@ -115,6 +119,11 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           mediaUrl: resolveUrl(rawMediaUrl),
           mediaMimeType: primaryMedia?.mimeType || (rawMediaUrl?.match(/\.(mp4|webm|mov)$/i) ? 'video/mp4' : undefined),
           thumbnailUrl: resolveUrl(denizen.thumbnail),
+          midjourneyPrompt: denizen.midjourneyPrompt || '',
+          midjourneySref: denizen.midjourneySref,
+          midjourneyProfile: denizen.midjourneyProfile,
+          midjourneyStylization: denizen.midjourneyStylization,
+          midjourneyStyleWeight: denizen.midjourneyStyleWeight,
         });
       } catch (error) {
         console.error('Error loading entity:', error);
@@ -142,6 +151,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
             url: getMediaPublicUrl(m.storagePath) || '',
             type: (m.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
             fileName: m.fileName,
+            name: m.name,
           }));
         setAdditionalMedia(additional);
       } catch (error) {
@@ -288,7 +298,9 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
+          name: formData.entityName || formData.entityClass || 'Unnamed',
+          entityClass: formData.entityClass || null,
+          entityName: formData.entityName || null,
           subtitle: formData.subtitle || null,
           type: formData.type,
           allegiance: formData.allegiance,
@@ -308,6 +320,11 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           glyphs: formData.glyphs,
           image: formData.mediaUrl || null,
           thumbnail: formData.thumbnailUrl || null,
+          midjourneyPrompt: formData.midjourneyPrompt || null,
+          midjourneySref: formData.midjourneySref || null,
+          midjourneyProfile: formData.midjourneyProfile || null,
+          midjourneyStylization: formData.midjourneyStylization || null,
+          midjourneyStyleWeight: formData.midjourneyStyleWeight || null,
         }),
       });
 
@@ -342,6 +359,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
             url: getMediaPublicUrl(m.storagePath) || '',
             type: (m.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
             fileName: m.fileName,
+            name: m.name,
           }));
         setAdditionalMedia(additional);
       } else {
@@ -352,6 +370,43 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
       alert('Error deleting media');
     } finally {
       setDeletingMediaId(null);
+    }
+  };
+
+  // Handle media name update
+  const handleUpdateMediaName = async (mediaId: string, newName: string) => {
+    setSavingMediaName(mediaId);
+    try {
+      const response = await fetch(`/api/admin/denizen-media/${mediaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(`Failed to update name: ${error.error || 'Unknown error'}`);
+        return;
+      }
+
+      // Reload additional media to reflect the change
+      const media = await fetchDenizenMedia(id);
+      const additional = media
+        .filter(m => m.mediaType !== 'thumbnail' && !m.isPrimary)
+        .map(m => ({
+          id: m.id,
+          url: getMediaPublicUrl(m.storagePath) || '',
+          type: (m.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
+          fileName: m.fileName,
+          name: m.name,
+        }));
+      setAdditionalMedia(additional);
+    } catch (error) {
+      console.error('Error updating media name:', error);
+      alert('Failed to update media name');
+    } finally {
+      setSavingMediaName(null);
+      setEditingMediaName(null);
     }
   };
 
@@ -418,6 +473,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           url: getMediaPublicUrl(m.storagePath) || '',
           type: (m.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
           fileName: m.fileName,
+          name: m.name,
         }));
       setAdditionalMedia(additional);
 
@@ -482,12 +538,12 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
       {/* Header */}
       <div className={styles.header}>
         <span className={styles.headerPrefix}>//</span>
-        <span className={styles.headerTitle}>Edit Entity: {formData.name}</span>
+        <span className={styles.headerTitle}>Edit Entity: {formData.entityClass || formData.entityName || 'Unnamed'}</span>
         <div className={styles.headerLine} />
         <button 
           className={styles.saveButton}
           onClick={handleUpdate}
-          disabled={isSaving || !formData.name}
+          disabled={isSaving || !formData.entityClass}
         >
           {isSaving ? 'UPDATING...' : 'UPDATE ARCHIVE'}
         </button>
@@ -599,22 +655,70 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
                         }}
                       />
                     )}
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      background: 'linear-gradient(to top, rgba(5, 4, 3, 0.8), transparent)',
-                      padding: '0.25rem 0.5rem',
-                      fontSize: '0.4rem',
-                      color: 'rgba(236, 227, 214, 0.6)',
-                      fontFamily: 'var(--font-mono, "PT Mono", monospace)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {media.fileName}
-                    </div>
+                    {/* Editable name field */}
+                    {editingMediaName === media.id ? (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'rgba(5, 4, 3, 0.95)',
+                        padding: '0.25rem 0.5rem',
+                      }}>
+                        <input
+                          type="text"
+                          defaultValue={media.name || media.fileName}
+                          onBlur={(e) => {
+                            const newName = e.target.value.trim();
+                            if (newName && newName !== (media.name || media.fileName)) {
+                              handleUpdateMediaName(media.id, newName);
+                            } else {
+                              setEditingMediaName(null);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            } else if (e.key === 'Escape') {
+                              setEditingMediaName(null);
+                            }
+                          }}
+                          autoFocus
+                          style={{
+                            width: '100%',
+                            fontSize: '0.4rem',
+                            fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                            color: 'rgba(236, 227, 214, 0.9)',
+                            background: 'rgba(236, 227, 214, 0.1)',
+                            border: '1px solid rgba(236, 227, 214, 0.3)',
+                            padding: '0.2rem 0.4rem',
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background: 'linear-gradient(to top, rgba(5, 4, 3, 0.8), transparent)',
+                          padding: '0.25rem 0.5rem',
+                          fontSize: '0.4rem',
+                          color: 'rgba(236, 227, 214, 0.6)',
+                          fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => setEditingMediaName(media.id)}
+                        title="Click to edit name"
+                      >
+                        {media.name || media.fileName}
+                      </div>
+                    )}
                     {/* Delete and Replace buttons */}
                     <div style={{
                       position: 'absolute',

@@ -11,9 +11,10 @@ import styles from './page.module.css';
 
 // Entity form data type
 export interface EntityFormData {
-  name: string;
+  entityClass: string;  // Entity class (e.g., "Eigensage", "Nullseer")
+  entityName: string;   // Individual entity name (e.g., "Vince")
   subtitle: string;
-  type: 'Guardian' | 'Wanderer' | 'Architect' | 'Void-Born' | 'Hybrid';
+  type: 'Guardian' | 'Wanderer' | 'Architect' | 'Void-Born' | 'Hybrid';  // Keep for backward compatibility
   allegiance: 'Liminal Covenant' | 'Nomenclate' | 'Unaligned' | 'Unknown';
   threatLevel: 'Benign' | 'Cautious' | 'Volatile' | 'Existential';
   domain: string;
@@ -32,11 +33,18 @@ export interface EntityFormData {
   mediaUrl?: string;
   mediaMimeType?: string;
   thumbnailUrl?: string; // For video thumbnails
+  // MidJourney parameters
+  midjourneyPrompt?: string;
+  midjourneySref?: string;
+  midjourneyProfile?: string;
+  midjourneyStylization?: number;
+  midjourneyStyleWeight?: number;
 }
 
 // Default form values
 const defaultFormData: EntityFormData = {
-  name: '',
+  entityClass: '',
+  entityName: '',
   subtitle: '',
   type: 'Guardian',
   allegiance: 'Unaligned',
@@ -96,9 +104,11 @@ export default function NewEntityPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
+          name: formData.entityName || formData.entityClass || 'Unnamed',
           subtitle: formData.subtitle || null,
           type: formData.type,
+          entity_class: formData.entityClass || null,
+          entity_name: formData.entityName || null,
           allegiance: formData.allegiance,
           threat_level: formData.threatLevel,
           domain: formData.domain,
@@ -114,6 +124,11 @@ export default function NewEntityPage() {
           glyphs: formData.glyphs,
           image: formData.mediaUrl || null,
           thumbnail: formData.thumbnailUrl || null, // Video thumbnail
+          midjourney_prompt: formData.midjourneyPrompt || null,
+          midjourney_sref: formData.midjourneySref || null,
+          midjourney_profile: formData.midjourneyProfile || null,
+          midjourney_stylization: formData.midjourneyStylization || null,
+          midjourney_style_weight: formData.midjourneyStyleWeight || null,
           // Position centered at (0,0) and spread based on coordinates
           // Coordinates range from -1 to 1, map to pixel positions around center
           position_x: formData.coordinates.geometry * 250,
@@ -174,7 +189,7 @@ export default function NewEntityPage() {
         <button 
           className={styles.saveButton}
           onClick={handleSave}
-          disabled={isSaving || !formData.name}
+          disabled={isSaving || !formData.entityClass}
         >
           {isSaving ? 'SAVING...' : 'SAVE TO ARCHIVE'}
         </button>

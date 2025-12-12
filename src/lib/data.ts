@@ -52,6 +52,8 @@ interface DenizenRow {
   name: string;
   subtitle: string | null;
   type: string;
+  entity_class: string | null;
+  entity_name: string | null;
   image: string | null;
   thumbnail: string | null;
   video_url: string | null;
@@ -68,6 +70,12 @@ interface DenizenRow {
   lore: string | null;
   features: string[] | null;
   first_observed: string | null;
+  // MidJourney fields
+  midjourney_prompt: string | null;
+  midjourney_sref: string | null;
+  midjourney_profile: string | null;
+  midjourney_stylization: number | null;
+  midjourney_style_weight: number | null;
   // Metaphysical fields
   phase_state: string | null;
   hallucination_index: number | null;
@@ -80,6 +88,7 @@ interface DenizenMediaRow {
   media_type: string;
   storage_path: string;
   file_name: string;
+  name: string | null;
   file_size: number | null;
   mime_type: string | null;
   display_order: number;
@@ -112,6 +121,7 @@ function transformMediaRow(row: DenizenMediaRow): DenizenMedia {
     mediaType: row.media_type as DenizenMedia['mediaType'],
     storagePath: row.storage_path,
     fileName: row.file_name,
+    name: row.name ?? undefined,
     fileSize: row.file_size ?? undefined,
     mimeType: row.mime_type ?? undefined,
     displayOrder: row.display_order,
@@ -150,6 +160,8 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: De
     name: row.name,
     subtitle: row.subtitle ?? undefined,
     type: row.type as Denizen['type'],
+    entityClass: row.entity_class ?? undefined,
+    entityName: row.entity_name ?? undefined,
     image: row.image ?? undefined,
     thumbnail: row.thumbnail ?? undefined,
     videoUrl: row.video_url ?? undefined,
@@ -167,6 +179,11 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: De
     lore: row.lore ?? undefined,
     features: row.features ?? undefined,
     firstObserved: row.first_observed ?? undefined,
+    midjourneyPrompt: row.midjourney_prompt ?? undefined,
+    midjourneySref: row.midjourney_sref ?? undefined,
+    midjourneyProfile: row.midjourney_profile ?? undefined,
+    midjourneyStylization: row.midjourney_stylization ?? undefined,
+    midjourneyStyleWeight: row.midjourney_style_weight ?? undefined,
     connections: connectionIds,
     media: media.length > 0 ? media : undefined,
     metaphysical,
@@ -578,6 +595,13 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
   try {
     // Build base insert data
     const insertData: DenizenInsert & {
+      entity_class?: string;
+      entity_name?: string;
+      midjourney_prompt?: string;
+      midjourney_sref?: string;
+      midjourney_profile?: string;
+      midjourney_stylization?: number;
+      midjourney_style_weight?: number;
       phase_state?: string;
       hallucination_index?: number;
       manifold_curvature?: number;
@@ -586,6 +610,8 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
       name: denizen.name,
       subtitle: denizen.subtitle ?? null,
       type: denizen.type,
+      entity_class: denizen.entityClass ?? null,
+      entity_name: denizen.entityName ?? null,
       image: denizen.image ?? null,
       thumbnail: denizen.thumbnail ?? null,
       video_url: denizen.videoUrl ?? null,
@@ -602,6 +628,11 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
       lore: denizen.lore ?? null,
       features: denizen.features ?? null,
       first_observed: denizen.firstObserved ?? null,
+      midjourney_prompt: denizen.midjourneyPrompt ?? null,
+      midjourney_sref: denizen.midjourneySref ?? null,
+      midjourney_profile: denizen.midjourneyProfile ?? null,
+      midjourney_stylization: denizen.midjourneyStylization ?? null,
+      midjourney_style_weight: denizen.midjourneyStyleWeight ?? null,
     };
 
     // Add metaphysical fields if provided
@@ -654,11 +685,21 @@ export async function updateDenizen(
 
   try {
     // Build update object with only defined fields
-    const updateData: DenizenUpdate = {};
+    const updateData: DenizenUpdate & {
+      entity_class?: string | null;
+      entity_name?: string | null;
+      midjourney_prompt?: string | null;
+      midjourney_sref?: string | null;
+      midjourney_profile?: string | null;
+      midjourney_stylization?: number | null;
+      midjourney_style_weight?: number | null;
+    } = {};
     
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.subtitle !== undefined) updateData.subtitle = updates.subtitle ?? null;
     if (updates.type !== undefined) updateData.type = updates.type;
+    if (updates.entityClass !== undefined) updateData.entity_class = updates.entityClass ?? null;
+    if (updates.entityName !== undefined) updateData.entity_name = updates.entityName ?? null;
     if (updates.image !== undefined) updateData.image = updates.image ?? null;
     if (updates.thumbnail !== undefined) updateData.thumbnail = updates.thumbnail ?? null;
     if (updates.videoUrl !== undefined) updateData.video_url = updates.videoUrl ?? null;
@@ -679,6 +720,11 @@ export async function updateDenizen(
     if (updates.lore !== undefined) updateData.lore = updates.lore ?? null;
     if (updates.features !== undefined) updateData.features = updates.features ?? null;
     if (updates.firstObserved !== undefined) updateData.first_observed = updates.firstObserved ?? null;
+    if (updates.midjourneyPrompt !== undefined) updateData.midjourney_prompt = updates.midjourneyPrompt ?? null;
+    if (updates.midjourneySref !== undefined) updateData.midjourney_sref = updates.midjourneySref ?? null;
+    if (updates.midjourneyProfile !== undefined) updateData.midjourney_profile = updates.midjourneyProfile ?? null;
+    if (updates.midjourneyStylization !== undefined) updateData.midjourney_stylization = updates.midjourneyStylization ?? null;
+    if (updates.midjourneyStyleWeight !== undefined) updateData.midjourney_style_weight = updates.midjourneyStyleWeight ?? null;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (client as any)
@@ -740,5 +786,45 @@ export async function deleteDenizen(id: string): Promise<boolean> {
   } catch (error) {
     console.error('Error in deleteDenizen:', error);
     return false;
+  }
+}
+
+/**
+ * Fetch all unique entity classes from the database
+ * Used for populating the Class dropdown in the form
+ */
+export async function fetchEntityClasses(): Promise<string[]> {
+  const client = getDataClient();
+  
+  if (!isSupabaseConfigured() || !client) {
+    console.warn('[fetchEntityClasses] Supabase not configured - returning empty array');
+    return [];
+  }
+
+  try {
+    const { data, error } = await client
+      .from('denizens')
+      .select('entity_class')
+      .not('entity_class', 'is', null);
+
+    if (error) {
+      console.error('[fetchEntityClasses] Error fetching entity classes:', error);
+      return [];
+    }
+
+    // Extract unique, non-null entity classes
+    const classes = new Set<string>();
+    (data as Array<{ entity_class: string | null }> || []).forEach(row => {
+      if (row.entity_class && row.entity_class.trim()) {
+        classes.add(row.entity_class.trim());
+      }
+    });
+
+    const result = Array.from(classes).sort();
+    console.log(`[fetchEntityClasses] Found ${result.length} unique entity classes`);
+    return result;
+  } catch (error) {
+    console.error('[fetchEntityClasses] Fatal error:', error);
+    return [];
   }
 }

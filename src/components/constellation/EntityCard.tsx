@@ -334,7 +334,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
                 color: 'var(--dawn)',
               }}
             >
-              {denizen.name}
+              {denizen.entityClass || denizen.entityName || denizen.name}
             </h3>
 
             {/* Subtitle */}

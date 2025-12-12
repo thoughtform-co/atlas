@@ -62,6 +62,8 @@ interface CreateEntityInput {
   name: string;
   subtitle?: string | null;
   type: DenizenType;
+  entity_class?: string | null;
+  entity_name?: string | null;
   allegiance: Allegiance;
   threat_level: ThreatLevel;
   domain: string;
@@ -78,6 +80,12 @@ interface CreateEntityInput {
   coord_geometry: number;
   coord_alterity: number;
   coord_dynamics: number;
+  // MidJourney fields
+  midjourney_prompt?: string | null;
+  midjourney_sref?: string | null;
+  midjourney_profile?: string | null;
+  midjourney_stylization?: number | null;
+  midjourney_style_weight?: number | null;
   // Metaphysical fields
   phase_state?: PhaseState;
   hallucination_index?: number;
@@ -136,6 +144,8 @@ export async function POST(request: NextRequest) {
       name: body.name,
       subtitle: body.subtitle ?? undefined,
       type: body.type,
+      entityClass: body.entity_class ?? undefined,
+      entityName: body.entity_name ?? undefined,
       image: body.image ?? undefined,
       thumbnail: body.thumbnail ?? undefined, // Video thumbnail
       glyphs: body.glyphs,
@@ -154,6 +164,11 @@ export async function POST(request: NextRequest) {
       description: body.description,
       lore: body.lore ?? undefined,
       features: body.features ?? undefined,
+      midjourneyPrompt: body.midjourney_prompt ?? undefined,
+      midjourneySref: body.midjourney_sref ?? undefined,
+      midjourneyProfile: body.midjourney_profile ?? undefined,
+      midjourneyStylization: body.midjourney_stylization ?? undefined,
+      midjourneyStyleWeight: body.midjourney_style_weight ?? undefined,
       // Add metaphysical properties if provided
       metaphysical: (body.phase_state || body.hallucination_index !== undefined || body.manifold_curvature !== undefined) ? {
         phaseState: body.phase_state,
