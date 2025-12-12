@@ -1,4 +1,12 @@
 /**
+ * Layout constants for consistent spacing across the app
+ */
+export const LAYOUT = {
+  NAV_HEIGHT: 44,  // Navigation bar height in pixels
+  MODAL_PADDING: 16, // Padding around modal content
+} as const;
+
+/**
  * Domain color definitions for the Atlas constellation view
  * Each domain has a distinct visual aesthetic expressed through particle colors
  */
@@ -59,5 +67,6 @@ export const DOMAIN_STYLES = {
 export function getDomainStyle(domain: string) {
   return DOMAIN_STYLES[domain as keyof typeof DOMAIN_STYLES] || DOMAIN_STYLES['default'];
 }
+
 
 

@@ -16,6 +16,7 @@ import { fetchDenizenMedia } from '@/lib/media';
 import type { DenizenMedia } from '@/lib/types';
 import { FloatingMediaCards } from './FloatingMediaCards';
 import { MediaTendrilCanvas } from './MediaTendrilCanvas';
+import { LAYOUT } from '@/lib/constants';
 
 type DenizenMediaInsert = Database['public']['Tables']['denizen_media']['Insert'];
 
@@ -850,7 +851,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
       onClick={handleBackdropClick}
-      style={{ padding: '16px', background: 'rgba(5, 4, 3, 0.95)', backdropFilter: 'blur(20px)' }}
+      style={{ 
+        // Account for nav bar - position modal below it
+        top: `${LAYOUT.NAV_HEIGHT}px`,
+        padding: `${LAYOUT.MODAL_PADDING}px`, 
+        background: 'rgba(5, 4, 3, 0.95)', 
+        backdropFilter: 'blur(20px)' 
+      }}
     >
       {/* Hidden canvas component for export */}
       {/* WHY no visibility:hidden: Browser throttles requestAnimationFrame for hidden elements,
@@ -891,12 +898,18 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       {/* Depth overlay - removed blur, using z-axis depth instead */}
 
       {/* Card — 4:5 Aspect */}
+      {/* Responsive sizing: Card scales down on smaller screens while maintaining aspect ratio.
+          Max height ensures card never exceeds viewport minus nav bar and padding.
+          Width follows aspect ratio: when height is constrained, width shrinks proportionally. */}
       <div
         ref={cardRef}
         data-atlas-card="true"
-        className="relative w-full overflow-hidden"
+        className="relative overflow-hidden"
         style={{
-          maxWidth: '720px',
+          // Let aspect ratio and max constraints determine size
+          // Height is primary constraint on small screens, width on large screens
+          width: `min(calc((100vh - ${LAYOUT.NAV_HEIGHT}px - ${LAYOUT.MODAL_PADDING * 2}px) * 0.8), 720px)`,
+          maxWidth: `calc(100vw - ${LAYOUT.MODAL_PADDING * 2}px)`,
           aspectRatio: '4/5',
           background: '#050403',
           display: 'grid',
