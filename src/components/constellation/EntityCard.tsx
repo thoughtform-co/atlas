@@ -340,7 +340,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
             {/* Subtitle */}
             {denizen.subtitle && (
               <p
-                className="mt-0.5 opacity-80"
+                className="mt-1.5 opacity-80"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: '8px',

@@ -10,10 +10,11 @@ import { clamp } from '@/lib/utils';
 
 // Maximum distance between entities in the same domain
 // Entities further apart than this will be pulled closer together
-const DOMAIN_CLUSTER_MAX_DISTANCE = 300;
+const DOMAIN_CLUSTER_MAX_DISTANCE = 380;
 
 // Minimum spacing between entities in a cluster to prevent overlap
-const DOMAIN_CLUSTER_MIN_SPACING = 220;
+// Increased to make particle beam connections more visible
+const DOMAIN_CLUSTER_MIN_SPACING = 280;
 
 // Strength for automatic domain connections (visible)
 const AUTO_CONNECTION_STRENGTH_SAME_DOMAIN = 0.7;

@@ -14,8 +14,7 @@ import html2canvas from 'html2canvas';
 import { DenizenCardCanvas, DenizenCardCanvasHandle } from './DenizenCardCanvas';
 import { fetchDenizenMedia } from '@/lib/media';
 import type { DenizenMedia } from '@/lib/types';
-import { FloatingMediaCards } from './FloatingMediaCards';
-import { MediaTendrilCanvas } from './MediaTendrilCanvas';
+import { MediaCarousel } from './MediaCarousel';
 import { LAYOUT } from '@/lib/constants';
 
 type DenizenMediaInsert = Database['public']['Tables']['denizen_media']['Insert'];
@@ -53,14 +52,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const [allMedia, setAllMedia] = useState<DenizenMedia[]>([]);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
-  // Stable array of refs for floating cards (for 3 background slots)
-  const [floatingCardRefs] = useState<React.RefObject<HTMLDivElement>[]>(() => {
-    const refs: React.RefObject<HTMLDivElement>[] = [];
-    for (let i = 0; i < 3; i++) {
-      refs.push(React.createRef<HTMLDivElement>() as React.RefObject<HTMLDivElement>);
-    }
-    return refs;
-  });
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -873,25 +864,13 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         />
       </div>
       
-      {/* Floating background cards */}
+      {/* Media Carousel - horizontal side cards with navigation */}
       {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
-        <FloatingMediaCards
-          denizen={displayDenizen}
+        <MediaCarousel
           allMedia={allMedia}
           currentIndex={currentMediaIndex}
-          cardRef={cardRef}
-          floatingCardRefs={floatingCardRefs}
-          onSelect={handleMediaSelect}
-        />
-      )}
-
-      {/* Tendril particle connections */}
-      {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
-        <MediaTendrilCanvas
-          allMedia={allMedia}
-          currentIndex={currentMediaIndex}
-          mainCardRef={cardRef}
-          floatingCardRefs={floatingCardRefs}
+          onIndexChange={handleMediaSelect}
+          mainCardWidth={720} // Match main card max width
         />
       )}
 
@@ -1482,7 +1461,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
             )}
             <div style={{ marginTop: '6px', fontFamily: 'var(--font-mono)', fontSize: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                CLASS <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.type.toUpperCase()}</span>
+                TYPE <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.type.toUpperCase()}</span>
               </div>
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 THREAT <span style={{ color: displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.threatLevel.toUpperCase()}</span>
