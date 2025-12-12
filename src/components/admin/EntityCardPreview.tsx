@@ -373,8 +373,8 @@ export function EntityCardPreview({
   }, [formData, setupCanvas, drawPixel, drawParticleCircle, initStates, initCenterParticles]);
 
   // Format name for display
-  // Use entityClass as primary display name, fallback to entityName or name
-  const displayClass = formData.entityClass || formData.entityName || formData.name || 'UNNAMED';
+  // Use entityClass as primary display name, fallback to entityName
+  const displayClass = formData.entityClass || formData.entityName || 'UNNAMED';
   const displayName = displayClass.toUpperCase().split(' ').join('\n');
   
   // Get threat color
