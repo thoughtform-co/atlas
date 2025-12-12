@@ -595,13 +595,13 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
   try {
     // Build base insert data
     const insertData: DenizenInsert & {
-      entity_class?: string;
-      entity_name?: string;
-      midjourney_prompt?: string;
-      midjourney_sref?: string;
-      midjourney_profile?: string;
-      midjourney_stylization?: number;
-      midjourney_style_weight?: number;
+      entity_class?: string | null;
+      entity_name?: string | null;
+      midjourney_prompt?: string | null;
+      midjourney_sref?: string | null;
+      midjourney_profile?: string | null;
+      midjourney_stylization?: number | null;
+      midjourney_style_weight?: number | null;
       phase_state?: string;
       hallucination_index?: number;
       manifold_curvature?: number;
