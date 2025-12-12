@@ -45,22 +45,24 @@ export function ConnectorCanvas({ connections, getPosition, denizens = [] }: Con
   }, [denizens]);
 
   useEffect(() => {
-    // Initialize connectors
+    // Initialize connectors with more particles for visibility
     connectorsRef.current = connections.map((conn) => {
-      const particleCount = Math.floor(80 + conn.strength * 60);
+      // More particles = more visible beams (scaled by strength)
+      const particleCount = Math.floor(120 + conn.strength * 80);
       const particles: Particle[] = [];
 
       for (let i = 0; i < particleCount; i++) {
-        const t = (i % (particleCount / 2)) / (particleCount / 2);
+        // Distribute particles evenly along the line with slight randomization
+        const t = (i / particleCount) + (Math.random() - 0.5) * 0.02;
         particles.push({
-          t,
-          baseOffset: (Math.random() - 0.5) * 8,
+          t: Math.max(0, Math.min(1, t)), // Clamp to 0-1
+          baseOffset: (Math.random() - 0.5) * 6, // Slightly tighter spread
           phase: Math.random() * Math.PI * 2,
-          size: 2 + Math.random() * 2,
+          size: 2 + Math.random() * 1.5,
         });
       }
 
-      // Determine domain color: use domain color if both entities are in same domain, otherwise null (neutral)
+      // Determine domain color: use domain color if both entities are in same domain, otherwise neutral
       const fromDomain = domainLookup.get(conn.from);
       const toDomain = domainLookup.get(conn.to);
       const domainColor = (fromDomain && toDomain && fromDomain === toDomain)
@@ -73,7 +75,7 @@ export function ConnectorCanvas({ connections, getPosition, denizens = [] }: Con
         strength: conn.strength,
         particles,
         pulsePhase: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.015 + Math.random() * 0.01,
+        pulseSpeed: 0.012 + Math.random() * 0.008, // Slightly slower, more elegant pulse
         domainColor: domainColor ? { r: domainColor.r, g: domainColor.g, b: domainColor.b } : null,
       };
     });
@@ -125,19 +127,21 @@ export function ConnectorCanvas({ connections, getPosition, denizens = [] }: Con
         const x = fromPos.x + dx * p.t + nx * p.baseOffset;
         const y = fromPos.y + dy * p.t + ny * p.baseOffset;
 
-        // Individual particle pulse
-        const particlePulse = Math.sin(connector.pulsePhase * 2 + p.phase) * 0.3 + 0.7;
+        // Individual particle pulse - more subtle variation
+        const particlePulse = Math.sin(connector.pulsePhase * 2 + p.phase) * 0.2 + 0.8;
 
-        // Fade at endpoints
-        const edgeFade = Math.min(p.t, 1 - p.t) * 5;
+        // Fade at endpoints - gentler fade
+        const edgeFade = Math.min(p.t, 1 - p.t) * 4;
         const alpha = Math.min(1, edgeFade) * globalPulse * particlePulse * connector.strength;
 
         // Pixelated rendering
         const px = Math.floor(x / gridSize) * gridSize;
         const py = Math.floor(y / gridSize) * gridSize;
 
-        // Use domain color for same-domain connections, neutral for cross-domain
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.7})`;
+        // Higher base visibility - beams should be clearly visible
+        // Same-domain: strong gold/domain color, cross-domain: subtle neutral
+        const domainMultiplier = connector.domainColor ? 1.0 : 0.7;
+        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * domainMultiplier})`;
         ctx.fillRect(px, py, gridSize, gridSize);
       });
     };

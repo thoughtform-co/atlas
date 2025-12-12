@@ -6,6 +6,15 @@ import { fetchEntityClasses } from '@/lib/data';
 import { parseMidjourneyPrompt } from '@/lib/midjourney-parser';
 import styles from './ParameterForm.module.css';
 
+// Domain type from API
+interface Domain {
+  id: string;
+  name: string;
+  srefCode: string | null;
+  description: string | null;
+  colorHex: string;
+}
+
 interface ParameterFormProps {
   formData: EntityFormData;
   onChange: (updates: Partial<EntityFormData>) => void;
@@ -13,6 +22,10 @@ interface ParameterFormProps {
 
 export function ParameterForm({ formData, onChange }: ParameterFormProps) {
   const [entityClasses, setEntityClasses] = useState<string[]>([]);
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [isAddingDomain, setIsAddingDomain] = useState(false);
+  const [newDomainName, setNewDomainName] = useState('');
+  const [newDomainSref, setNewDomainSref] = useState('');
   const [isMidjourneyOpen, setIsMidjourneyOpen] = useState(false);
   const [midjourneyInput, setMidjourneyInput] = useState(formData.midjourneyPrompt || '');
 
@@ -22,6 +35,49 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
       setEntityClasses(classes);
     });
   }, []);
+
+  // Fetch existing domains for dropdown
+  useEffect(() => {
+    fetch('/api/domains')
+      .then(res => res.json())
+      .then(data => {
+        if (data.domains) {
+          setDomains(data.domains);
+        }
+      })
+      .catch(err => console.error('Failed to fetch domains:', err));
+  }, []);
+
+  // Handle adding a new domain
+  const handleAddDomain = async () => {
+    if (!newDomainName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/domains', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newDomainName.trim(),
+          srefCode: newDomainSref.trim() || null,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setDomains(prev => [...prev, data.domain].sort((a, b) => a.name.localeCompare(b.name)));
+        onChange({ domain: data.domain.name });
+        setNewDomainName('');
+        setNewDomainSref('');
+        setIsAddingDomain(false);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to create domain');
+      }
+    } catch (err) {
+      console.error('Failed to add domain:', err);
+      alert('Failed to create domain');
+    }
+  };
 
   // Handle coordinate changes
   const handleCoordinateChange = (axis: 'geometry' | 'alterity' | 'dynamics', value: number) => {
@@ -193,19 +249,109 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
 
       <div className={styles.divider} />
 
-      {/* Domain */}
+      {/* Domain - Dropdown with Add New option */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
           Domain
         </label>
-        <input
-          type="text"
-          className={styles.fieldInput}
-          value={formData.domain}
-          onChange={(e) => onChange({ domain: e.target.value })}
-          placeholder="Conceptual territory..."
-        />
+        {!isAddingDomain ? (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <select
+              className={styles.fieldSelect}
+              value={formData.domain}
+              onChange={(e) => {
+                if (e.target.value === '__ADD_NEW__') {
+                  setIsAddingDomain(true);
+                  // Pre-fill SREF from current entity's MidJourney params
+                  if (formData.midjourneySref) {
+                    setNewDomainSref(formData.midjourneySref);
+                  }
+                } else {
+                  onChange({ domain: e.target.value });
+                }
+              }}
+              style={{ flex: 1 }}
+            >
+              <option value="">Select domain...</option>
+              {domains.map((domain) => (
+                <option key={domain.id} value={domain.name}>
+                  {domain.name} {domain.srefCode ? `(SREF: ${domain.srefCode})` : ''}
+                </option>
+              ))}
+              <option value="__ADD_NEW__">+ Add New Domain</option>
+            </select>
+          </div>
+        ) : (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.5rem',
+            padding: '0.75rem',
+            background: 'rgba(202, 165, 84, 0.05)',
+            border: '1px solid rgba(202, 165, 84, 0.2)',
+            borderRadius: '2px',
+          }}>
+            <div style={{ fontSize: '0.5rem', color: 'rgba(236, 227, 214, 0.5)', marginBottom: '0.25rem' }}>
+              NEW DOMAIN
+            </div>
+            <input
+              type="text"
+              className={styles.fieldInput}
+              value={newDomainName}
+              onChange={(e) => setNewDomainName(e.target.value)}
+              placeholder="Domain name (e.g., The Gradient Throne)"
+              autoFocus
+            />
+            <input
+              type="text"
+              className={styles.fieldInput}
+              value={newDomainSref}
+              onChange={(e) => setNewDomainSref(e.target.value)}
+              placeholder="SREF code (e.g., 1942457994)"
+            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={handleAddDomain}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  background: 'rgba(202, 165, 84, 0.2)',
+                  border: '1px solid rgba(202, 165, 84, 0.4)',
+                  color: '#CAA554',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Create Domain
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingDomain(false);
+                  setNewDomainName('');
+                  setNewDomainSref('');
+                }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  background: 'transparent',
+                  border: '1px solid rgba(236, 227, 214, 0.2)',
+                  color: 'rgba(236, 227, 214, 0.5)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Phase State & Hallucination Row */}
