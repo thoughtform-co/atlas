@@ -107,6 +107,11 @@ export function MediaUploadZone({
       setError(`File too large. Maximum: ${maxMB}MB`);
       return;
     }
+    
+    // Determine if we should use URL-based analysis (for large files or videos)
+    // Base64 encoding adds ~33% overhead, and Vercel has a 4.5MB request limit
+    // Gemini also has a 20MB limit for inline base64 data
+    const useUrlForAnalysis = isVideo || file.size > 5 * 1024 * 1024;
 
     // Start upload
     setUploadProgress(10);
@@ -203,16 +208,28 @@ export function MediaUploadZone({
       setIsAnalyzing(true);
       setUploadProgress(70);
 
-      // Convert to base64 for analysis
-      const base64 = await fileToBase64(file);
+      // For videos or large files, use mediaUrl instead of base64 to avoid size limits:
+      // - Vercel has a 4.5MB request body limit for serverless functions
+      // - Base64 encoding adds ~33% overhead (16MB file → ~22MB)
+      // - Gemini has a 20MB limit for inline base64 data
+      // Using the URL approach fetches the video server-side, bypassing client request size limits
+      const requestBody: { mimeType: string; base64?: string; mediaUrl?: string } = {
+        mimeType: file.type,
+      };
+      
+      if (useUrlForAnalysis) {
+        // Use the uploaded media URL - server will fetch and convert to base64
+        requestBody.mediaUrl = urlData.publicUrl;
+      } else {
+        // For small images, use base64 directly
+        const base64 = await fileToBase64(file);
+        requestBody.base64 = base64;
+      }
       
       const analyzeResponse = await fetch('/api/admin/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          base64,
-          mimeType: file.type,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       setUploadProgress(90);
