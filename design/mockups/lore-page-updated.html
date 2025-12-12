@@ -170,14 +170,17 @@
     .tabs-container {
       border-bottom: 1px solid var(--dawn-08);
       margin-bottom: 0;
-      background: rgba(10, 9, 8, 0.3);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(10, 9, 8, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 0;
     }
     
     .tabs {
       display: flex;
       gap: 0;
+      align-items: center;
+      padding: 0 12px;
     }
     
     .tab {
@@ -189,32 +192,47 @@
       color: var(--dawn-30);
       background: transparent;
       border: none;
-      border-bottom: 2px solid transparent;
+      border-bottom: none;
       cursor: pointer;
       transition: all 0.15s ease;
       position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     
     .tab:hover {
-      color: var(--dawn-70);
-      background: rgba(236, 227, 214, 0.03);
+      color: var(--dawn-50);
     }
     
     .tab.active {
       color: var(--gold);
-      border-bottom-color: var(--gold);
+    }
+    
+    /* Brackets for selected tab */
+    .tab.active::before {
+      content: '[';
+      color: var(--gold);
+      opacity: 0.5;
+    }
+    
+    .tab.active::after {
+      content: ']';
+      color: var(--gold);
+      opacity: 0.5;
     }
     
     .tab-count {
-      margin-left: 0.5rem;
+      margin-left: 0;
       padding: 0.125rem 0.375rem;
-      background: var(--dawn-08);
+      background: rgba(236, 227, 214, 0.05);
       font-size: 0.5625rem;
       color: var(--dawn-30);
+      letter-spacing: 0.05em;
     }
     
     .tab.active .tab-count {
-      background: rgba(202, 165, 84, 0.3);
+      background: rgba(202, 165, 84, 0.15);
       color: var(--gold);
     }
     
