@@ -10,11 +10,11 @@ import { clamp } from '@/lib/utils';
 
 // Maximum distance between entities in the same domain
 // Entities further apart than this will be pulled closer together
-const DOMAIN_CLUSTER_MAX_DISTANCE = 380;
+const DOMAIN_CLUSTER_MAX_DISTANCE = 550;
 
 // Minimum spacing between entities in a cluster to prevent overlap
-// Increased to make particle beam connections more visible
-const DOMAIN_CLUSTER_MIN_SPACING = 280;
+// Cards are 200px wide, so spacing needs to exceed card width + margin
+const DOMAIN_CLUSTER_MIN_SPACING = 380;
 
 // Strength for automatic domain connections (visible)
 const AUTO_CONNECTION_STRENGTH_SAME_DOMAIN = 0.7;
@@ -83,9 +83,10 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       const angle = indexInGroup * goldenAngle;
       
       // Distance from center based on index (spiral outward)
-      const baseRadius = DOMAIN_CLUSTER_MIN_SPACING * 0.5;
-      const spiralRadius = baseRadius + (indexInGroup * DOMAIN_CLUSTER_MIN_SPACING * 0.4);
-      const radius = Math.min(spiralRadius, DOMAIN_CLUSTER_MAX_DISTANCE * 0.5);
+      // Ensure minimum separation to prevent card overlap (cards are 200px wide)
+      const baseRadius = DOMAIN_CLUSTER_MIN_SPACING * 0.6;
+      const spiralRadius = baseRadius + (indexInGroup * DOMAIN_CLUSTER_MIN_SPACING * 0.5);
+      const radius = Math.min(spiralRadius, DOMAIN_CLUSTER_MAX_DISTANCE * 0.7);
 
       return {
         ...d,
