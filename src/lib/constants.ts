@@ -59,3 +59,4 @@ export const DOMAIN_STYLES = {
 export function getDomainStyle(domain: string) {
   return DOMAIN_STYLES[domain as keyof typeof DOMAIN_STYLES] || DOMAIN_STYLES['default'];
 }
+

@@ -222,7 +222,7 @@ export function MediaUploadZone({
         requestBody.mediaUrl = urlData.publicUrl;
       } else {
         // For small images, use base64 directly
-        const base64 = await fileToBase64(file);
+      const base64 = await fileToBase64(file);
         requestBody.base64 = base64;
       }
       
@@ -244,7 +244,7 @@ export function MediaUploadZone({
         
         try {
           if (isJson) {
-            const error = await analyzeResponse.json();
+        const error = await analyzeResponse.json();
             errorMessage = error.error || error.message || 'Analysis failed';
           } else {
             // Try to get text response (e.g., for 413 errors)

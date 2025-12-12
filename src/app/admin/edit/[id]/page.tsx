@@ -657,7 +657,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
                     )}
                     {/* Editable name field */}
                     {editingMediaName === media.id ? (
-                      <div style={{
+                    <div style={{
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
@@ -699,25 +699,25 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
                     ) : (
                       <div 
                         style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          background: 'linear-gradient(to top, rgba(5, 4, 3, 0.8), transparent)',
-                          padding: '0.25rem 0.5rem',
-                          fontSize: '0.4rem',
-                          color: 'rgba(236, 227, 214, 0.6)',
-                          fontFamily: 'var(--font-mono, "PT Mono", monospace)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(5, 4, 3, 0.8), transparent)',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.4rem',
+                      color: 'rgba(236, 227, 214, 0.6)',
+                      fontFamily: 'var(--font-mono, "PT Mono", monospace)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                           cursor: 'pointer',
                         }}
                         onClick={() => setEditingMediaName(media.id)}
                         title="Click to edit name"
                       >
                         {media.name || media.fileName}
-                      </div>
+                    </div>
                     )}
                     {/* Delete and Replace buttons */}
                     <div style={{
