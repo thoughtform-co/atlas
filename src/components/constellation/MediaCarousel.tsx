@@ -273,6 +273,7 @@ export function MediaCarousel({ allMedia, currentIndex, onIndexChange, mainCardW
 }
 
 // Side card component - simplified: just show media directly, no loading state
+// WHY: Videos auto-play on hover and pause when mouse leaves
 function CarouselCard({
   media,
   position,
@@ -292,9 +293,29 @@ function CarouselCard({
   isVideo: (media: DenizenMedia) => boolean;
   getThumbnailUrl: (media: DenizenMedia) => string | undefined;
 }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isCardHovered, setIsCardHovered] = useState(false);
+  
   const mediaUrl = getMediaPublicUrl(media.storagePath) || undefined;
   const isVideoMedia = isVideo(media);
   const thumbnailUrl = getThumbnailUrl(media);
+  
+  // Control video playback based on hover state
+  // WHY: Videos should auto-play when hovering over the side cards and stop when mouse leaves
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideoMedia) return;
+    
+    if (isCardHovered) {
+      video.play().catch(err => {
+        // Ignore autoplay errors (browser may block autoplay)
+        console.debug('Video autoplay prevented on carousel card:', err);
+      });
+    } else {
+      video.pause();
+      video.currentTime = 0; // Reset to beginning when mouse leaves
+    }
+  }, [isCardHovered, isVideoMedia]);
   
   // Calculate offset from center
   const offsetX = position === 'left' 
@@ -318,10 +339,12 @@ function CarouselCard({
       }}
       onClick={onClick}
       onMouseEnter={(e) => {
+        setIsCardHovered(true);
         e.currentTarget.style.opacity = '0.85';
         e.currentTarget.style.transform = `translate(calc(-50% + ${offsetX}px), -50%) scale(1.02)`;
       }}
       onMouseLeave={(e) => {
+        setIsCardHovered(false);
         e.currentTarget.style.opacity = '0.6';
         e.currentTarget.style.transform = `translate(calc(-50% + ${offsetX}px), -50%) scale(1)`;
       }}
@@ -334,23 +357,48 @@ function CarouselCard({
           borderRadius: '2px',
         }}
       >
-        {/* For videos: show thumbnail if available, otherwise show video element */}
+        {/* For videos: show thumbnail when not hovered, video when hovered */}
         {isVideoMedia ? (
           thumbnailUrl ? (
-            <Image
-              src={thumbnailUrl}
-              alt=""
-              fill
-              className="object-cover"
-              unoptimized
-            />
+            <>
+              {/* Thumbnail (shown when not hovered) */}
+              <div 
+                className="absolute inset-0 transition-opacity duration-300"
+                style={{ opacity: isCardHovered ? 0 : 1 }}
+              >
+                <Image
+                  src={thumbnailUrl}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+              {/* Video (shown when hovered) */}
+              <div 
+                className="absolute inset-0 transition-opacity duration-300"
+                style={{ opacity: isCardHovered ? 1 : 0 }}
+              >
+                <video
+                  ref={videoRef}
+                  src={mediaUrl}
+                  className="w-full h-full object-cover"
+                  muted
+                  playsInline
+                  loop
+                  preload="auto"
+                />
+              </div>
+            </>
           ) : (
-            // Show video element - browser will display first frame when ready
+            // Show video element - auto-plays on hover
             <video
+              ref={videoRef}
               src={mediaUrl}
               className="w-full h-full object-cover"
               muted
               playsInline
+              loop
               preload="auto"
             />
           )
