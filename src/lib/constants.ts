@@ -40,39 +40,40 @@ export function getDomainColor(domain: string): { r: number; g: number; b: numbe
 
 /**
  * Domain visual characteristics for particle rendering
+ * WHY: Each domain has a distinct particle nebula surrounding its entities
  */
 export const DOMAIN_STYLES = {
   // Gradient Throne: Soft, warm golden cloud - regal and luminous
   // WHY: Creates a divine, radiant atmosphere around the main entity cluster
   'Gradient Throne': {
-    particleDensity: 1.0,      // Moderate density for soft cloud effect
+    particleDensity: 2.5,      // Dense for visible soft cloud effect
     glitchChance: 0.02,        // Minimal glitch - stable, divine
     pulseSpeed: 0.002,         // Very slow, gentle breathing like candlelight
-    maxAlpha: 0.15,            // More visible - warm golden glow
+    maxAlpha: 0.35,            // Clearly visible warm golden glow
   },
   'Starhaven Reaches': {
-    particleDensity: 0.8,      // Relative density of nebula particles
+    particleDensity: 2.0,      // Good density of nebula particles
     glitchChance: 0.05,        // Low glitch - warm and stable
     pulseSpeed: 0.003,         // Slow, gentle breathing
-    maxAlpha: 0.12,            // Subtle but visible
+    maxAlpha: 0.30,            // Visible glow
   },
   'The Lattice': {
-    particleDensity: 1.2,      // Denser - more data-like
+    particleDensity: 2.5,      // Denser - more data-like
     glitchChance: 0.25,        // High glitch - data corruption aesthetic
     pulseSpeed: 0.008,         // Faster, more erratic
-    maxAlpha: 0.08,            // Pale, ethereal
+    maxAlpha: 0.20,            // Pale, ethereal
   },
   'The Threshold': {
-    particleDensity: 0.6,      // Sparse - transitional
+    particleDensity: 1.5,      // Medium - transitional
     glitchChance: 0.15,        // Medium glitch - unstable
     pulseSpeed: 0.005,         // Variable
-    maxAlpha: 0.10,            // Medium visibility
+    maxAlpha: 0.25,            // Medium visibility
   },
   'default': {
-    particleDensity: 0.7,
+    particleDensity: 2.0,      // Visible default
     glitchChance: 0.1,
     pulseSpeed: 0.004,
-    maxAlpha: 0.10,
+    maxAlpha: 0.25,
   },
 } as const;
 

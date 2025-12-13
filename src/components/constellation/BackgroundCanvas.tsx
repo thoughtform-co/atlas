@@ -110,16 +110,17 @@ export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale
   useEffect(() => {
     clustersRef.current = domainClusters.map(cluster => {
       // Calculate particle count based on area and density
+      // WHY: More particles = more visible nebula cloud effect
       const area = Math.PI * cluster.radius * cluster.radius;
-      const baseCount = Math.floor(area / 8000); // Base density
+      const baseCount = Math.floor(area / 3000); // Higher base density (was 8000)
       const particleCount = Math.floor(baseCount * cluster.style.particleDensity);
       
       const particles: NebulaParticle[] = [];
-      for (let i = 0; i < Math.min(particleCount, 200); i++) { // Cap at 200 per cluster
+      for (let i = 0; i < Math.min(particleCount, 400); i++) { // Cap at 400 per cluster (was 200)
         // Distribute in a circular pattern with falloff
         const angle = Math.random() * Math.PI * 2;
-        const distRatio = Math.pow(Math.random(), 0.6); // Bias towards center
-        const dist = distRatio * cluster.radius;
+        const distRatio = Math.pow(Math.random(), 0.5); // Slightly more spread out (was 0.6)
+        const dist = distRatio * cluster.radius * 1.2; // Extend slightly beyond radius
         
         const x = cluster.center.x + Math.cos(angle) * dist;
         const y = cluster.center.y + Math.sin(angle) * dist;
@@ -131,7 +132,7 @@ export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale
           baseY: y,
           vx: (Math.random() - 0.5) * 0.15,
           vy: (Math.random() - 0.5) * 0.15,
-          alpha: 0.02 + Math.random() * (cluster.style.maxAlpha - 0.02),
+          alpha: 0.05 + Math.random() * (cluster.style.maxAlpha - 0.05), // Higher minimum alpha
           size: GRID,
           phase: Math.random() * Math.PI * 2,
         });
@@ -317,16 +318,19 @@ export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale
           }
         });
 
-        // Draw subtle radial gradient for cluster region (very faint)
+        // Draw radial gradient for cluster region - soft domain glow
+        // WHY: Creates a visible "territory" effect around each domain
         const screenCenter = worldToScreen(cluster.center.x, cluster.center.y);
-        const screenRadius = cluster.radius * scale;
+        const screenRadius = cluster.radius * scale * 1.3; // Extend beyond entity positions
         
         const gradient = ctx.createRadialGradient(
           screenCenter.x, screenCenter.y, 0,
           screenCenter.x, screenCenter.y, screenRadius
         );
-        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.02)`);
-        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, 0.01)`);
+        // More visible gradient stops
+        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.08)`);
+        gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`);
+        gradient.addColorStop(0.6, `rgba(${color.r}, ${color.g}, ${color.b}, 0.02)`);
         gradient.addColorStop(1, 'transparent');
         
         ctx.fillStyle = gradient;
