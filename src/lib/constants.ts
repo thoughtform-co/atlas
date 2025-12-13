@@ -68,5 +68,22 @@ export function getDomainStyle(domain: string) {
   return DOMAIN_STYLES[domain as keyof typeof DOMAIN_STYLES] || DOMAIN_STYLES['default'];
 }
 
+/**
+ * Constellation clustering and layout constants
+ * Controls how entities are grouped and positioned in the constellation view
+ */
+export const CONSTELLATION = {
+  CLUSTER_MAX_DISTANCE: 550,
+  CLUSTER_MIN_SPACING: 380,
+  AUTO_CONNECTION_STRENGTH_SAME_DOMAIN: 0.7,
+  AUTO_CONNECTION_STRENGTH_CROSS_DOMAIN: 0.4,
+  SMALL_CONSTELLATION_THRESHOLD: 10,
+  SPIRAL: {
+    BASE_RADIUS_FACTOR: 0.6,
+    GROWTH_FACTOR: 0.5,
+    MAX_RADIUS_FACTOR: 0.7,
+  },
+} as const;
+
 
 

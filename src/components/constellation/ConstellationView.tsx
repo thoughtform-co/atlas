@@ -7,21 +7,7 @@ import { ConnectorCanvas } from './ConnectorCanvas';
 import { EntityCard } from './EntityCard';
 import { DenizenModalV3 } from './DenizenModalV3';
 import { clamp } from '@/lib/utils';
-
-// Maximum distance between entities in the same domain
-// Entities further apart than this will be pulled closer together
-const DOMAIN_CLUSTER_MAX_DISTANCE = 550;
-
-// Minimum spacing between entities in a cluster to prevent overlap
-// Cards are 200px wide, so spacing needs to exceed card width + margin
-const DOMAIN_CLUSTER_MIN_SPACING = 380;
-
-// Strength for automatic domain connections (visible)
-const AUTO_CONNECTION_STRENGTH_SAME_DOMAIN = 0.7;
-const AUTO_CONNECTION_STRENGTH_CROSS_DOMAIN = 0.4;
-
-// When entity count is below this, connect ALL entities (small constellation mode)
-const SMALL_CONSTELLATION_THRESHOLD = 10;
+import { CONSTELLATION } from '@/lib/constants';
 
 interface ConstellationViewProps {
   denizens: Denizen[];
@@ -84,9 +70,9 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       
       // Distance from center based on index (spiral outward)
       // Ensure minimum separation to prevent card overlap (cards are 200px wide)
-      const baseRadius = DOMAIN_CLUSTER_MIN_SPACING * 0.6;
-      const spiralRadius = baseRadius + (indexInGroup * DOMAIN_CLUSTER_MIN_SPACING * 0.5);
-      const radius = Math.min(spiralRadius, DOMAIN_CLUSTER_MAX_DISTANCE * 0.7);
+      const baseRadius = CONSTELLATION.CLUSTER_MIN_SPACING * CONSTELLATION.SPIRAL.BASE_RADIUS_FACTOR;
+      const spiralRadius = baseRadius + (indexInGroup * CONSTELLATION.CLUSTER_MIN_SPACING * CONSTELLATION.SPIRAL.GROWTH_FACTOR);
+      const radius = Math.min(spiralRadius, CONSTELLATION.CLUSTER_MAX_DISTANCE * CONSTELLATION.SPIRAL.MAX_RADIUS_FACTOR);
 
       return {
         ...d,
@@ -122,7 +108,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     });
 
     // Small constellation mode: connect ALL entities
-    if (denizens.length < SMALL_CONSTELLATION_THRESHOLD) {
+    if (denizens.length < CONSTELLATION.SMALL_CONSTELLATION_THRESHOLD) {
       for (let i = 0; i < denizens.length; i++) {
         for (let j = i + 1; j < denizens.length; j++) {
           const pairKey = `${denizens[i].id}-${denizens[j].id}`;
@@ -132,7 +118,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
             autoConnections.push({
               from: denizens[i].id,
               to: denizens[j].id,
-              strength: sameDomain ? AUTO_CONNECTION_STRENGTH_SAME_DOMAIN : AUTO_CONNECTION_STRENGTH_CROSS_DOMAIN,
+              strength: sameDomain ? CONSTELLATION.AUTO_CONNECTION_STRENGTH_SAME_DOMAIN : CONSTELLATION.AUTO_CONNECTION_STRENGTH_CROSS_DOMAIN,
               type: 'semantic',
             });
             existingPairs.add(pairKey);
@@ -158,7 +144,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
               autoConnections.push({
                 from: group[i].id,
                 to: group[j].id,
-                strength: AUTO_CONNECTION_STRENGTH_SAME_DOMAIN,
+                strength: CONSTELLATION.AUTO_CONNECTION_STRENGTH_SAME_DOMAIN,
                 type: 'semantic',
               });
               existingPairs.add(pairKey);
