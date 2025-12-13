@@ -87,9 +87,8 @@ export function getDomainStyle(domain: string) {
 export const CONSTELLATION = {
   CLUSTER_MAX_DISTANCE: 550,
   CLUSTER_MIN_SPACING: 380,
+  // Connection strength for auto-generated connections within same domain
   AUTO_CONNECTION_STRENGTH_SAME_DOMAIN: 0.7,
-  AUTO_CONNECTION_STRENGTH_CROSS_DOMAIN: 0.4,
-  SMALL_CONSTELLATION_THRESHOLD: 10,
   SPIRAL: {
     BASE_RADIUS_FACTOR: 0.6,
     GROWTH_FACTOR: 0.5,

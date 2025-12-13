@@ -142,75 +142,66 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
 
   /**
    * Generate automatic connections between entities.
-   * - Small constellations (< 10 entities): Connect ALL entities with visible beams
-   * - Larger constellations: Only connect entities in the same domain
-   * WHY: Visual cohesion - entities feel connected like the Dark family tree visualization.
+   * Only connect entities within the SAME domain - different domains are separate territories.
+   * WHY: Visual cohesion within domains, but clear separation between different aesthetic territories.
    */
   const allConnections = useMemo(() => {
-    // Start with explicit connections
+    // Start with explicit connections (only same-domain ones)
     const existingPairs = new Set<string>();
-    connections.forEach(c => {
-      existingPairs.add(`${c.from}-${c.to}`);
-      existingPairs.add(`${c.to}-${c.from}`);
-    });
-
-    // Generate automatic connections
-    const autoConnections: Connection[] = [];
     
-    // Build domain lookup for determining connection strength
+    // Build domain lookup
     const domainLookup = new Map<string, string>();
     denizens.forEach(d => {
       domainLookup.set(d.id, d.domain || 'default');
     });
+    
+    // Filter explicit connections to only include same-domain pairs
+    const filteredConnections = connections.filter(c => {
+      const fromDomain = domainLookup.get(c.from);
+      const toDomain = domainLookup.get(c.to);
+      return fromDomain === toDomain;
+    });
+    
+    filteredConnections.forEach(c => {
+      existingPairs.add(`${c.from}-${c.to}`);
+      existingPairs.add(`${c.to}-${c.from}`);
+    });
 
-    // Small constellation mode: connect ALL entities
-    if (denizens.length < CONSTELLATION.SMALL_CONSTELLATION_THRESHOLD) {
-      for (let i = 0; i < denizens.length; i++) {
-        for (let j = i + 1; j < denizens.length; j++) {
-          const pairKey = `${denizens[i].id}-${denizens[j].id}`;
+    // Generate automatic connections - ONLY within same domain
+    const autoConnections: Connection[] = [];
+    
+    // Group entities by domain
+    const domainGroups = new Map<string, Denizen[]>();
+    denizens.forEach(d => {
+      const domain = d.domain || 'default';
+      if (!domainGroups.has(domain)) {
+        domainGroups.set(domain, []);
+      }
+      domainGroups.get(domain)!.push(d);
+    });
+
+    // Connect entities within each domain
+    domainGroups.forEach((group) => {
+      // Only create connections if there are multiple entities in the domain
+      if (group.length < 2) return;
+      
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const pairKey = `${group[i].id}-${group[j].id}`;
           if (!existingPairs.has(pairKey)) {
-            // Use higher strength for same-domain connections
-            const sameDomain = domainLookup.get(denizens[i].id) === domainLookup.get(denizens[j].id);
             autoConnections.push({
-              from: denizens[i].id,
-              to: denizens[j].id,
-              strength: sameDomain ? CONSTELLATION.AUTO_CONNECTION_STRENGTH_SAME_DOMAIN : CONSTELLATION.AUTO_CONNECTION_STRENGTH_CROSS_DOMAIN,
+              from: group[i].id,
+              to: group[j].id,
+              strength: CONSTELLATION.AUTO_CONNECTION_STRENGTH_SAME_DOMAIN,
               type: 'semantic',
             });
             existingPairs.add(pairKey);
           }
         }
       }
-    } else {
-      // Large constellation mode: only connect same-domain entities
-      const domainGroups = new Map<string, Denizen[]>();
-      denizens.forEach(d => {
-        const domain = d.domain || 'default';
-        if (!domainGroups.has(domain)) {
-          domainGroups.set(domain, []);
-        }
-        domainGroups.get(domain)!.push(d);
-      });
+    });
 
-      domainGroups.forEach((group) => {
-        for (let i = 0; i < group.length; i++) {
-          for (let j = i + 1; j < group.length; j++) {
-            const pairKey = `${group[i].id}-${group[j].id}`;
-            if (!existingPairs.has(pairKey)) {
-              autoConnections.push({
-                from: group[i].id,
-                to: group[j].id,
-                strength: CONSTELLATION.AUTO_CONNECTION_STRENGTH_SAME_DOMAIN,
-                type: 'semantic',
-              });
-              existingPairs.add(pairKey);
-            }
-          }
-        }
-      });
-    }
-
-    return [...connections, ...autoConnections];
+    return [...filteredConnections, ...autoConnections];
   }, [denizens, connections]);
 
   const [currentDenizens, setCurrentDenizens] = useState<Denizen[]>(clusteredDenizens);
