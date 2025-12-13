@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { Denizen, DenizenMedia } from '@/lib/types';
 import { getMediaPublicUrl } from '@/lib/media';
 import Image from 'next/image';
@@ -27,6 +28,23 @@ interface EntityCardProps {
  * - Nomenclate allegiance tinting
  */
 export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelected, activeMedia }: EntityCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Control video playback based on hover state
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isHovered) {
+        videoRef.current.play().catch(err => {
+          // Ignore autoplay errors (browser may block autoplay)
+          console.debug('Video autoplay prevented:', err);
+        });
+      } else {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0; // Reset to beginning
+      }
+    }
+  }, [isHovered]);
 
   // Format coordinate for display (removes leading zero)
   const formatCoord = (n: number): string => {
@@ -96,8 +114,14 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
         ${isNomenclate ? 'entity-card--nomenclate' : ''}
       `}
       style={style}
-      onMouseEnter={!activeMedia ? () => onHover?.(denizen) : undefined}
-      onMouseLeave={!activeMedia ? () => onHover?.(null) : undefined}
+      onMouseEnter={!activeMedia ? () => {
+        setIsHovered(true);
+        onHover?.(denizen);
+      } : undefined}
+      onMouseLeave={!activeMedia ? () => {
+        setIsHovered(false);
+        onHover?.(null);
+      } : undefined}
       onClick={!activeMedia ? () => onClick?.(denizen) : undefined}
       data-id={denizen.id}
     >
@@ -192,14 +216,47 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
             // Video without thumbnail - render video element (muted, no controls for card preview)
             <div className="absolute inset-0">
               <video
+                ref={videoRef}
                 src={rawMediaUrl}
                 className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
                 style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
-                autoPlay
                 loop
                 muted
                 playsInline
               />
+              {/* Subtle gradient overlay for readability */}
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(5, 4, 3, 0.1) 0%, transparent 30%, transparent 50%, rgba(5, 4, 3, 0.4) 80%, rgba(5, 4, 3, 0.85) 100%)',
+                }}
+              />
+            </div>
+          ) : isVideo && thumbnailUrl && rawMediaUrl ? (
+            // Video with thumbnail - show thumbnail by default, video on hover
+            <div className="absolute inset-0">
+              {/* Thumbnail (shown when not hovered) */}
+              <div className={`absolute inset-0 transition-opacity duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
+                <Image
+                  src={thumbnailUrl}
+                  alt={denizen.name}
+                  fill
+                  className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                  style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
+                />
+              </div>
+              {/* Video (shown when hovered) */}
+              <div className={`absolute inset-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                <video
+                  ref={videoRef}
+                  src={rawMediaUrl}
+                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                  style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)' }}
+                  loop
+                  muted
+                  playsInline
+                />
+              </div>
               {/* Subtle gradient overlay for readability */}
               <div 
                 className="absolute inset-0 pointer-events-none"

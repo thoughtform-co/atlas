@@ -5,6 +5,7 @@ import { EntityFormData } from '@/app/admin/new-entity/page';
 import { fetchEntityClasses } from '@/lib/data';
 import { parseMidjourneyPrompt } from '@/lib/midjourney-parser';
 import { Domain } from '@/lib/types';
+import { EntityClassDropdown } from './EntityClassDropdown';
 import styles from './ParameterForm.module.css';
 
 interface ParameterFormProps {
@@ -20,6 +21,13 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
   const [newDomainSref, setNewDomainSref] = useState('');
   const [isMidjourneyOpen, setIsMidjourneyOpen] = useState(false);
   const [midjourneyInput, setMidjourneyInput] = useState(formData.midjourneyPrompt || '');
+  const [isAddingEntityClass, setIsAddingEntityClass] = useState(false);
+  const [newEntityClassName, setNewEntityClassName] = useState('');
+  const [editingEntityClass, setEditingEntityClass] = useState<string | null>(null);
+  const [editedEntityClassName, setEditedEntityClassName] = useState('');
+  const [hoveredEntityClass, setHoveredEntityClass] = useState<string | null>(null);
+  const [isEntityClassDropdownOpen, setIsEntityClassDropdownOpen] = useState(false);
+  const [editingClassInDropdown, setEditingClassInDropdown] = useState<string | null>(null);
 
   // Fetch existing entity classes for dropdown
   useEffect(() => {
@@ -39,6 +47,12 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
       })
       .catch(err => console.error('Failed to fetch domains:', err));
   }, []);
+
+  // Refresh entity classes after adding/editing
+  const refreshEntityClasses = async () => {
+    const classes = await fetchEntityClasses();
+    setEntityClasses(classes);
+  };
 
   // Handle adding a new domain
   const handleAddDomain = async () => {
@@ -68,6 +82,83 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
     } catch (err) {
       console.error('Failed to add domain:', err);
       alert('Failed to create domain');
+    }
+  };
+
+  // Handle adding a new entity class
+  // Note: The class is saved to the database when the entity is saved (via entity_class field)
+  // This function just updates the local state for the dropdown
+  const handleAddEntityClass = (className: string) => {
+    if (!className.trim()) return;
+    
+    const trimmedName = className.trim();
+    
+    // Update form data immediately
+    onChange({ entityClass: trimmedName });
+    
+    // Add to local state if not already present (for dropdown options)
+    if (!entityClasses.includes(trimmedName)) {
+      setEntityClasses(prev => [...prev, trimmedName].sort());
+    }
+    
+    // Close add dialog if open
+    setIsAddingEntityClass(false);
+    setNewEntityClassName('');
+    
+    // Note: The class will be saved to the database when the entity is saved
+    // Entity classes are stored in the entity_class column of denizens table
+    // They're not in a separate table, so they're created when entities are created
+  };
+
+  // Handle editing an entity class (updates all denizens with that class)
+  const handleEditEntityClass = async (oldName: string, newName: string) => {
+    if (!oldName || !newName || oldName.trim() === '' || newName.trim() === '') return;
+    if (oldName === newName) {
+      setEditingEntityClass(null);
+      setEditedEntityClassName('');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/admin/entity-classes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          oldName: oldName.trim(),
+          newName: newName.trim(),
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Update local state
+        setEntityClasses(prev => {
+          const updated = prev.filter(c => c !== oldName);
+          if (!updated.includes(newName.trim())) {
+            updated.push(newName.trim());
+          }
+          return updated.sort();
+        });
+        
+        // Update form data if the current entity uses this class
+        if (formData.entityClass === oldName) {
+          onChange({ entityClass: newName.trim() });
+        }
+        
+        setEditingEntityClass(null);
+        setEditedEntityClassName('');
+        
+        // Refresh classes to ensure consistency
+        await refreshEntityClasses();
+        
+        alert(data.message || `Updated ${data.updated || 0} entities`);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update entity class');
+      }
+    } catch (err) {
+      console.error('Failed to edit entity class:', err);
+      alert('Failed to update entity class');
     }
   };
 
@@ -224,32 +315,174 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
         )}
       </div>
 
-      {/* Class (Entity Class) */}
+      {/* Class (Entity Class) - Custom dropdown with edit functionality */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
           Class
         </label>
-        <input
-          type="text"
-          list="entity-classes"
-          className={styles.fieldInput}
-          value={formData.entityClass}
-          onChange={(e) => {
-            const value = e.target.value;
-            onChange({ entityClass: value });
-            // If it's a new class, add it to the list
-            if (value && !entityClasses.includes(value)) {
-              setEntityClasses([...entityClasses, value].sort());
-            }
-          }}
-          placeholder="Eigensage, Nullseer, etc..."
-        />
-        <datalist id="entity-classes">
-          {entityClasses.map((cls) => (
-            <option key={cls} value={cls} />
-          ))}
-        </datalist>
+        {!isAddingEntityClass && editingEntityClass === null ? (
+          <EntityClassDropdown
+            value={formData.entityClass}
+            options={entityClasses}
+            onChange={(value) => onChange({ entityClass: value })}
+            onAddNew={() => setIsAddingEntityClass(true)}
+            onEdit={(className) => {
+              setEditingEntityClass(className);
+              setEditedEntityClassName(className);
+            }}
+            onEnterNewClass={(className) => {
+              handleAddEntityClass(className);
+            }}
+            placeholder="Select class or type new..."
+          />
+        ) : isAddingEntityClass ? (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.5rem',
+            padding: '0.75rem',
+            background: 'rgba(202, 165, 84, 0.05)',
+            border: '1px solid rgba(202, 165, 84, 0.2)',
+            borderRadius: '2px',
+          }}>
+            <div style={{ fontSize: '0.5rem', color: 'rgba(236, 227, 214, 0.5)', marginBottom: '0.25rem' }}>
+              NEW CLASS
+            </div>
+            <input
+              type="text"
+              className={styles.fieldInput}
+              value={newEntityClassName}
+              onChange={(e) => setNewEntityClassName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newEntityClassName.trim()) {
+                  handleAddEntityClass(newEntityClassName.trim());
+                } else if (e.key === 'Escape') {
+                  setIsAddingEntityClass(false);
+                  setNewEntityClassName('');
+                }
+              }}
+              placeholder="Class name (e.g., Eigensage, Nullseer)"
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (newEntityClassName.trim()) {
+                    handleAddEntityClass(newEntityClassName.trim());
+                  }
+                }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  background: 'rgba(202, 165, 84, 0.2)',
+                  border: '1px solid rgba(202, 165, 84, 0.4)',
+                  color: '#CAA554',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Create Class
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingEntityClass(false);
+                  setNewEntityClassName('');
+                }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  background: 'transparent',
+                  border: '1px solid rgba(236, 227, 214, 0.2)',
+                  color: 'rgba(236, 227, 214, 0.5)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.5rem',
+            padding: '0.75rem',
+            background: 'rgba(202, 165, 84, 0.05)',
+            border: '1px solid rgba(202, 165, 84, 0.2)',
+            borderRadius: '2px',
+          }}>
+            <div style={{ fontSize: '0.5rem', color: 'rgba(236, 227, 214, 0.5)', marginBottom: '0.25rem' }}>
+              EDIT CLASS: {editingEntityClass}
+            </div>
+            <input
+              type="text"
+              className={styles.fieldInput}
+              value={editedEntityClassName}
+              onChange={(e) => setEditedEntityClassName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && editedEntityClassName.trim() && editingEntityClass) {
+                  handleEditEntityClass(editingEntityClass, editedEntityClassName.trim());
+                } else if (e.key === 'Escape') {
+                  setEditingEntityClass(null);
+                  setEditedEntityClassName('');
+                }
+              }}
+              placeholder="Class name"
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (editingEntityClass && editedEntityClassName.trim()) {
+                    handleEditEntityClass(editingEntityClass, editedEntityClassName.trim());
+                  }
+                }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  background: 'rgba(202, 165, 84, 0.2)',
+                  border: '1px solid rgba(202, 165, 84, 0.4)',
+                  color: '#CAA554',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Save Changes
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingEntityClass(null);
+                  setEditedEntityClassName('');
+                }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  background: 'transparent',
+                  border: '1px solid rgba(236, 227, 214, 0.2)',
+                  color: 'rgba(236, 227, 214, 0.5)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Type */}
