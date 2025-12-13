@@ -26,11 +26,14 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   /**
    * Calculate clustered positions for entities based on their domain.
    * Entities in the same domain are pulled closer together around the first entity's position.
-   * WHY: Improves UX by keeping related entities visible together without scrolling.
+   * Different domains are pushed apart to maintain visual separation.
+   * WHY: Improves UX by keeping related entities visible together without scrolling,
+   * while ensuring different aesthetic domains are clearly distinct clusters.
    * 
-   * Algorithm: Use the first entity in each domain as an "anchor". Other entities in the
-   * same domain are positioned around this anchor using a golden angle spiral, but starting
-   * from their relative direction to preserve spatial relationships.
+   * Algorithm:
+   * 1. Calculate initial domain centers (average position of entities in each domain)
+   * 2. Apply repulsion between domain centers to push different domains apart
+   * 3. Position entities around their (adjusted) domain center using golden angle spiral
    */
   const clusteredDenizens = useMemo(() => {
     // Group denizens by domain, preserving original order
@@ -43,7 +46,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       domainGroups.get(domain)!.push(d);
     });
 
-    // Calculate cluster center for each domain (average of all entity positions in that domain)
+    // Calculate initial cluster center for each domain (average of all entity positions in that domain)
     const domainCenters = new Map<string, Position>();
     domainGroups.forEach((group, domain) => {
       const avgX = group.reduce((sum, d) => sum + d.position.x, 0) / group.length;
@@ -51,17 +54,70 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       domainCenters.set(domain, { x: avgX, y: avgY });
     });
 
+    // Apply repulsion between domain centers to ensure minimum separation
+    // WHY: Domains with different aesthetics should be visually separate in the constellation
+    const domains = Array.from(domainCenters.keys());
+    if (domains.length > 1) {
+      const minSeparation = CONSTELLATION.DOMAIN_MIN_SEPARATION;
+      
+      // Iterative repulsion - push overlapping domain centers apart
+      for (let iter = 0; iter < CONSTELLATION.DOMAIN_REPULSION_ITERATIONS; iter++) {
+        for (let i = 0; i < domains.length; i++) {
+          for (let j = i + 1; j < domains.length; j++) {
+            const centerA = domainCenters.get(domains[i])!;
+            const centerB = domainCenters.get(domains[j])!;
+            
+            const dx = centerB.x - centerA.x;
+            const dy = centerB.y - centerA.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // If domains are too close, push them apart
+            if (distance < minSeparation && distance > 0) {
+              const overlap = minSeparation - distance;
+              const pushX = (dx / distance) * overlap * 0.5;
+              const pushY = (dy / distance) * overlap * 0.5;
+              
+              // Push both domains in opposite directions
+              domainCenters.set(domains[i], {
+                x: centerA.x - pushX,
+                y: centerA.y - pushY,
+              });
+              domainCenters.set(domains[j], {
+                x: centerB.x + pushX,
+                y: centerB.y + pushY,
+              });
+            } else if (distance === 0) {
+              // If exactly overlapping, push in a deterministic direction based on domain name
+              // WHY: Consistent positioning when domains have identical center positions
+              const angle = (domains[i].charCodeAt(0) + domains[j].charCodeAt(0)) * 0.1;
+              domainCenters.set(domains[i], {
+                x: centerA.x - Math.cos(angle) * minSeparation * 0.5,
+                y: centerA.y - Math.sin(angle) * minSeparation * 0.5,
+              });
+              domainCenters.set(domains[j], {
+                x: centerB.x + Math.cos(angle) * minSeparation * 0.5,
+                y: centerB.y + Math.sin(angle) * minSeparation * 0.5,
+              });
+            }
+          }
+        }
+      }
+    }
+
     // Reposition entities within each domain cluster
     return denizens.map(d => {
       const domain = d.domain || 'default';
       const group = domainGroups.get(domain) || [];
+      const center = domainCenters.get(domain)!;
       
-      // If only one entity in domain, keep original position
+      // If only one entity in domain, position at domain center
       if (group.length <= 1) {
-        return d;
+        return {
+          ...d,
+          position: { x: center.x, y: center.y },
+        };
       }
 
-      const center = domainCenters.get(domain)!;
       const indexInGroup = group.findIndex(g => g.id === d.id);
 
       // Calculate position within cluster using golden angle spiral

@@ -83,6 +83,10 @@ export const CONSTELLATION = {
     GROWTH_FACTOR: 0.5,
     MAX_RADIUS_FACTOR: 0.7,
   },
+  // Domain separation: minimum distance between centers of different domains
+  // WHY: Entities from different aesthetic domains should be visually distinct clusters
+  DOMAIN_MIN_SEPARATION: 800, // Minimum px between domain cluster centers
+  DOMAIN_REPULSION_ITERATIONS: 10, // Number of iterations for repulsion algorithm
 } as const;
 
 
