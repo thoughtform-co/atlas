@@ -90,14 +90,6 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   // Track if we need to render video instead of image (video without thumbnail)
   const shouldRenderVideo = isVideo && !thumbnailUrl && rawMediaUrl;
 
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    const logData = {location:'components/constellation/EntityCard.tsx:92',message:'EntityCard thumbnail resolution',data:{denizenId:denizen.id,name:denizen.name,thumbnailRaw:denizen.thumbnail,thumbnailUrl,rawMediaUrl,isVideo,imageUrl,shouldRenderVideo},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'};
-    console.log('[DEBUG]', logData);
-    fetch('http://127.0.0.1:7242/ingest/6d1c01a6-e28f-42e4-aca5-d93649a488e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
-  }
-  // #endregion
-
   // Check if entity has multiple media for stacked hint
   // WHY: Only show stack hint on main card (not on background stacked cards)
   const mediaCount = denizen.media?.filter(m => m.mediaType !== 'thumbnail').length || 0;
