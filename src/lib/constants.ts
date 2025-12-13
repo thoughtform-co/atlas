@@ -12,6 +12,10 @@ export const LAYOUT = {
  */
 
 export const DOMAIN_COLORS = {
+  // Gradient Throne: Warm gold, ethereal light, divine radiance
+  // WHY: The primary domain - soft golden particles creating a regal, luminous atmosphere
+  'Gradient Throne': { r: 212, g: 175, b: 95, hex: '#D4AF5F' },
+  
   // Starhaven Reaches: Gold-umber, warm desert tones, cosmic backdrops
   'Starhaven Reaches': { r: 202, g: 165, b: 84, hex: '#CAA554' },
   
@@ -38,6 +42,14 @@ export function getDomainColor(domain: string): { r: number; g: number; b: numbe
  * Domain visual characteristics for particle rendering
  */
 export const DOMAIN_STYLES = {
+  // Gradient Throne: Soft, warm golden cloud - regal and luminous
+  // WHY: Creates a divine, radiant atmosphere around the main entity cluster
+  'Gradient Throne': {
+    particleDensity: 1.0,      // Moderate density for soft cloud effect
+    glitchChance: 0.02,        // Minimal glitch - stable, divine
+    pulseSpeed: 0.002,         // Very slow, gentle breathing like candlelight
+    maxAlpha: 0.15,            // More visible - warm golden glow
+  },
   'Starhaven Reaches': {
     particleDensity: 0.8,      // Relative density of nebula particles
     glitchChance: 0.05,        // Low glitch - warm and stable
@@ -85,8 +97,9 @@ export const CONSTELLATION = {
   },
   // Domain separation: minimum distance between centers of different domains
   // WHY: Entities from different aesthetic domains should be visually distinct clusters
-  DOMAIN_MIN_SEPARATION: 800, // Minimum px between domain cluster centers
-  DOMAIN_REPULSION_ITERATIONS: 10, // Number of iterations for repulsion algorithm
+  // The constellation is an infinite canvas - domains should hint at distant territories
+  DOMAIN_MIN_SEPARATION: 1800, // Minimum px between domain cluster centers (far apart)
+  DOMAIN_REPULSION_ITERATIONS: 15, // Number of iterations for repulsion algorithm
 } as const;
 
 
