@@ -46,15 +46,6 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   const isExistential = denizen.threatLevel === 'Existential';
   const connectionCount = denizen.connections?.length || 0;
 
-  // Convert storage path to public URL, handling both relative paths and full URLs
-  const getMediaUrl = (path: string | undefined): string | undefined => {
-    if (!path) return undefined;
-    // If it's already a full URL, return it
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    // Otherwise convert from storage path
-    return getMediaPublicUrl(path) || undefined;
-  };
-  
   // Get primary media for Constellation view
   // WHY: If activeMedia is provided, use it immediately (for stacked cards)
   // Otherwise, prioritize explicit primary media, then original image field, then first media in array
@@ -63,7 +54,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
     denizen.media?.find(m => m.isPrimary) ||
     (denizen.image
       ? denizen.media?.find(m => {
-          const mediaUrl = getMediaUrl(m.storagePath);
+          const mediaUrl = getMediaPublicUrl(m.storagePath);
           return mediaUrl === denizen.image || m.storagePath === denizen.image;
         }) || null
       : denizen.media?.[0])
@@ -74,14 +65,14 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
   const isVideoFromUrl = !!denizen.videoUrl;
   // Use resolved media if available, otherwise use original image field
   // WHY: This ensures additional media never replaces the original in Constellation view
-  const rawMediaUrl = resolvedMedia ? getMediaUrl(resolvedMedia.storagePath) : denizen.image;
+  const rawMediaUrl = resolvedMedia ? getMediaPublicUrl(resolvedMedia.storagePath) : denizen.image;
   // Check for video extension in URL (handle both full URLs and paths, with or without query params)
   const isVideoFromExtension = rawMediaUrl?.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) != null;
   const isVideo = isVideoFromMedia || isVideoFromUrl || isVideoFromExtension;
   
   // For card preview, prefer thumbnail for video entities (faster loading, no autoplay)
   // Falls back to video URL if no thumbnail, then to image
-  const thumbnailUrl = denizen.thumbnail ? getMediaUrl(denizen.thumbnail) : undefined;
+  const thumbnailUrl = denizen.thumbnail ? getMediaPublicUrl(denizen.thumbnail) : undefined;
   
   // If we have a thumbnail, prefer it for videos (even if video detection failed)
   // For images: use the raw media URL

@@ -9,7 +9,7 @@ const MEDIA_BUCKET = 'denizen-media';
 /**
  * Transform database row to DenizenMedia type
  */
-interface MediaRow {
+export interface MediaRow {
   id: string;
   denizen_id: string;
   media_type: string;
@@ -26,7 +26,7 @@ interface MediaRow {
   updated_at: string;
 }
 
-function transformMediaRow(row: MediaRow): DenizenMedia {
+export function transformMediaRow(row: MediaRow): DenizenMedia {
   return {
     id: row.id,
     denizenId: row.denizen_id,
@@ -47,8 +47,19 @@ function transformMediaRow(row: MediaRow): DenizenMedia {
 
 /**
  * Get public URL for a media file
+ * Handles both full URLs (returns as-is) and storage paths (converts to public URL)
  */
-export function getMediaPublicUrl(storagePath: string): string | null {
+export function getMediaPublicUrl(storagePath: string | undefined): string | null {
+  if (!storagePath) {
+    return null;
+  }
+  
+  // If it's already a full URL, return it
+  if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) {
+    return storagePath;
+  }
+  
+  // Otherwise convert from storage path
   if (!isSupabaseConfigured() || !supabase) {
     return null;
   }

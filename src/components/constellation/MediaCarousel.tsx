@@ -105,10 +105,6 @@ export function MediaCarousel({ allMedia, currentIndex, onIndexChange, mainCardW
   const leftIndex = prevIndex;
   const rightIndex = displayMedia.length === 2 ? prevIndex : nextIndex;
   
-  // Helper to resolve media URL
-  const resolveMediaUrl = (media: DenizenMedia): string | undefined => {
-    return getMediaPublicUrl(media.storagePath) || undefined;
-  };
   
   // Helper to check if media is video
   const isVideo = (media: DenizenMedia): boolean => {
@@ -219,7 +215,6 @@ export function MediaCarousel({ allMedia, currentIndex, onIndexChange, mainCardW
           gap={gap}
           mainCardWidth={mainCardWidth}
           onClick={handlePrev}
-          resolveMediaUrl={resolveMediaUrl}
           isVideo={isVideo}
           getThumbnailUrl={getThumbnailUrl}
         />
@@ -235,7 +230,6 @@ export function MediaCarousel({ allMedia, currentIndex, onIndexChange, mainCardW
           gap={gap}
           mainCardWidth={mainCardWidth}
           onClick={handleNext}
-          resolveMediaUrl={resolveMediaUrl}
           isVideo={isVideo}
           getThumbnailUrl={getThumbnailUrl}
         />
@@ -296,11 +290,10 @@ function CarouselCard({
   gap: number;
   mainCardWidth: number;
   onClick: () => void;
-  resolveMediaUrl: (media: DenizenMedia) => string | undefined;
   isVideo: (media: DenizenMedia) => boolean;
   getThumbnailUrl: (media: DenizenMedia) => string | undefined;
 }) {
-  const mediaUrl = resolveMediaUrl(media);
+  const mediaUrl = getMediaPublicUrl(media.storagePath) || undefined;
   const isVideoMedia = isVideo(media);
   const thumbnailUrl = getThumbnailUrl(media);
   

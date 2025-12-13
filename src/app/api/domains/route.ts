@@ -1,19 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
-// Domain type
-export interface Domain {
-  id: string;
-  name: string;
-  srefCode: string | null;
-  description: string | null;
-  colorR: number;
-  colorG: number;
-  colorB: number;
-  colorHex: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Domain } from '@/lib/types';
 
 // GET - Fetch all domains
 export async function GET() {

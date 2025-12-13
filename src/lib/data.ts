@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Denizen, Connection, DenizenMedia, PhaseState } from './types';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
 import type { Database } from './database.types';
+import { transformMediaRow as transformMediaRowFromMedia, type MediaRow } from './media';
 
 /**
  * Get a Supabase client that works in both client and server contexts
@@ -82,23 +83,6 @@ interface DenizenRow {
   manifold_curvature: number | null;
 }
 
-interface DenizenMediaRow {
-  id: string;
-  denizen_id: string;
-  media_type: string;
-  storage_path: string;
-  file_name: string;
-  name: string | null;
-  file_size: number | null;
-  mime_type: string | null;
-  display_order: number;
-  is_primary: boolean;
-  caption: string | null;
-  alt_text: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 interface ConnectionRow {
   from_denizen_id: string;
   to_denizen_id: string;
@@ -109,28 +93,6 @@ interface ConnectionRow {
 interface ConnectionRefRow {
   from_denizen_id: string;
   to_denizen_id: string;
-}
-
-/**
- * Transform Supabase media row to DenizenMedia type
- */
-function transformMediaRow(row: DenizenMediaRow): DenizenMedia {
-  return {
-    id: row.id,
-    denizenId: row.denizen_id,
-    mediaType: row.media_type as DenizenMedia['mediaType'],
-    storagePath: row.storage_path,
-    fileName: row.file_name,
-    name: row.name ?? undefined,
-    fileSize: row.file_size ?? undefined,
-    mimeType: row.mime_type ?? undefined,
-    displayOrder: row.display_order,
-    isPrimary: row.is_primary,
-    caption: row.caption ?? undefined,
-    altText: row.alt_text ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
 }
 
 /**
@@ -385,8 +347,8 @@ export async function fetchDenizens(): Promise<Denizen[]> {
 
     // Build media map
     const mediaMap = new Map<string, DenizenMedia[]>();
-    (mediaRows as DenizenMediaRow[] || []).forEach(row => {
-      const media = transformMediaRow(row);
+    (mediaRows as MediaRow[] || []).forEach(row => {
+      const media = transformMediaRowFromMedia(row);
       const existing = mediaMap.get(row.denizen_id) || [];
       existing.push(media);
       mediaMap.set(row.denizen_id, existing);
@@ -530,7 +492,7 @@ export async function fetchDenizenById(id: string): Promise<Denizen | null> {
       // Continue without media - don't fail the whole request
     }
 
-    const media = (mediaRows as DenizenMediaRow[] || []).map(transformMediaRow);
+    const media = (mediaRows as MediaRow[] || []).map(transformMediaRowFromMedia);
 
     return transformDenizenRow(denizenRow as DenizenRow, connectionIds, media);
   } catch (error) {

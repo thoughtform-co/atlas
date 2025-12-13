@@ -317,15 +317,6 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   const tempValue = ((getManifestationCoords.dynamics + 1) / 2).toFixed(2);
   const hallucinationScore = Math.round((getManifestationCoords.dynamics + 1) * 2.5);
 
-  // Helper to convert storage path to public URL
-  const resolveMediaUrl = (path: string | undefined): string | undefined => {
-    if (!path) return undefined;
-    // If it's already a full URL, return it
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    // Otherwise convert from storage path
-    return getMediaPublicUrl(path) || undefined;
-  };
-
   // Get current media from allMedia array, or fallback to denizen's existing media
   // WHY: Prioritize explicit primary, then original image field, then first in array
   // This ensures additional media doesn't replace the original in the modal
@@ -334,7 +325,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     : (displayDenizen.media?.find(m => m.isPrimary) || 
        (displayDenizen.image ? 
          displayDenizen.media?.find(m => {
-           const mediaUrl = resolveMediaUrl(m.storagePath);
+           const mediaUrl = getMediaPublicUrl(m.storagePath);
            return mediaUrl === displayDenizen.image || m.storagePath === displayDenizen.image;
          }) || null :
          displayDenizen.media?.[0]));
@@ -342,11 +333,11 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
   // Use uploaded media if available, otherwise use current media from allMedia, then fallback to original image
   // WHY: Always prefer the original image field if no media array match is found
   const mediaUrl = uploadedMedia?.url || 
-                   (currentMedia ? resolveMediaUrl(currentMedia.storagePath) : null) || 
+                   (currentMedia ? getMediaPublicUrl(currentMedia.storagePath) : null) || 
                    displayDenizen.image;
   
   // Get thumbnail URL (for video entities)
-  const thumbnailUrl = displayDenizen.thumbnail ? resolveMediaUrl(displayDenizen.thumbnail) : undefined;
+  const thumbnailUrl = displayDenizen.thumbnail ? getMediaPublicUrl(displayDenizen.thumbnail) : undefined;
   
   // Check if media is video based on multiple sources
   const isVideoFromMedia = uploadedMedia?.type === 'video' || currentMedia?.mediaType === 'video';

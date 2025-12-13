@@ -168,3 +168,16 @@ export interface ArchivistSession {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Domain {
+  id: string;
+  name: string;
+  srefCode: string | null;
+  description: string | null;
+  colorR: number;
+  colorG: number;
+  colorB: number;
+  colorHex: string;
+  createdAt: string;
+  updatedAt: string;
+}

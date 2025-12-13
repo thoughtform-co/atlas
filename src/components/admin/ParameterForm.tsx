@@ -4,16 +4,8 @@ import { useState, useEffect } from 'react';
 import { EntityFormData } from '@/app/admin/new-entity/page';
 import { fetchEntityClasses } from '@/lib/data';
 import { parseMidjourneyPrompt } from '@/lib/midjourney-parser';
+import { Domain } from '@/lib/types';
 import styles from './ParameterForm.module.css';
-
-// Domain type from API
-interface Domain {
-  id: string;
-  name: string;
-  srefCode: string | null;
-  description: string | null;
-  colorHex: string;
-}
 
 interface ParameterFormProps {
   formData: EntityFormData;
