@@ -81,16 +81,16 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
     });
   };
 
-  // Handle feature array changes
-  const handleFeaturesChange = (index: number, value: string) => {
-    const newFeatures = [...formData.features];
-    newFeatures[index] = value;
-    onChange({ features: newFeatures.filter(f => f.trim() !== '') });
+  // Handle abilities array changes (renamed from features)
+  const handleAbilitiesChange = (index: number, value: string) => {
+    const newAbilities = [...formData.abilities];
+    newAbilities[index] = value;
+    onChange({ abilities: newAbilities.filter(a => a.trim() !== '') });
   };
 
-  const addFeature = () => {
-    if (formData.features.length < 5) {
-      onChange({ features: [...formData.features, ''] });
+  const addAbility = () => {
+    if (formData.abilities.length < 5) {
+      onChange({ abilities: [...formData.abilities, ''] });
     }
   };
 
@@ -119,129 +119,7 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
 
   return (
     <div className={styles.form}>
-      {/* Class (Entity Class) - Moved to top */}
-      <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>
-          <span className={styles.fieldPrefix}>▸</span>
-          Class
-        </label>
-        <input
-          type="text"
-          list="entity-classes"
-          className={styles.fieldInput}
-          value={formData.entityClass}
-          onChange={(e) => {
-            const value = e.target.value;
-            onChange({ entityClass: value });
-            // If it's a new class, add it to the list
-            if (value && !entityClasses.includes(value)) {
-              setEntityClasses([...entityClasses, value].sort());
-            }
-          }}
-          placeholder="Eigensage, Nullseer, etc..."
-        />
-        <datalist id="entity-classes">
-          {entityClasses.map((cls) => (
-            <option key={cls} value={cls} />
-          ))}
-        </datalist>
-      </div>
-
-      {/* Entity Name - Individual name */}
-      <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>
-          <span className={styles.fieldPrefix}>▸</span>
-          Entity Name
-        </label>
-        <input
-          type="text"
-          className={styles.fieldInput}
-          value={formData.entityName}
-          onChange={(e) => onChange({ entityName: e.target.value })}
-          placeholder="Individual entity name (e.g., Vince)"
-        />
-      </div>
-
-      {/* Subtitle */}
-      <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>
-          <span className={styles.fieldPrefix}>▸</span>
-          Subtitle
-        </label>
-        <input
-          type="text"
-          className={styles.fieldInput}
-          value={formData.subtitle}
-          onChange={(e) => onChange({ subtitle: e.target.value })}
-          placeholder="Optional epithet..."
-        />
-      </div>
-
-      {/* Description */}
-      <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>
-          <span className={styles.fieldPrefix}>▸</span>
-          Description <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontSize: '0.5rem', fontWeight: 'normal' }}>(max 200 characters)</span>
-        </label>
-        <textarea
-          className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-          value={formData.description}
-          onChange={(e) => {
-            const value = e.target.value.slice(0, 200);
-            onChange({ description: value });
-          }}
-          placeholder="Describe the entity..."
-          rows={3}
-          maxLength={200}
-        />
-        {formData.description.length >= 200 && (
-          <div style={{ fontSize: '0.4rem', color: 'rgba(236, 227, 214, 0.3)', marginTop: '0.25rem' }}>
-            Character limit reached (200)
-          </div>
-        )}
-      </div>
-
-      {/* Type (Guardian/Wanderer/etc) / Threat Row */}
-      <div className={styles.fieldRow}>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>
-            <span className={styles.fieldPrefix}>▸</span>
-            Type
-          </label>
-          <select
-            className={styles.fieldSelect}
-            value={formData.type}
-            onChange={(e) => onChange({ type: e.target.value as EntityFormData['type'] })}
-          >
-            <option value="Guardian">Guardian</option>
-            <option value="Wanderer">Wanderer</option>
-            <option value="Architect">Architect</option>
-            <option value="Void-Born">Void-Born</option>
-            <option value="Hybrid">Hybrid</option>
-          </select>
-        </div>
-
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>
-            <span className={styles.fieldPrefix}>▸</span>
-            Threat
-          </label>
-          <select
-            className={styles.fieldSelect}
-            value={formData.threatLevel}
-            onChange={(e) => onChange({ threatLevel: e.target.value as EntityFormData['threatLevel'] })}
-          >
-            <option value="Benign">Benign</option>
-            <option value="Cautious">Cautious</option>
-            <option value="Volatile">Volatile</option>
-            <option value="Existential">Existential</option>
-          </select>
-        </div>
-      </div>
-
-      <div className={styles.divider} />
-
-      {/* Domain - Dropdown with Add New option */}
+      {/* Domain - Moved to top */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
@@ -346,173 +224,293 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
         )}
       </div>
 
-      {/* Phase State & Hallucination Row */}
-      <div className={styles.fieldRow}>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>
-            <span className={styles.fieldPrefix}>▸</span>
-            Phase State
-          </label>
-          <select
-            className={styles.fieldSelect}
-            value={formData.phaseState}
-            onChange={(e) => onChange({ phaseState: e.target.value as EntityFormData['phaseState'] })}
-          >
-            <option value="Solid">Solid</option>
-            <option value="Liminal">Liminal</option>
-            <option value="Spectral">Spectral</option>
-            <option value="Fluctuating">Fluctuating</option>
-            <option value="Crystallized">Crystallized</option>
-          </select>
-        </div>
-
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>
-            <span className={styles.fieldPrefix}>▸</span>
-            Manifold Curvature
-          </label>
-          <select
-            className={styles.fieldSelect}
-            value={formData.manifoldCurvature}
-            onChange={(e) => onChange({ manifoldCurvature: e.target.value as EntityFormData['manifoldCurvature'] })}
-          >
-            <option value="Stable">Stable</option>
-            <option value="Moderate">Moderate</option>
-            <option value="Severe">Severe</option>
-            <option value="Critical">Critical</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Hallucination Index Slider */}
+      {/* Class (Entity Class) */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
-          Hallucination Index
+          Class
         </label>
-        <div className={styles.sliderWrap}>
-          <input
-            type="range"
-            className={styles.slider}
-            min="0"
-            max="1"
-            step="0.01"
-            value={formData.hallucinationIndex}
-            onChange={(e) => onChange({ hallucinationIndex: parseFloat(e.target.value) })}
-          />
-          <span className={styles.sliderValue}>
-            {formData.hallucinationIndex.toFixed(2)}
-          </span>
-        </div>
+        <input
+          type="text"
+          list="entity-classes"
+          className={styles.fieldInput}
+          value={formData.entityClass}
+          onChange={(e) => {
+            const value = e.target.value;
+            onChange({ entityClass: value });
+            // If it's a new class, add it to the list
+            if (value && !entityClasses.includes(value)) {
+              setEntityClasses([...entityClasses, value].sort());
+            }
+          }}
+          placeholder="Eigensage, Nullseer, etc..."
+        />
+        <datalist id="entity-classes">
+          {entityClasses.map((cls) => (
+            <option key={cls} value={cls} />
+          ))}
+        </datalist>
       </div>
 
-      <div className={styles.divider} />
-
-      {/* Latent Position Coordinates */}
+      {/* Type */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
-          Latent Position
+          Type
         </label>
-        <div className={styles.coordsRow}>
-          <div className={styles.coordInput}>
-            <span className={styles.coordLabel} style={{ color: '#CAA554' }}>◆ Geometry</span>
-            <input
-              type="number"
-              className={styles.fieldInput}
-              value={formData.coordinates.geometry}
-              onChange={(e) => handleCoordinateChange('geometry', parseFloat(e.target.value) || 0)}
-              step="0.001"
-              min="-1"
-              max="1"
-            />
-          </div>
-          <div className={styles.coordInput}>
-            <span className={styles.coordLabel} style={{ color: '#ECE3D6' }}>○ Alterity</span>
-            <input
-              type="number"
-              className={styles.fieldInput}
-              value={formData.coordinates.alterity}
-              onChange={(e) => handleCoordinateChange('alterity', parseFloat(e.target.value) || 0)}
-              step="0.001"
-              min="-1"
-              max="1"
-            />
-          </div>
-          <div className={styles.coordInput}>
-            <span className={styles.coordLabel} style={{ color: '#5B8A7A' }}>◇ Dynamics</span>
-            <input
-              type="number"
-              className={styles.fieldInput}
-              value={formData.coordinates.dynamics}
-              onChange={(e) => handleCoordinateChange('dynamics', parseFloat(e.target.value) || 0)}
-              step="0.001"
-              min="-1"
-              max="1"
-            />
-          </div>
-        </div>
+        <select
+          className={styles.fieldSelect}
+          value={formData.type}
+          onChange={(e) => onChange({ type: e.target.value as EntityFormData['type'] })}
+        >
+          <option value="Guardian">Guardian</option>
+          <option value="Wanderer">Wanderer</option>
+          <option value="Architect">Architect</option>
+          <option value="Void-Born">Void-Born</option>
+          <option value="Hybrid">Hybrid</option>
+        </select>
       </div>
 
-      <div className={styles.divider} />
-
-      {/* Glyphs */}
+      {/* Subtitle */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
-          Glyphs (4 symbols)
+          Subtitle
         </label>
         <input
           type="text"
           className={styles.fieldInput}
-          value={formData.glyphs}
-          onChange={(e) => onChange({ glyphs: e.target.value.slice(0, 8) })}
-          placeholder="◆●∇⊗"
-          maxLength={8}
+          value={formData.subtitle}
+          onChange={(e) => onChange({ subtitle: e.target.value })}
+          placeholder="Optional epithet..."
         />
       </div>
 
-      {/* Features */}
+      {/* Description */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>
           <span className={styles.fieldPrefix}>▸</span>
-          Features (up to 5)
+          Description <span style={{ color: 'rgba(236, 227, 214, 0.3)', fontSize: '0.5rem', fontWeight: 'normal' }}>(max 200 characters)</span>
         </label>
-        {formData.features.map((feature, index) => (
+        <textarea
+          className={`${styles.fieldInput} ${styles.fieldTextarea}`}
+          value={formData.description}
+          onChange={(e) => {
+            const value = e.target.value.slice(0, 200);
+            onChange({ description: value });
+          }}
+          placeholder="Describe the entity..."
+          rows={3}
+          maxLength={200}
+        />
+        {formData.description.length >= 200 && (
+          <div style={{ fontSize: '0.4rem', color: 'rgba(236, 227, 214, 0.3)', marginTop: '0.25rem' }}>
+            Character limit reached (200)
+          </div>
+        )}
+      </div>
+
+      <div className={styles.divider} />
+
+      {/* Abilities (renamed from Features) */}
+      <div className={styles.fieldGroup}>
+        <label className={styles.fieldLabel}>
+          <span className={styles.fieldPrefix}>▸</span>
+          Abilities (up to 5)
+        </label>
+        {formData.abilities.map((ability, index) => (
           <input
             key={index}
             type="text"
             className={styles.fieldInput}
-            value={feature}
-            onChange={(e) => handleFeaturesChange(index, e.target.value)}
-            placeholder={`Feature ${index + 1}...`}
+            value={ability}
+            onChange={(e) => handleAbilitiesChange(index, e.target.value)}
+            placeholder={`Ability ${index + 1}...`}
             style={{ marginTop: index > 0 ? '0.5rem' : 0 }}
           />
         ))}
-        {formData.features.length < 5 && (
+        {formData.abilities.length < 5 && (
           <button
             type="button"
             className={styles.addButton}
-            onClick={addFeature}
+            onClick={addAbility}
           >
-            + Add Feature
+            + Add Ability
           </button>
         )}
       </div>
 
-      {/* Lore */}
-      <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>
-          <span className={styles.fieldPrefix}>▸</span>
-          Lore
-        </label>
-        <textarea
-          className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-          value={formData.lore}
-          onChange={(e) => onChange({ lore: e.target.value })}
-          placeholder="Historical context, theories..."
-          rows={4}
-        />
+      <div className={styles.divider} />
+
+      {/* Parameter Cluster Section - with soft yellow border */}
+      <div className={styles.parameterCluster}>
+        {/* Phase State & Manifold Curvature Row */}
+        <div className={styles.fieldRow}>
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>
+              <span className={styles.fieldPrefix}>▸</span>
+              Phase State
+            </label>
+            <select
+              className={styles.fieldSelect}
+              value={formData.phaseState}
+              onChange={(e) => onChange({ phaseState: e.target.value as EntityFormData['phaseState'] })}
+            >
+              <option value="Solid">Solid</option>
+              <option value="Liminal">Liminal</option>
+              <option value="Spectral">Spectral</option>
+              <option value="Fluctuating">Fluctuating</option>
+              <option value="Crystallized">Crystallized</option>
+            </select>
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>
+              <span className={styles.fieldPrefix}>▸</span>
+              Manifold Curvature
+            </label>
+            <select
+              className={styles.fieldSelect}
+              value={formData.manifoldCurvature}
+              onChange={(e) => onChange({ manifoldCurvature: e.target.value as EntityFormData['manifoldCurvature'] })}
+            >
+              <option value="Stable">Stable</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Severe">Severe</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Hallucination Index Slider */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldPrefix}>▸</span>
+            Hallucination Index
+          </label>
+          <div className={styles.sliderWrap}>
+            <input
+              type="range"
+              className={styles.slider}
+              min="0"
+              max="1"
+              step="0.01"
+              value={formData.hallucinationIndex}
+              onChange={(e) => onChange({ hallucinationIndex: parseFloat(e.target.value) })}
+            />
+            <span className={styles.sliderValue}>
+              {formData.hallucinationIndex.toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        {/* Superposition */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldPrefix}>▸</span>
+            Superposition
+          </label>
+          <div className={styles.sliderWrap}>
+            <input
+              type="range"
+              className={styles.slider}
+              min="-1"
+              max="1"
+              step="0.01"
+              value={formData.superposition ?? formData.coordinates.alterity}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                onChange({ 
+                  superposition: value,
+                  coordinates: {
+                    ...formData.coordinates,
+                    alterity: value, // Sync with coordinates for animation
+                  }
+                });
+              }}
+            />
+            <span className={styles.sliderValue}>
+              {(formData.superposition ?? formData.coordinates.alterity).toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        {/* Embedding Signature */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldPrefix}>▸</span>
+            Embedding Signature
+          </label>
+          <div className={styles.sliderWrap}>
+            <input
+              type="range"
+              className={styles.slider}
+              min="-1"
+              max="1"
+              step="0.01"
+              value={formData.embeddingSignature ?? formData.coordinates.dynamics}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                onChange({ 
+                  embeddingSignature: value,
+                  coordinates: {
+                    ...formData.coordinates,
+                    dynamics: value, // Sync with coordinates for animation
+                  }
+                });
+              }}
+            />
+            <span className={styles.sliderValue}>
+              {(formData.embeddingSignature ?? formData.coordinates.dynamics).toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        {/* Latent Position Coordinates */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>
+            <span className={styles.fieldPrefix}>▸</span>
+            Latent Position
+          </label>
+          <div className={styles.coordsRow}>
+            <div className={styles.coordInput}>
+              <span className={styles.coordLabel} style={{ color: '#CAA554' }}>◆ Geometry</span>
+              <input
+                type="number"
+                className={styles.fieldInput}
+                value={formData.coordinates.geometry}
+                onChange={(e) => handleCoordinateChange('geometry', parseFloat(e.target.value) || 0)}
+                step="0.001"
+                min="-1"
+                max="1"
+              />
+            </div>
+            <div className={styles.coordInput}>
+              <span className={styles.coordLabel} style={{ color: '#ECE3D6' }}>○ Alterity</span>
+              <input
+                type="number"
+                className={styles.fieldInput}
+                value={formData.coordinates.alterity}
+                onChange={(e) => handleCoordinateChange('alterity', parseFloat(e.target.value) || 0)}
+                step="0.001"
+                min="-1"
+                max="1"
+              />
+            </div>
+            <div className={styles.coordInput}>
+              <span className={styles.coordLabel} style={{ color: '#5B8A7A' }}>◇ Dynamics</span>
+              <input
+                type="number"
+                className={styles.fieldInput}
+                value={formData.coordinates.dynamics}
+                onChange={(e) => handleCoordinateChange('dynamics', parseFloat(e.target.value) || 0)}
+                step="0.001"
+                min="-1"
+                max="1"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className={styles.divider} />
@@ -564,7 +562,7 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
                 }}
                 placeholder="Paste full MidJourney prompt here..."
                 rows={4}
-                style={{ fontFamily: 'var(--font-mono, "PT Mono", monospace)', fontSize: '0.5rem', width: '100%' }}
+                style={{ fontFamily: 'var(--font-mono, "PT Mono", monospace)', fontSize: '0.75rem', width: '100%' }}
               />
               <button
                 type="button"
@@ -603,29 +601,29 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
                 background: 'rgba(236, 227, 214, 0.05)',
                 border: '1px solid rgba(236, 227, 214, 0.1)',
                 borderRadius: '2px',
-                fontSize: '0.4rem',
+                fontSize: '0.625rem',
                 fontFamily: 'var(--font-mono, "PT Mono", monospace)',
                 color: 'rgba(236, 227, 214, 0.5)',
               }}>
-                <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: 'rgba(236, 227, 214, 0.7)' }}>
+                <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: 'rgba(236, 227, 214, 0.7)', fontSize: '0.625rem' }}>
                   Parsed Components:
                 </div>
                 {parsedMidjourney.sref && (
-                  <div>--sref: {parsedMidjourney.sref}</div>
+                  <div style={{ fontSize: '0.625rem' }}>--sref: {parsedMidjourney.sref}</div>
                 )}
                 {parsedMidjourney.profile && (
-                  <div>--profile: {parsedMidjourney.profile}</div>
+                  <div style={{ fontSize: '0.625rem' }}>--profile: {parsedMidjourney.profile}</div>
                 )}
                 {parsedMidjourney.stylization !== undefined && (
-                  <div>--s: {parsedMidjourney.stylization}</div>
+                  <div style={{ fontSize: '0.625rem' }}>--s: {parsedMidjourney.stylization}</div>
                 )}
                 {parsedMidjourney.styleWeight !== undefined && (
-                  <div>--sw: {parsedMidjourney.styleWeight}</div>
+                  <div style={{ fontSize: '0.625rem' }}>--sw: {parsedMidjourney.styleWeight}</div>
                 )}
                 {!parsedMidjourney.sref && !parsedMidjourney.profile && 
                  parsedMidjourney.stylization === undefined && 
                  parsedMidjourney.styleWeight === undefined && (
-                  <div style={{ fontStyle: 'italic' }}>No parameters detected</div>
+                  <div style={{ fontStyle: 'italic', fontSize: '0.625rem' }}>No parameters detected</div>
                 )}
               </div>
             )}

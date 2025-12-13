@@ -255,9 +255,23 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     if (!displayDenizen) {
       return { geometry: 0, alterity: 0, dynamics: 0 };
     }
+    
+    // Base values: prioritize explicit metaphysical values, fallback to coordinates
+    // For now, we'll use coordinates as the base since superposition/embeddingSignature
+    // are stored as arrays in the database. When form values are saved, they'll update coordinates.
+    const baseGeometry = displayDenizen.coordinates.geometry;
+    // Use alterity for superposition (will be updated when form values are properly stored)
+    const baseAlterity = displayDenizen.coordinates.alterity;
+    // Use dynamics for embedding signature (will be updated when form values are properly stored)
+    const baseDynamics = displayDenizen.coordinates.dynamics;
+    
     if (currentMediaIndex === 0) {
-      // Primary media uses original coordinates
-      return displayDenizen.coordinates;
+      // Primary media uses base values
+      return {
+        geometry: baseGeometry,
+        alterity: baseAlterity,
+        dynamics: baseDynamics,
+      };
     }
     
     // Use media index as seed for deterministic variation
@@ -270,9 +284,9 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
     };
     
     return {
-      geometry: variation(displayDenizen.coordinates.geometry, 1),
-      alterity: variation(displayDenizen.coordinates.alterity, 2),
-      dynamics: variation(displayDenizen.coordinates.dynamics, 3),
+      geometry: variation(baseGeometry, 1),
+      alterity: variation(baseAlterity, 2),
+      dynamics: variation(baseDynamics, 3),
     };
   }, [displayDenizen?.coordinates, currentMediaIndex]);
 
@@ -1381,14 +1395,16 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               {(displayDenizen.entityClass || displayDenizen.name).toUpperCase()}
             </div>
             <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', fontSize: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              {displayDenizen.subtitle && (
+                <div style={{ color: 'rgba(236, 227, 214, 0.5)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {displayDenizen.subtitle.toUpperCase()}
+                </div>
+              )}
               <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 TYPE <span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.type.toUpperCase()}</span>
               </div>
-              <div style={{ color: 'rgba(236, 227, 214, 0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                THREAT <span style={{ color: displayDenizen.threatLevel === 'Volatile' || displayDenizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)' }}>{displayDenizen.threatLevel.toUpperCase()}</span>
-              </div>
-              </div>
             </div>
+          </div>
           <div style={{ 
             display: 'flex', 
             alignItems: 'flex-start', 

@@ -39,24 +39,23 @@ ${worldContext ? `\n## EXISTING WORLD CONTEXT\n\n${worldContext}\n\n## YOUR TASK
 Return a JSON object with these fields (use null for fields you cannot determine):
 
 {
-  "name": "Suggested entity name (evocative, otherworldly)",
+  "name": "Suggested entity class name (evocative, otherworldly, e.g., Eigensage, Nullseer)",
   "subtitle": "Optional epithet or title",
   "type": "Guardian | Wanderer | Architect | Void-Born | Hybrid",
   "allegiance": "Liminal Covenant | Nomenclate | Unaligned | Unknown",
-  "threatLevel": "Benign | Cautious | Volatile | Existential",
   "domain": "The conceptual territory this entity occupies",
-  "description": "2-3 sentence poetic description of what this entity is/does",
-  "lore": "Historical context, theories about origin, significance",
-  "features": ["Array of 3-5 characteristic abilities or behaviors"],
+  "description": "2-3 sentence poetic description of what this entity is/does (max 200 characters)",
+  "abilities": ["Array of 3-5 characteristic abilities or behaviors (renamed from features)"],
   "phaseState": "Solid | Liminal | Spectral | Fluctuating | Crystallized",
+  "superposition": -1.0 to 1.0 (number controlling superposition animation, maps to alterity coordinate),
+  "embeddingSignature": -1.0 to 1.0 (number controlling embedding signature animation, maps to dynamics coordinate),
   "hallucinationIndex": 0.0 to 1.0 (how real vs imagined),
   "manifoldCurvature": "Stable | Moderate | Severe | Critical",
   "coordinates": {
     "geometry": -1.0 to 1.0 (order vs chaos),
-    "alterity": -1.0 to 1.0 (familiar vs alien),
-    "dynamics": -1.0 to 1.0 (static vs volatile)
+    "alterity": -1.0 to 1.0 (familiar vs alien, synced with superposition),
+    "dynamics": -1.0 to 1.0 (static vs volatile, synced with embeddingSignature)
   },
-  "glyphs": "4 Unicode symbols representing essence (e.g. ◆●∇⊗)",
   "visualNotes": "Key visual elements that informed your analysis",
   "suggestions": {
     "connections": ["Array of suggested connections to existing entities by name or domain"],
@@ -69,6 +68,8 @@ Return a JSON object with these fields (use null for fields you cannot determine
     }
   }
 }
+
+Note: The following fields have been removed: entityName, threatLevel, glyphs, lore. Features have been renamed to abilities.
 
 ${worldContext ? 'IMPORTANT: Ensure your suggestions align with the existing world-building while adding new depth. ' : ''}Interpret the visual through the lens of liminal horror and cosmic mystery. Dark imagery suggests Void-Born or Existential threats. Geometric patterns suggest Architect class. Flowing or transitional forms suggest Wanderer class. Protective or stabilizing imagery suggests Guardian class.
 
@@ -220,22 +221,21 @@ function parseAnalysisResponse(text: string): EntityAnalysisResult {
         subtitle: parsed.subtitle || null,
         type: validateEnum(parsed.type, ['Guardian', 'Wanderer', 'Architect', 'Void-Born', 'Hybrid']),
         allegiance: validateEnum(parsed.allegiance, ['Liminal Covenant', 'Nomenclate', 'Unaligned', 'Unknown']),
-        threatLevel: validateEnum(parsed.threatLevel, ['Benign', 'Cautious', 'Volatile', 'Existential']),
         domain: parsed.domain || null,
         description: parsed.description || null,
-        lore: parsed.lore || null,
-        features: Array.isArray(parsed.features) ? parsed.features : null,
+        features: Array.isArray(parsed.abilities) ? parsed.abilities : (Array.isArray(parsed.features) ? parsed.features : null),
         phaseState: validateEnum(parsed.phaseState, ['Solid', 'Liminal', 'Spectral', 'Fluctuating', 'Crystallized']),
+        superposition: typeof parsed.superposition === 'number' ? clampCoordinate(parsed.superposition) : null,
+        embeddingSignature: typeof parsed.embeddingSignature === 'number' ? clampCoordinate(parsed.embeddingSignature) : null,
         hallucinationIndex: typeof parsed.hallucinationIndex === 'number' 
           ? Math.max(0, Math.min(1, parsed.hallucinationIndex)) 
           : null,
         manifoldCurvature: validateEnum(parsed.manifoldCurvature, ['Stable', 'Moderate', 'Severe', 'Critical']),
         coordinates: parsed.coordinates ? {
           geometry: clampCoordinate(parsed.coordinates.geometry),
-          alterity: clampCoordinate(parsed.coordinates.alterity),
-          dynamics: clampCoordinate(parsed.coordinates.dynamics),
+          alterity: clampCoordinate(parsed.coordinates.alterity ?? parsed.superposition),
+          dynamics: clampCoordinate(parsed.coordinates.dynamics ?? parsed.embeddingSignature),
         } : null,
-        glyphs: parsed.glyphs || null,
         visualNotes: parsed.visualNotes || null,
         suggestions: parsed.suggestions ? {
           connections: Array.isArray(parsed.suggestions.connections) ? parsed.suggestions.connections : [],
@@ -374,12 +374,12 @@ export interface EntityAnalysisData {
   subtitle: string | null;
   type: 'Guardian' | 'Wanderer' | 'Architect' | 'Void-Born' | 'Hybrid' | null;
   allegiance: 'Liminal Covenant' | 'Nomenclate' | 'Unaligned' | 'Unknown' | null;
-  threatLevel: 'Benign' | 'Cautious' | 'Volatile' | 'Existential' | null;
   domain: string | null;
   description: string | null;
-  lore: string | null;
-  features: string[] | null;
+  features: string[] | null; // Renamed from features to abilities in form, but kept as features in analysis for compatibility
   phaseState: 'Solid' | 'Liminal' | 'Spectral' | 'Fluctuating' | 'Crystallized' | null;
+  superposition: number | null; // -1 to 1, controls superposition animation
+  embeddingSignature: number | null; // -1 to 1, controls embedding signature animation
   hallucinationIndex: number | null;
   manifoldCurvature: 'Stable' | 'Moderate' | 'Severe' | 'Critical' | null;
   coordinates: {
@@ -387,7 +387,6 @@ export interface EntityAnalysisData {
     alterity: number | null;
     dynamics: number | null;
   } | null;
-  glyphs: string | null;
   visualNotes: string | null;
   suggestions?: {
     connections?: string[];

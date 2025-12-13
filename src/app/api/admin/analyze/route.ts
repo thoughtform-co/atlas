@@ -148,24 +148,23 @@ export async function POST(request: NextRequest) {
  */
 function transformAnalysisToFormData(analysis: EntityAnalysisData) {
   return {
-    name: analysis.name || '',
-    subtitle: analysis.subtitle || '',
-    type: analysis.type || 'Guardian',
-    allegiance: analysis.allegiance || 'Unaligned',
-    threatLevel: analysis.threatLevel || 'Cautious',
     domain: analysis.domain || '',
+    entityClass: analysis.name || '',
+    type: analysis.type || 'Guardian',
+    subtitle: analysis.subtitle || '',
     description: analysis.description || '',
-    lore: analysis.lore || '',
-    features: analysis.features || [],
+    allegiance: analysis.allegiance || 'Unaligned',
+    abilities: analysis.features || [],
     phaseState: analysis.phaseState || 'Liminal',
     hallucinationIndex: analysis.hallucinationIndex ?? 0.5,
     manifoldCurvature: analysis.manifoldCurvature || 'Moderate',
+    superposition: analysis.superposition ?? undefined,
+    embeddingSignature: analysis.embeddingSignature ?? undefined,
     coordinates: {
       geometry: analysis.coordinates?.geometry ?? 0,
-      alterity: analysis.coordinates?.alterity ?? 0,
-      dynamics: analysis.coordinates?.dynamics ?? 0,
+      alterity: analysis.coordinates?.alterity ?? (analysis.superposition ?? 0),
+      dynamics: analysis.coordinates?.dynamics ?? (analysis.embeddingSignature ?? 0),
     },
-    glyphs: analysis.glyphs || '◆●∇⊗',
     visualNotes: analysis.visualNotes || '',
   };
 }

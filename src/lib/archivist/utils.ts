@@ -180,8 +180,11 @@ export function formatExtendedClassification(fields: ExtractedFields): string {
     parts.push(`Phase State: ${fields.extended.phaseState}`);
   }
 
-  if (fields.extended.superposition && fields.extended.superposition.length > 0) {
-    parts.push(`Superposition: ${fields.extended.superposition.join(', ')}`);
+  if (fields.extended.superposition !== undefined) {
+    parts.push(`Superposition: ${fields.extended.superposition.toFixed(2)}`);
+  }
+  if (fields.extended.embeddingSignature !== undefined) {
+    parts.push(`Embedding Signature: ${fields.extended.embeddingSignature.toFixed(2)}`);
   }
 
   if (fields.extended.hallucinationIndex !== undefined) {
@@ -189,7 +192,10 @@ export function formatExtendedClassification(fields: ExtractedFields): string {
   }
 
   if (fields.extended.manifoldCurvature !== undefined) {
-    parts.push(`Manifold Curvature: ${fields.extended.manifoldCurvature.toFixed(3)}`);
+    const curvature = typeof fields.extended.manifoldCurvature === 'number' 
+      ? fields.extended.manifoldCurvature.toFixed(3)
+      : fields.extended.manifoldCurvature;
+    parts.push(`Manifold Curvature: ${curvature}`);
   }
 
   return parts.length > 0 ? `\n\n## Extended Classification\n${parts.join('\n')}` : '';

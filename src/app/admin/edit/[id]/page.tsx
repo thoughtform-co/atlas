@@ -15,25 +15,23 @@ import styles from '../../new-entity/page.module.css';
 
 // Default form values
 const defaultFormData: EntityFormData = {
-  entityClass: '',
-  entityName: '',
-  subtitle: '',
-  type: 'Guardian',
-  allegiance: 'Unaligned',
-  threatLevel: 'Cautious',
   domain: '',
+  entityClass: '',
+  type: 'Guardian',
+  subtitle: '',
   description: '',
-  lore: '',
-  features: [],
+  allegiance: 'Unaligned',
+  abilities: [],
   phaseState: 'Liminal',
   hallucinationIndex: 0.5,
   manifoldCurvature: 'Moderate',
+  superposition: undefined,
+  embeddingSignature: undefined,
   coordinates: {
     geometry: 0,
     alterity: 0,
     dynamics: 0,
   },
-  glyphs: '◆●∇⊗',
 };
 
 interface EditEntityPageProps {
@@ -97,25 +95,23 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
         
         // Map denizen data to form data
         setFormData({
-          entityClass: denizen.entityClass || denizen.name || '',
-          entityName: denizen.entityName || '',
-          subtitle: denizen.subtitle || '',
-          type: denizen.type || 'Guardian',
-          allegiance: denizen.allegiance || 'Unaligned',
-          threatLevel: denizen.threatLevel || 'Cautious',
           domain: denizen.domain || '',
+          entityClass: denizen.entityClass || denizen.name || '',
+          type: denizen.type || 'Guardian',
+          subtitle: denizen.subtitle || '',
           description: denizen.description || '',
-          lore: denizen.lore || '',
-          features: denizen.features || [],
+          allegiance: denizen.allegiance || 'Unaligned',
+          abilities: denizen.features || [],
           phaseState: denizen.phaseState || 'Liminal',
           hallucinationIndex: denizen.hallucinationIndex ?? 0.5,
           manifoldCurvature: getCurvatureLabel(denizen.manifoldCurvature ?? 0.5),
+          superposition: undefined, // Will be set from coordinates for now
+          embeddingSignature: undefined, // Will be set from coordinates for now
           coordinates: {
             geometry: denizen.coordinates?.geometry ?? 0,
             alterity: denizen.coordinates?.alterity ?? 0,
             dynamics: denizen.coordinates?.dynamics ?? 0,
           },
-          glyphs: denizen.glyphs || '◆●∇⊗',
           mediaUrl: resolveUrl(rawMediaUrl),
           mediaMimeType: primaryMedia?.mimeType || (rawMediaUrl?.match(/\.(mp4|webm|mov)$/i) ? 'video/mp4' : undefined),
           thumbnailUrl: resolveUrl(denizen.thumbnail),
@@ -253,17 +249,14 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.entityName || formData.entityClass || 'Unnamed',
+          name: formData.entityClass || 'Unnamed',
           entityClass: formData.entityClass || null,
-          entityName: formData.entityName || null,
           subtitle: formData.subtitle || null,
           type: formData.type,
           allegiance: formData.allegiance,
-          threatLevel: formData.threatLevel,
           domain: formData.domain,
           description: formData.description,
-          lore: formData.lore || null,
-          features: formData.features.length > 0 ? formData.features : null,
+          features: formData.abilities.length > 0 ? formData.abilities : null,
           phaseState: formData.phaseState,
           hallucinationIndex: formData.hallucinationIndex,
           manifoldCurvature: getCurvatureValue(formData.manifoldCurvature),
@@ -272,7 +265,6 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
             alterity: formData.coordinates.alterity,
             dynamics: formData.coordinates.dynamics,
           },
-          glyphs: formData.glyphs,
           image: formData.mediaUrl || null,
           thumbnail: formData.thumbnailUrl || null,
           midjourneyPrompt: formData.midjourneyPrompt || null,
@@ -493,7 +485,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
       {/* Header */}
       <div className={styles.header}>
         <span className={styles.headerPrefix}>//</span>
-        <span className={styles.headerTitle}>Edit Entity: {formData.entityClass || formData.entityName || 'Unnamed'}</span>
+        <span className={styles.headerTitle}>Edit Entity: {formData.entityClass || 'Unnamed'}</span>
         <div className={styles.headerLine} />
         <button 
           className={styles.saveButton}

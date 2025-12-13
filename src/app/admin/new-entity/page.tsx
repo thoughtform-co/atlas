@@ -11,25 +11,23 @@ import styles from './page.module.css';
 
 // Entity form data type
 export interface EntityFormData {
-  entityClass: string;  // Entity class (e.g., "Eigensage", "Nullseer")
-  entityName: string;   // Individual entity name (e.g., "Vince")
-  subtitle: string;
-  type: 'Guardian' | 'Wanderer' | 'Architect' | 'Void-Born' | 'Hybrid';  // Keep for backward compatibility
-  allegiance: 'Liminal Covenant' | 'Nomenclate' | 'Unaligned' | 'Unknown';
-  threatLevel: 'Benign' | 'Cautious' | 'Volatile' | 'Existential';
   domain: string;
+  entityClass: string;  // Entity class (e.g., "Eigensage", "Nullseer")
+  type: 'Guardian' | 'Wanderer' | 'Architect' | 'Void-Born' | 'Hybrid';
+  subtitle: string;
   description: string;
-  lore: string;
-  features: string[];
+  allegiance: 'Liminal Covenant' | 'Nomenclate' | 'Unaligned' | 'Unknown';
+  abilities: string[];  // Renamed from features
   phaseState: 'Solid' | 'Liminal' | 'Spectral' | 'Fluctuating' | 'Crystallized';
   hallucinationIndex: number;
   manifoldCurvature: 'Stable' | 'Moderate' | 'Severe' | 'Critical';
+  superposition?: number;  // 0-1 range, controls SuperpositionCanvas animation
+  embeddingSignature?: number;  // 0-1 range, controls SpectralCanvas animation
   coordinates: {
     geometry: number;
     alterity: number;
     dynamics: number;
   };
-  glyphs: string;
   mediaUrl?: string;
   mediaMimeType?: string;
   thumbnailUrl?: string; // For video thumbnails
@@ -43,25 +41,23 @@ export interface EntityFormData {
 
 // Default form values
 const defaultFormData: EntityFormData = {
-  entityClass: '',
-  entityName: '',
-  subtitle: '',
-  type: 'Guardian',
-  allegiance: 'Unaligned',
-  threatLevel: 'Cautious',
   domain: '',
+  entityClass: '',
+  type: 'Guardian',
+  subtitle: '',
   description: '',
-  lore: '',
-  features: [],
+  allegiance: 'Unaligned',
+  abilities: [],
   phaseState: 'Liminal',
   hallucinationIndex: 0.5,
   manifoldCurvature: 'Moderate',
+  superposition: undefined,
+  embeddingSignature: undefined,
   coordinates: {
     geometry: 0,
     alterity: 0,
     dynamics: 0,
   },
-  glyphs: '◆●∇⊗',
 };
 
 export default function NewEntityPage() {
@@ -104,24 +100,20 @@ export default function NewEntityPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.entityName || formData.entityClass || 'Unnamed',
+          name: formData.entityClass || 'Unnamed',
           subtitle: formData.subtitle || null,
           type: formData.type,
           entity_class: formData.entityClass || null,
-          entity_name: formData.entityName || null,
           allegiance: formData.allegiance,
-          threat_level: formData.threatLevel,
           domain: formData.domain,
           description: formData.description,
-          lore: formData.lore || null,
-          features: formData.features.length > 0 ? formData.features : null,
+          features: formData.abilities.length > 0 ? formData.abilities : null,
           phase_state: formData.phaseState,
           hallucination_index: formData.hallucinationIndex,
           manifold_curvature: getCurvatureValue(formData.manifoldCurvature),
           coord_geometry: formData.coordinates.geometry,
           coord_alterity: formData.coordinates.alterity,
           coord_dynamics: formData.coordinates.dynamics,
-          glyphs: formData.glyphs,
           image: formData.mediaUrl || null,
           thumbnail: formData.thumbnailUrl || null, // Video thumbnail
           midjourney_prompt: formData.midjourneyPrompt || null,
@@ -129,6 +121,9 @@ export default function NewEntityPage() {
           midjourney_profile: formData.midjourneyProfile || null,
           midjourney_stylization: formData.midjourneyStylization || null,
           midjourney_style_weight: formData.midjourneyStyleWeight || null,
+          // Store metaphysical properties if provided
+          ...(formData.superposition !== undefined && { superposition_value: formData.superposition }),
+          ...(formData.embeddingSignature !== undefined && { embedding_signature_value: formData.embeddingSignature }),
           // Position centered at (0,0) and spread based on coordinates
           // Coordinates range from -1 to 1, map to pixel positions around center
           position_x: formData.coordinates.geometry * 250,
@@ -189,7 +184,7 @@ export default function NewEntityPage() {
         <button 
           className={styles.saveButton}
           onClick={handleSave}
-          disabled={isSaving || !formData.entityClass}
+          disabled={isSaving || !formData.entityClass || !formData.domain}
         >
           {isSaving ? 'SAVING...' : 'SAVE TO ARCHIVE'}
         </button>

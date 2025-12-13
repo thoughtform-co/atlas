@@ -625,15 +625,15 @@ export const DenizenCardCanvas = forwardRef<DenizenCardCanvasHandle, DenizenCard
       
       tctx.font = '9px monospace';
       tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-      tctx.fillText('CLASS ', layout.footer.classLabelX, footerY + 48);
+      tctx.fillText('TYPE ', layout.footer.classLabelX, footerY + 48);
       tctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
       tctx.fillText(denizen.type.toUpperCase(), layout.footer.classValueX, footerY + 48);
       
-      tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';
-      tctx.fillText('THREAT ', layout.footer.threatLabelX, footerY + 60);
-      const threatColor = denizen.threatLevel === 'Volatile' || denizen.threatLevel === 'Existential' ? '#C17F59' : 'rgba(236, 227, 214, 0.5)';
-      tctx.fillStyle = threatColor;
-      tctx.fillText(denizen.threatLevel.toUpperCase(), layout.footer.threatValueX, footerY + 60);
+      // Show subtitle if available (where entityName was previously)
+      if (denizen.subtitle) {
+        tctx.fillStyle = 'rgba(236, 227, 214, 0.5)';
+        tctx.fillText(denizen.subtitle.toUpperCase(), layout.footer.classLabelX, footerY + 60);
+      }
       
       // Coordinates in footer
       tctx.fillStyle = 'rgba(236, 227, 214, 0.3)';

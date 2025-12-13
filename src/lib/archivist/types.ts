@@ -8,9 +8,10 @@ export type PhaseState = 'Solid' | 'Liminal' | 'Spectral' | 'Fluctuating' | 'Cry
 
 export interface ExtendedClassification {
   phaseState?: PhaseState;
-  superposition?: string[];  // Multiple potential states the entity might occupy
+  superposition?: number;  // -1 to 1, controls superposition animation (synced with alterity coordinate)
+  embeddingSignature?: number;  // -1 to 1, controls embedding signature animation (synced with dynamics coordinate)
   hallucinationIndex?: number;  // 0-1: how "real" vs "imagined"
-  manifoldCurvature?: number;  // Local distortion in narrative space
+  manifoldCurvature?: number | string;  // Local distortion in narrative space (number or 'Stable' | 'Moderate' | 'Severe' | 'Critical')
 }
 
 /**

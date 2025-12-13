@@ -52,12 +52,14 @@ export interface Denizen {
 
   // Entity classification (new system)
   entityClass?: string;  // Entity class name (e.g., "Eigensage", "Nullseer")
+  /** @deprecated No longer used in UI - kept for backward compatibility */
   entityName?: string;   // Individual entity name (e.g., "Vince")
 
   // Visuals
   image?: string;
   thumbnail?: string;
   videoUrl?: string;
+  /** @deprecated No longer used in UI - kept for backward compatibility */
   glyphs: string;
 
   // Position in constellation view
@@ -68,13 +70,15 @@ export interface Denizen {
 
   // Classification
   allegiance: Allegiance;
+  /** @deprecated No longer used in UI - kept for backward compatibility */
   threatLevel: ThreatLevel;
   domain: string;
 
   // Content
   description: string;
+  /** @deprecated No longer used in UI - kept for backward compatibility */
   lore?: string;
-  features?: string[];
+  features?: string[];  // Note: Form uses "abilities" but database/API still uses "features"
   firstObserved?: string;
 
   // MidJourney parameters

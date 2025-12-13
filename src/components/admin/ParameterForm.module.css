@@ -162,3 +162,12 @@
   color: var(--gold, #CAA554);
 }
 
+.parameterCluster {
+  border: 1px solid var(--dawn-15);
+  padding: 1rem;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+

@@ -63,14 +63,10 @@ interface CreateEntityInput {
   subtitle?: string | null;
   type: DenizenType;
   entity_class?: string | null;
-  entity_name?: string | null;
   allegiance: Allegiance;
-  threat_level: ThreatLevel;
   domain: string;
   description: string;
-  lore?: string | null;
-  features?: string[] | null;
-  glyphs: string;
+  features?: string[] | null; // Note: Form uses "abilities" but API uses "features"
   image?: string | null;
   thumbnail?: string | null; // Video thumbnail
   // Position fields (flat)
@@ -90,6 +86,11 @@ interface CreateEntityInput {
   phase_state?: PhaseState;
   hallucination_index?: number;
   manifold_curvature?: number;
+  // Legacy fields (optional, for backward compatibility)
+  entity_name?: string | null;
+  threat_level?: ThreatLevel;
+  lore?: string | null;
+  glyphs?: string;
 }
 
 /**
@@ -116,9 +117,7 @@ export async function POST(request: NextRequest) {
     const requiredFields: (keyof CreateEntityInput)[] = [
       'name',
       'type',
-      'glyphs',
       'allegiance',
-      'threat_level',
       'domain',
       'description',
     ];
@@ -145,10 +144,9 @@ export async function POST(request: NextRequest) {
       subtitle: body.subtitle ?? undefined,
       type: body.type,
       entityClass: body.entity_class ?? undefined,
-      entityName: body.entity_name ?? undefined,
       image: body.image ?? undefined,
       thumbnail: body.thumbnail ?? undefined, // Video thumbnail
-      glyphs: body.glyphs,
+      glyphs: body.glyphs || '◆●∇⊗', // Default for backward compatibility
       position: {
         x: body.position_x ?? 0,
         y: body.position_y ?? 0,
@@ -159,10 +157,9 @@ export async function POST(request: NextRequest) {
         dynamics: body.coord_dynamics ?? 0,
       },
       allegiance: body.allegiance,
-      threatLevel: body.threat_level,
+      threatLevel: body.threat_level || 'Cautious', // Default for backward compatibility
       domain: body.domain,
       description: body.description,
-      lore: body.lore ?? undefined,
       features: body.features ?? undefined,
       midjourneyPrompt: body.midjourney_prompt ?? undefined,
       midjourneySref: body.midjourney_sref ?? undefined,

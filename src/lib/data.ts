@@ -113,11 +113,11 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: De
     subtitle: row.subtitle ?? undefined,
     type: row.type as Denizen['type'],
     entityClass: row.entity_class ?? undefined,
-    entityName: row.entity_name ?? undefined,
+    entityName: row.entity_name ?? undefined, // Kept for backward compatibility
     image: row.image ?? undefined,
     thumbnail: row.thumbnail ?? undefined,
     videoUrl: row.video_url ?? undefined,
-    glyphs: row.glyphs,
+    glyphs: row.glyphs || '◆●∇⊗', // Default for backward compatibility
     position: { x: row.position_x, y: row.position_y },
     coordinates: {
       geometry: row.coord_geometry,
@@ -125,10 +125,10 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: De
       dynamics: row.coord_dynamics,
     },
     allegiance: row.allegiance as Denizen['allegiance'],
-    threatLevel: row.threat_level as Denizen['threatLevel'],
+    threatLevel: (row.threat_level || 'Cautious') as Denizen['threatLevel'], // Default for backward compatibility
     domain: row.domain,
     description: row.description,
-    lore: row.lore ?? undefined,
+    lore: row.lore ?? undefined, // Kept for backward compatibility
     features: row.features ?? undefined,
     firstObserved: row.first_observed ?? undefined,
     midjourneyPrompt: row.midjourney_prompt ?? undefined,
@@ -553,21 +553,19 @@ export async function createDenizen(denizen: Omit<Denizen, 'connections'>): Prom
       subtitle: denizen.subtitle ?? null,
       type: denizen.type,
       entity_class: denizen.entityClass ?? null,
-      entity_name: denizen.entityName ?? null,
       image: denizen.image ?? null,
       thumbnail: denizen.thumbnail ?? null,
       video_url: denizen.videoUrl ?? null,
-      glyphs: denizen.glyphs,
+      glyphs: denizen.glyphs || '◆●∇⊗', // Default for backward compatibility
       position_x: denizen.position.x,
       position_y: denizen.position.y,
       coord_geometry: denizen.coordinates.geometry,
       coord_alterity: denizen.coordinates.alterity,
       coord_dynamics: denizen.coordinates.dynamics,
       allegiance: denizen.allegiance,
-      threat_level: denizen.threatLevel,
+      threat_level: denizen.threatLevel || 'Cautious', // Default for backward compatibility
       domain: denizen.domain,
       description: denizen.description,
-      lore: denizen.lore ?? null,
       features: denizen.features ?? null,
       first_observed: denizen.firstObserved ?? null,
       midjourney_prompt: denizen.midjourneyPrompt ?? null,
@@ -641,11 +639,9 @@ export async function updateDenizen(
     if (updates.subtitle !== undefined) updateData.subtitle = updates.subtitle ?? null;
     if (updates.type !== undefined) updateData.type = updates.type;
     if (updates.entityClass !== undefined) updateData.entity_class = updates.entityClass ?? null;
-    if (updates.entityName !== undefined) updateData.entity_name = updates.entityName ?? null;
     if (updates.image !== undefined) updateData.image = updates.image ?? null;
     if (updates.thumbnail !== undefined) updateData.thumbnail = updates.thumbnail ?? null;
     if (updates.videoUrl !== undefined) updateData.video_url = updates.videoUrl ?? null;
-    if (updates.glyphs !== undefined) updateData.glyphs = updates.glyphs;
     if (updates.position !== undefined) {
       updateData.position_x = updates.position.x;
       updateData.position_y = updates.position.y;
@@ -656,10 +652,8 @@ export async function updateDenizen(
       updateData.coord_dynamics = updates.coordinates.dynamics;
     }
     if (updates.allegiance !== undefined) updateData.allegiance = updates.allegiance;
-    if (updates.threatLevel !== undefined) updateData.threat_level = updates.threatLevel;
     if (updates.domain !== undefined) updateData.domain = updates.domain;
     if (updates.description !== undefined) updateData.description = updates.description;
-    if (updates.lore !== undefined) updateData.lore = updates.lore ?? null;
     if (updates.features !== undefined) updateData.features = updates.features ?? null;
     if (updates.firstObserved !== undefined) updateData.first_observed = updates.firstObserved ?? null;
     if (updates.midjourneyPrompt !== undefined) updateData.midjourney_prompt = updates.midjourneyPrompt ?? null;

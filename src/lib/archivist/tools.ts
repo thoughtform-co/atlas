@@ -231,7 +231,7 @@ async function handleAnalyzeImage(input: { image_url: string }): Promise<string>
       colors: result.data.coordinates?.geometry != null ? {
         gradient: result.data.coordinates.geometry > 0 ? 'warm-gold' : 'cool-white',
       } : null,
-      mood: result.data.lore?.substring(0, 100),
+      mood: result.data.description?.substring(0, 100),
     },
   });
 }

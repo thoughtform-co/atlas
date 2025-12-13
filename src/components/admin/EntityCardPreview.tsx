@@ -373,18 +373,9 @@ export function EntityCardPreview({
   }, [formData, setupCanvas, drawPixel, drawParticleCircle, initStates, initCenterParticles]);
 
   // Format name for display
-  // Use entityClass as primary display name, fallback to entityName
-  const displayClass = formData.entityClass || formData.entityName || 'UNNAMED';
+  // Use entityClass as primary display name
+  const displayClass = formData.entityClass || 'UNNAMED';
   const displayName = displayClass.toUpperCase().split(' ').join('\n');
-  
-  // Get threat color
-  const threatColors: Record<string, string> = {
-    Benign: '#5B8A7A',
-    Cautious: '#7A7868',
-    Volatile: '#C17F59',
-    Existential: '#8B5A5A',
-  };
-  const threatColor = threatColors[formData.threatLevel] || '#7A7868';
 
   const isVideo = formData.mediaMimeType?.startsWith('video');
 
@@ -406,7 +397,7 @@ export function EntityCardPreview({
           ) : (
             <img 
               src={formData.mediaUrl} 
-              alt={formData.entityClass || formData.entityName || 'Entity'} 
+              alt={formData.entityClass || 'Entity'} 
               className={styles.backgroundMedia}
             />
           )}
@@ -523,23 +514,21 @@ export function EntityCardPreview({
       <div className={styles.footer}>
         <div className={styles.footerLeft}>
           <div className={styles.footerName} style={{ whiteSpace: 'pre-line' }}>{displayName}</div>
-          {/* Entity Name if provided (smaller, below class) */}
-          {formData.entityName && formData.entityClass && (
+          {/* Subtitle if provided */}
+          {formData.subtitle && (
             <div style={{ 
               marginTop: '4px', 
               fontFamily: 'var(--font-mono, "PT Mono", monospace)', 
               fontSize: '8px', 
               color: 'rgba(236, 227, 214, 0.6)', 
-              letterSpacing: '0.06em' 
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase'
             }}>
-              {formData.entityName}
+              {formData.subtitle}
             </div>
           )}
           <div className={styles.footerMeta}>
-            <div className={styles.footerMetaLine}>CLASS <span>{formData.type.toUpperCase()}</span></div>
-            <div className={styles.footerMetaLine}>
-              THREAT <span style={{ color: threatColor }}>{formData.threatLevel.toUpperCase()}</span>
-            </div>
+            <div className={styles.footerMetaLine}>TYPE <span>{formData.type.toUpperCase()}</span></div>
             {/* Coordinates removed - moved to top center in modal */}
           </div>
         </div>

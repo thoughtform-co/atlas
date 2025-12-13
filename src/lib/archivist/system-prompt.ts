@@ -217,24 +217,23 @@ export const FIELD_EXTRACTION_PROMPT = `Analyze the conversation and extract any
 Return ONLY valid field values that are clearly stated or strongly implied. Use "uncertain" for ambiguous cases.
 
 Fields to extract:
-- name: string
+- name: string (entity class name)
 - subtitle: string
 - type: "Guardian" | "Wanderer" | "Architect" | "Void-Born" | "Hybrid"
 - allegiance: "Liminal Covenant" | "Nomenclate" | "Unaligned" | "Unknown"
-- threatLevel: "Benign" | "Cautious" | "Volatile" | "Existential"
 - domain: string
-- description: string (concise, poetic summary)
-- lore: string (historical context, theories)
-- features: string[] (3-5 characteristic abilities/behaviors)
-- firstObserved: string
-- glyphs: string (4 Unicode symbols)
+- description: string (concise, poetic summary, max 200 characters)
+- abilities: string[] (3-5 characteristic abilities/behaviors, renamed from features)
 - phaseState: "Solid" | "Liminal" | "Spectral" | "Fluctuating" | "Crystallized"
-- superposition: string[] (multiple simultaneous states)
+- superposition: number (-1 to 1, controls superposition animation)
+- embeddingSignature: number (-1 to 1, controls embedding signature animation)
 - hallucinationIndex: number (0-1)
-- manifoldCurvature: number
+- manifoldCurvature: "Stable" | "Moderate" | "Severe" | "Critical"
 - coordGeometry: number (-1 to 1)
 - coordAlterity: number (-1 to 1)
 - coordDynamics: number (-1 to 1)
 - suggestedConnections: string[] (IDs or names of related entities)
+
+Note: The following fields have been removed: entityName, threatLevel, glyphs, lore. Features have been renamed to abilities.
 
 Return as JSON object with only the fields you can confidently extract.`;

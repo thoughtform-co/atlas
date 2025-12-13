@@ -320,8 +320,8 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
               {denizen.entityClass || denizen.name}
             </h3>
 
-            {/* Subtitle */}
-            {denizen.subtitle && (
+            {/* Subtitle - always show if available */}
+            {denizen.subtitle ? (
               <p
                 className="mt-1.5 opacity-80"
                 style={{
@@ -334,7 +334,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
               >
                 {denizen.subtitle}
               </p>
-            )}
+            ) : null}
 
             {/* Meta row */}
             <div
@@ -356,7 +356,7 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
                   color: 'var(--dawn-30)',
                 }}
               >
-                {denizen.type}
+                TYPE <span style={{ color: 'var(--dawn-50)' }}>{denizen.type}</span>
               </span>
 
               <div

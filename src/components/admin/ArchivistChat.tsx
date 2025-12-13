@@ -121,7 +121,7 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
     const analysisMessage: Message = {
       id: `analysis-${Date.now()}`,
       role: 'archivist',
-      content: `*studies the visual signature*\n\n${analysisNotes}\n\nThe entity appears to be of the **${formData.type}** class, with ${formData.threatLevel.toLowerCase()} threat potential. I have pre-filled the parameters based on my observations.\n\nWhat designation would you assign to this entity?`,
+      content: `*studies the visual signature*\n\n${analysisNotes}\n\nThe entity appears to be of the **${formData.type}** class. I have pre-filled the parameters based on my observations.\n\nWhat designation would you assign to this entity?`,
       timestamp: formatTime(),
     };
     setMessages(prev => [...prev, analysisMessage]);
@@ -176,7 +176,6 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
       domain: 'Domain',
       description: 'Description',
       allegiance: 'Allegiance',
-      threatLevel: 'Threat',
     };
     return names[key] || key;
   };
@@ -239,7 +238,6 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
             if (data.extractedFields.domain) updates.domain = data.extractedFields.domain;
             if (data.extractedFields.description) updates.description = data.extractedFields.description;
             if (data.extractedFields.allegiance) updates.allegiance = data.extractedFields.allegiance;
-            if (data.extractedFields.threatLevel) updates.threatLevel = data.extractedFields.threatLevel;
             
             if (Object.keys(updates).length > 0) {
               archivistResponse.fieldSuggestion = {
@@ -272,9 +270,7 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
     let responseContent = '';
     
     if (messageText.toLowerCase().includes('name') || messageText.toLowerCase().includes('designation')) {
-      responseContent = `**${formData.entityClass || formData.entityName || 'The entity'}** — a fitting designation. I shall note this in the archive.`;
-    } else if (messageText.toLowerCase().includes('threat') || messageText.toLowerCase().includes('danger')) {
-      responseContent = `The threat assessment of **${formData.threatLevel}** has been noted. ${formData.threatLevel === 'Existential' ? 'Approach with extreme caution.' : 'Standard cataloging protocols apply.'}`;
+      responseContent = `**${formData.entityClass || 'The entity'}** — a fitting designation. I shall note this in the archive.`;
     } else if (messageText.toLowerCase().includes('confirm') || messageText.toLowerCase().includes('save')) {
       responseContent = 'The classification appears complete. You may now commit this entity to the Archive.';
     } else {

@@ -294,19 +294,6 @@ export default function LorePage() {
                     }}
                     onClick={handleEntityClick}
                   />
-                  {isAdmin && (
-                    <div className={styles.cardActions}>
-                      <button 
-                        className={styles.actionBtn}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(denizen.id);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
                 </div>
               ))
             )}
