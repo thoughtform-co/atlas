@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thoughtform — Navigate Intelligence</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  
+  <!-- Lenis smooth scroll -->
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  
+  <!-- PP Mondwest font -->
+  <style>
+    @font-face {
+      font-family: 'PP Mondwest';
+      src: url('../../../../12_Thoughtform.co/public/fonts/PPMondwest-Regular.woff2') format('woff2'),
+           url('../../../../12_Thoughtform.co/public/fonts/PPMondwest-Regular.woff') format('woff');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════════════════════════════
+       FIXED BACKGROUND - 3D Latent Engine
+       Single canvas with scroll-driven Z navigation
+       Landmarks appear on RIGHT side as you scroll through Z-space
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="space-background">
+    <canvas id="spaceCanvas" class="space-canvas"></canvas>
+  </div>
+  
+  <!-- ═══════════════════════════════════════════════════════════════
+       FIXED HUD FRAME - Navigation Cockpit
+       
+       INFORMATION HIERARCHY:
+       ├── TOP: Brand navigation (Manifesto, Services, About, Contact)
+       ├── LEFT RAIL: Depth scale (radar ticks) + position readouts
+       ├── RIGHT RAIL: Signal indicators + section markers
+       ├── BOTTOM: Coordinates + scroll progress
+       └── CENTER: Viewport for content + landmark visualizations
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hud-frame">
+    
+    <!-- Top Bar: Brand Navigation -->
+    <header class="hud-top">
+      <div class="hud-brand">
+        <span class="brand-label">Thoughtform</span>
+        <span class="brand-divider">/</span>
+        <span class="brand-sector" id="hudSector">Origin</span>
+      </div>
+      <nav class="hud-nav">
+        <a href="#manifesto" class="nav-link" data-section="manifesto">Manifesto</a>
+        <a href="#services" class="nav-link" data-section="services">Services</a>
+        <a href="#about" class="nav-link" data-section="about">About</a>
+        <a href="#contact" class="nav-link" data-section="contact">Contact</a>
+      </nav>
+      <div class="hud-signal">
+        <span class="signal-label">Signal</span>
+        <span class="signal-value" id="hudSignal">61%</span>
+      </div>
+    </header>
+    
+    <!-- Left Rail: Depth Scale (Radar-style) -->
+    <aside class="hud-rail hud-rail-left">
+      <div class="rail-scale">
+        <div class="scale-ticks" id="leftTicks"></div>
+        <div class="scale-indicator" id="depthIndicator"></div>
+      </div>
+      <div class="rail-readouts">
+        <div class="readout">
+          <span class="readout-value" id="hudDepth">0.0</span>
+          <span class="readout-unit">km</span>
+        </div>
+        <div class="readout">
+          <span class="readout-label">Vector</span>
+          <span class="readout-value" id="hudVector">Entry</span>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Right Rail: Section Markers -->
+    <aside class="hud-rail hud-rail-right">
+      <div class="rail-scale">
+        <div class="scale-ticks" id="rightTicks"></div>
+      </div>
+      <div class="rail-markers">
+        <div class="section-marker" data-section="hero">
+          <span class="marker-dot"></span>
+          <span class="marker-label">01</span>
+        </div>
+        <div class="section-marker" data-section="manifesto">
+          <span class="marker-dot"></span>
+          <span class="marker-label">02</span>
+        </div>
+        <div class="section-marker" data-section="services">
+          <span class="marker-dot"></span>
+          <span class="marker-label">03</span>
+        </div>
+        <div class="section-marker" data-section="contact">
+          <span class="marker-dot"></span>
+          <span class="marker-label">04</span>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Bottom Bar: Coordinates + Progress -->
+    <footer class="hud-bottom">
+      <div class="hud-coords">
+        <span class="coord">δ: <span id="hudDelta">0.27</span></span>
+        <span class="coord">θ: <span id="hudTheta">58.1°</span></span>
+        <span class="coord">ρ: <span id="hudRho">0.63</span></span>
+        <span class="coord">ζ: <span id="hudZeta">2.4</span></span>
+      </div>
+      <div class="hud-instruction">
+        <span id="hudInstruction">Scroll to descend. The window stays. The world changes.</span>
+      </div>
+    </footer>
+    
+    <!-- Corner Brackets -->
+    <div class="hud-corner hud-corner-tl"></div>
+    <div class="hud-corner hud-corner-tr"></div>
+    <div class="hud-corner hud-corner-bl"></div>
+    <div class="hud-corner hud-corner-br"></div>
+  </div>
+  
+  <!-- ═══════════════════════════════════════════════════════════════
+       SCROLL CONTAINER - Content Sections
+       ═══════════════════════════════════════════════════════════════ -->
+  <main class="scroll-container">
+    
+    <!-- Section 1: Hero -->
+    <section class="section section-hero" id="hero" data-section="hero">
+      <div class="hero-layout">
+        <!-- Left: Brand content -->
+        <div class="hero-content">
+          <div class="wordmark" data-animate="fade-up">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1178.18 494.93">
+              <defs><style>.wm-dawn{fill:#ebe3d6}.wm-gold{fill:#caa554}</style></defs>
+              <path class="wm-dawn" d="M517.7,108.78c0,59.15-39.04,108.78-107.06,108.78s-107.06-49.63-107.06-108.78S342.62,0,410.64,0s107.06,49.63,107.06,108.78ZM491.63,108.78c0-56.24-28.32-103.49-80.86-103.49s-80.86,47.38-80.86,103.49,28.32,103.49,80.86,103.49,80.86-47.38,80.86-103.49Z"/>
+              <path class="wm-gold" d="M421.49,374.38l-2.51,8.47h-93.83l-1.19,6.62h-8.87l-20.38,105.47h-11.38l18.26-97.13h-4.23l1.46-8.34h-9.93l1.19-6.62H0l2.51-8.47h294.31l1.19-6.62h8.87l18.39-97.93h11.38l-16.28,89.59h4.23l-1.46,8.34h9.93l-1.19,6.62h89.72-.13Z"/>
+              <path class="wm-dawn" d="M598.29,273.54v9.93h-106.93v210.02h-25.94v-219.94h133-.13Z"/>
+              <path class="wm-dawn" d="M557,373.58h-70.27v9.93h70.27v-9.93Z"/>
+              <path class="wm-dawn" d="M734.59,483.95h-89.72v9.79h89.72v-9.79Z"/>
+              <path class="wm-dawn" d="M618.54,316.94h-25.94v133.39h25.94v-133.39h0Z"/>
+              <path class="wm-dawn" d="M786.47,316.94h-25.94v133.39h25.94v-133.39h0Z"/>
+              <path class="wm-dawn" d="M734.59,283.46v-9.53h-89.99v9.53h-25.94v33.48h25.94v-33.22h89.99v33.22h25.94v-33.48h-25.94Z"/>
+              <path class="wm-dawn" d="M644.87,450.47h-25.94v33.48h25.94v-33.48Z"/>
+              <path class="wm-dawn" d="M760.53,450.47h-25.94v33.48h25.94v-33.48Z"/>
+              <path class="wm-dawn" d="M912.58,283.46v100.31h-85.09v-100.31h85.09v-10.45h-111.16v220.74h26.07v-99.25h40.89v33.48h25.28v44.07h25.94v-44.07h-25.94v-33.48h18.92v-10.85h21.84v-100.31h-21.84v.13Z"/>
+              <path class="wm-dawn" d="M930.98,472.17h-11.38v21.7h11.38v-21.7Z"/>
+              <path class="wm-dawn" d="M1117.7,273.01v44.73h-25.67v43.27h-10.45v44.73h10.45v-44.73h25.67v132.6h25.81v-220.74h-25.81v.13Z"/>
+              <path class="wm-dawn" d="M1009.06,361.14v-43.27h-25.67v-44.73h-25.81v220.74h25.81v-132.6h25.67v44.73h10.45v-44.73h-10.45v-.13Z"/>
+              <path class="wm-dawn" d="M1035.26,405.87h-15.75v44.33h15.75v-44.33h0Z"/>
+              <path class="wm-dawn" d="M1081.84,405.87h-15.75v44.33h15.75v-44.33h0Z"/>
+              <path class="wm-dawn" d="M1066.09,450.2h-30.83v43.67h30.83v-43.67h0Z"/>
+              <path class="wm-dawn" d="M877.38,1.85v4.9c7.68-.13,15.62-.66,16.54,8.73l-.26,188.45c-1.72,8.2-9.66,6.48-16.28,6.48v4.9h59.68v-4.9c-14.03.93-16.54-.79-17.47-14.56v-87.47h68.95v95.68c0,6.48-12.04,6.88-16.54,6.22v4.9h59.82v-4.9c-7.28,0-15.48,1.72-16.54-7.81l.66-190.56c2.12-6.22,10.72-5.16,15.88-5.29V1.59h-59.68v4.9c3.97,0,9.4-.53,13.1,1.46,1.06.66,3.57,3.97,3.57,4.76v85.75h-67.62l-1.32-1.32V19.19c0-.26.79-5.69.93-6.35,1.72-7.54,10.32-6.35,16.41-6.35V1.46h-59.82.13l-.13.4Z"/>
+              <path class="wm-dawn" d="M301.33,1.72h-59.82v4.9h.93c1.99,0,4.76,0,7.41.26h.66c2.91.4,5.56,1.32,6.75,3.44.4.53,1.72,4.63,1.72,4.9v83.24h-69.87V15.22c0-.26,1.46-4.5,1.72-4.9,1.19-2.12,3.84-3.04,6.75-3.44h.66c2.65-.4,5.43-.26,7.41-.26h.93V1.72h-59.82v4.9h0c3.57.13,6.75,0,9.26.53h.53c4.1.79,6.88,3.18,7.68,9.93v181.43c-.93,12.57-5.96,12.44-17.47,11.91v4.9h59.82v-4.9h-7.68c-.66,0-1.46,0-2.12-.26-2.51-.4-4.63-1.32-5.96-3.71-.26-.66-1.72-4.63-1.72-4.9v-92.37h69.87v92.37c0,.26-1.46,4.23-1.72,4.9-1.32,2.38-3.57,3.31-5.96,3.71h-9.79v4.9h59.82v-4.9c-11.65.53-16.54.66-17.47-11.91V16.81c.79-6.75,3.44-9.13,7.68-9.93h.53c2.65-.4,5.82-.26,9.26-.26h0V1.59h0v.13Z"/>
+              <path class="wm-dawn" d="M744.52,107.32l1.85,1.32,79.93.66c4.5,1.72,4.9,9.53,5.29,13.9,1.59,22.76-1.32,47.51,0,70.53l-.53,2.12c-32.29,25.94-80.86,21.31-107.99-9.93-45.13-52.27-30.83-175.87,51.48-180.64,14.16-.79,48.7,5.43,53.07,21.7,4.1,15.88-8.87,23.03-18.13,32.95v1.59l2.51,2.38,38.51-38.51c-43.01-37.72-119.37-32.95-155.23,12.44-34.27,43.54-31.89,123.47,14.16,158.14,38.64,29.11,111.96,29.91,147.29-5.43l.66-75.43c1.46-8.07,10.19-6.22,16.41-6.35v-9.93h-129.56v8.6h.4l-.13-.13Z"/>
+              <path class="wm-dawn" d="M1178.18,28.19h-4.5s-5.56-11.65-10.32-14.82c-6.88-4.76-16.54-6.75-25.01-6.62h-2.25c-2.25.13-3.97.53-5.43,1.06-.26,0-.53.13-.66.26-.13,0-.26.13-.53.26-1.99,1.06-3.04,2.65-3.57,4.76h0c0,.26-.13.4-.26.66v186.99c-.13,3.97,3.04,9.53,7.15,9.53h12.7v4.9h-66.17v-4.9h12.7c4.1,0,7.28-5.56,7.15-9.53V13.76c0-.26-.13-.4-.26-.66h0c-.53-2.12-1.59-3.71-3.57-4.76-.13,0-.26-.13-.53-.26-.26,0-.4-.13-.66-.26-1.32-.53-3.18-.93-5.29-1.06h-2.25c-8.47-.26-18.13,1.85-25.01,6.62-4.63,3.18-10.32,14.82-10.32,14.82h-4.5l4.5-20.78,1.19-5.43h119.76l1.19,5.43,4.5,20.78h.26Z"/>
+              <path class="wm-dawn" d="M134.19,28.19h-4.5s-5.56-11.65-10.32-14.82c-6.88-4.76-16.54-6.75-25.01-6.62h-2.25c-2.25.13-3.97.53-5.43,1.06-.26,0-.53.13-.66.26-.13,0-.26.13-.53.26-1.99,1.06-3.04,2.65-3.57,4.76h0c0,.26-.13.4-.26.66v186.99c-.13,3.97,3.04,9.53,7.15,9.53h12.7v4.9H35.2v-4.9h12.7c4.1,0,7.28-5.56,7.15-9.53V13.76c0-.26-.13-.4-.26-.66h0c-.53-2.12-1.46-3.71-3.57-4.76-.13,0-.26-.13-.53-.26-.26,0-.4-.13-.66-.26-1.32-.53-3.18-.93-5.43-1.06h-2.25c-8.47-.26-18,1.85-25.01,6.62-4.63,3.18-10.32,14.82-10.32,14.82H2.65L7.15,7.41l1.19-5.43h119.76l1.19,5.43,4.5,20.78h.4Z"/>
+              <path class="wm-dawn" d="M631.5,1.85v4.9c8.47,0,15.48-.66,16.54,9.53-2.38,49.36,3.18,101.63,0,150.86-1.85,29.11-18.26,47.38-48.7,45.13-24.09-1.72-33.61-20.11-36-41.82V15.62c.26-9.4,9.26-8.87,16.54-8.73V1.98h-59.68v4.9c11.65-.66,15.22.79,16.81,8.73v137.76c-.26,34.27,13.1,60.87,53.46,63.92,35.86,2.65,60.08-10.72,62.73-48.43,3.31-49.1-2.51-101.9,0-151.39,1.32-10.98,6.88-10.45,16.54-10.45V2.12h-38.24v-.26Z"/>
+            </svg>
+          </div>
+          
+          <p class="hero-tagline" data-animate="fade-up" data-delay="0.1">
+            Navigate the alien terrain of machine intelligence.
+          </p>
+          
+          <p class="hero-description" data-animate="fade-up" data-delay="0.2">
+            Thoughtform pioneers intuitive human-AI collaboration. We teach teams to think <em>with</em> AI—navigating its latent space for creative breakthroughs.
+          </p>
+          
+          <div class="hero-cta" data-animate="fade-up" data-delay="0.3">
+            <a href="#manifesto" class="btn btn-primary">Begin Navigation</a>
+          </div>
+          
+          <div class="hero-meta" data-animate="fade-up" data-delay="0.4">
+            <span class="meta-label">Landmark:</span>
+            <span class="meta-value">semantic terrain / latent topology</span>
+          </div>
+        </div>
+        
+        <!-- Right: Visualization area (landmark renders here) -->
+        <div class="hero-visualization">
+          <!-- Landmark 1 canvas renders in this area -->
+        </div>
+      </div>
+    </section>
+    
+    <!-- Section 2: Manifesto -->
+    <section class="section section-manifesto" id="manifesto" data-section="manifesto">
+      <div class="section-layout">
+        <div class="section-label">
+          <span class="label-number">02</span>
+          <span class="label-text">Manifesto</span>
+        </div>
+        
+        <div class="section-content">
+          <h2 class="headline" data-animate="fade-up">
+            AI Isn't Software
+          </h2>
+          
+          <div class="text-block">
+            <p class="text" data-animate="fade-up" data-delay="0.1">
+              Most companies struggle because they treat AI like normal software.
+            </p>
+            <p class="text text-emphasis" data-animate="fade-up" data-delay="0.15">
+              But AI isn't a tool to command.
+            </p>
+            <p class="text" data-animate="fade-up" data-delay="0.2">
+              It's a strange, new intelligence we must learn to <em>navigate</em>. 
+              It leaps across dimensions. It hallucinates. It surprises.
+            </p>
+            <p class="text" data-animate="fade-up" data-delay="0.25">
+              In technical work, that strangeness must be constrained.<br>
+              In creative work? <strong>It's the source of truly novel ideas.</strong>
+            </p>
+          </div>
+          
+          <div class="section-meta" data-animate="fade-up" data-delay="0.3">
+            <span class="meta-label">Landmark:</span>
+            <span class="meta-value">polar coordinates / semantic orbit</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Section 3: Services -->
+    <section class="section section-services" id="services" data-section="services">
+      <div class="section-layout">
+        <div class="section-label">
+          <span class="label-number">03</span>
+          <span class="label-text">Services</span>
+        </div>
+        
+        <div class="section-content">
+          <h2 class="headline" data-animate="fade-up">
+            Navigation Training
+          </h2>
+          
+          <div class="services-grid" data-animate="fade-up" data-delay="0.1">
+            <div class="service-card">
+              <span class="service-id">01</span>
+              <h3 class="service-title">AI Intuition Workshops</h3>
+              <p class="service-desc">Develop the mental models that unlock creative collaboration with AI.</p>
+            </div>
+            <div class="service-card">
+              <span class="service-id">02</span>
+              <h3 class="service-title">Strategic Integration</h3>
+              <p class="service-desc">Design AI-augmented workflows for creative and strategic teams.</p>
+            </div>
+            <div class="service-card">
+              <span class="service-id">03</span>
+              <h3 class="service-title">Custom Expeditions</h3>
+              <p class="service-desc">Guided exploration of AI capabilities tailored to your domain.</p>
+            </div>
+          </div>
+          
+          <div class="section-meta" data-animate="fade-up" data-delay="0.2">
+            <span class="meta-label">Landmark:</span>
+            <span class="meta-value">trajectory grid / vanishing point</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Section 4: Contact -->
+    <section class="section section-contact" id="contact" data-section="contact">
+      <div class="section-layout">
+        <div class="section-label">
+          <span class="label-number">04</span>
+          <span class="label-text">Contact</span>
+        </div>
+        
+        <div class="section-content section-content-centered">
+          <h2 class="headline" data-animate="fade-up">
+            Plot Your Course
+          </h2>
+          
+          <p class="text text-center" data-animate="fade-up" data-delay="0.1">
+            Ready to navigate intelligence with your team?
+          </p>
+          
+          <a href="mailto:hello@thoughtform.co" class="btn btn-primary btn-large" data-animate="fade-up" data-delay="0.2">
+            Initiate Contact
+          </a>
+          
+          <div class="contact-email" data-animate="fade-up" data-delay="0.3">
+            hello@thoughtform.co
+          </div>
+          
+          <div class="section-meta" data-animate="fade-up" data-delay="0.4">
+            <span class="meta-label">Landmark:</span>
+            <span class="meta-value">event horizon / destination lock</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+  </main>
+  
+  <script src="particles.js"></script>
+  <script src="animations.js"></script>
+</body>
+</html>
