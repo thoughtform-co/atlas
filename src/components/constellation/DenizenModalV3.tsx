@@ -337,7 +337,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
                    displayDenizen.image;
   
   // Get thumbnail URL (for video entities)
-  const thumbnailUrl = displayDenizen.thumbnail ? getMediaPublicUrl(displayDenizen.thumbnail) : undefined;
+  const thumbnailUrl = displayDenizen.thumbnail ? (getMediaPublicUrl(displayDenizen.thumbnail) ?? undefined) : undefined;
   
   // Check if media is video based on multiple sources
   const isVideoFromMedia = uploadedMedia?.type === 'video' || currentMedia?.mediaType === 'video';

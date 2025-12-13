@@ -280,7 +280,6 @@ function CarouselCard({
   gap,
   mainCardWidth,
   onClick,
-  resolveMediaUrl,
   isVideo,
   getThumbnailUrl,
 }: {
