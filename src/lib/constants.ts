@@ -12,12 +12,13 @@ export const LAYOUT = {
  */
 
 export const DOMAIN_COLORS = {
-  // Gradient Throne: Warm gold, ethereal light, divine radiance
-  // WHY: The primary domain - soft golden particles creating a regal, luminous atmosphere
-  'Gradient Throne': { r: 212, g: 175, b: 95, hex: '#D4AF5F' },
+  // Gradient Throne: Grey/white ethereal mist - dark, mysterious entities
+  // WHY: Subtle grey particles that complement the dark, otherworldly aesthetic
+  'Gradient Throne': { r: 180, g: 175, b: 168, hex: '#B4AFA8' },
   
-  // Starhaven Reaches: Gold-umber, warm desert tones, cosmic backdrops
-  'Starhaven Reaches': { r: 202, g: 165, b: 84, hex: '#CAA554' },
+  // Starhaven Reaches: Warm gold, desert sands, cosmic warmth
+  // WHY: Rich golden particles for entities with warm, luminous aesthetic
+  'Starhaven Reaches': { r: 218, g: 175, b: 85, hex: '#DAAF55' },
   
   // The Lattice: White/pale, glitch aesthetics, data corruption, scanlines
   'The Lattice': { r: 184, g: 196, b: 208, hex: '#B8C4D0' },
@@ -43,19 +44,21 @@ export function getDomainColor(domain: string): { r: number; g: number; b: numbe
  * WHY: Each domain has a distinct particle nebula surrounding its entities
  */
 export const DOMAIN_STYLES = {
-  // Gradient Throne: Soft, warm golden cloud - regal and luminous
-  // WHY: Creates a divine, radiant atmosphere around the main entity cluster
+  // Gradient Throne: Subtle grey mist - mysterious, ethereal
+  // WHY: Complements the dark, otherworldly entities without overpowering them
   'Gradient Throne': {
-    particleDensity: 2.5,      // Dense for visible soft cloud effect
-    glitchChance: 0.02,        // Minimal glitch - stable, divine
-    pulseSpeed: 0.002,         // Very slow, gentle breathing like candlelight
-    maxAlpha: 0.35,            // Clearly visible warm golden glow
+    particleDensity: 2.0,      // Moderate density
+    glitchChance: 0.03,        // Minimal glitch - stable
+    pulseSpeed: 0.002,         // Very slow, gentle breathing
+    maxAlpha: 0.25,            // Subtle grey mist
   },
+  // Starhaven Reaches: Rich golden cloud - warm, luminous, inviting
+  // WHY: Strong golden particles for the warm desert/cosmic aesthetic
   'Starhaven Reaches': {
-    particleDensity: 2.0,      // Good density of nebula particles
-    glitchChance: 0.05,        // Low glitch - warm and stable
-    pulseSpeed: 0.003,         // Slow, gentle breathing
-    maxAlpha: 0.30,            // Visible glow
+    particleDensity: 3.0,      // Dense golden cloud
+    glitchChance: 0.02,        // Very stable - warm and welcoming
+    pulseSpeed: 0.0025,        // Slow, warm breathing like sunlight
+    maxAlpha: 0.45,            // Very visible golden glow
   },
   'The Lattice': {
     particleDensity: 2.5,      // Denser - more data-like
