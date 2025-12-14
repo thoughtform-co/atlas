@@ -7,6 +7,9 @@ import { parseMidjourneyPrompt } from '@/lib/midjourney-parser';
 import { Domain } from '@/lib/types';
 import { EntityClassDropdown } from './EntityClassDropdown';
 import { EntityTypeDropdown } from './EntityTypeDropdown';
+import { DomainDropdown } from './DomainDropdown';
+import { PhaseStateDropdown } from './PhaseStateDropdown';
+import { ManifoldCurvatureDropdown } from './ManifoldCurvatureDropdown';
 import styles from './ParameterForm.module.css';
 
 interface ParameterFormProps {
@@ -226,32 +229,19 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
           Domain
         </label>
         {!isAddingDomain ? (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <select
-              className={styles.fieldSelect}
-              value={formData.domain}
-              onChange={(e) => {
-                if (e.target.value === '__ADD_NEW__') {
-                  setIsAddingDomain(true);
-                  // Pre-fill SREF from current entity's MidJourney params
-                  if (formData.midjourneySref) {
-                    setNewDomainSref(formData.midjourneySref);
-                  }
-                } else {
-                  onChange({ domain: e.target.value });
-                }
-              }}
-              style={{ flex: 1 }}
-            >
-              <option value="">Select domain...</option>
-              {domains.map((domain) => (
-                <option key={domain.id} value={domain.name}>
-                  {domain.name} {domain.srefCode ? `(SREF: ${domain.srefCode})` : ''}
-                </option>
-              ))}
-              <option value="__ADD_NEW__">+ Add New Domain</option>
-            </select>
-          </div>
+          <DomainDropdown
+            value={formData.domain}
+            options={domains}
+            onChange={(value) => onChange({ domain: value })}
+            onAddNew={() => {
+              setIsAddingDomain(true);
+              // Pre-fill SREF from current entity's MidJourney params
+              if (formData.midjourneySref) {
+                setNewDomainSref(formData.midjourneySref);
+              }
+            }}
+            placeholder="Select domain..."
+          />
         ) : (
           <div style={{ 
             display: 'flex', 
@@ -594,17 +584,11 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
               <span className={styles.fieldPrefix}>▸</span>
               Phase State
             </label>
-            <select
-              className={styles.fieldSelect}
+            <PhaseStateDropdown
               value={formData.phaseState}
-              onChange={(e) => onChange({ phaseState: e.target.value as EntityFormData['phaseState'] })}
-            >
-              <option value="Solid">Solid</option>
-              <option value="Liminal">Liminal</option>
-              <option value="Spectral">Spectral</option>
-              <option value="Fluctuating">Fluctuating</option>
-              <option value="Crystallized">Crystallized</option>
-            </select>
+              onChange={(value) => onChange({ phaseState: value as EntityFormData['phaseState'] })}
+              placeholder="Select phase state..."
+            />
           </div>
 
           <div className={styles.fieldGroup}>
@@ -612,16 +596,11 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
               <span className={styles.fieldPrefix}>▸</span>
               Manifold Curvature
             </label>
-            <select
-              className={styles.fieldSelect}
+            <ManifoldCurvatureDropdown
               value={formData.manifoldCurvature}
-              onChange={(e) => onChange({ manifoldCurvature: e.target.value as EntityFormData['manifoldCurvature'] })}
-            >
-              <option value="Stable">Stable</option>
-              <option value="Moderate">Moderate</option>
-              <option value="Severe">Severe</option>
-              <option value="Critical">Critical</option>
-            </select>
+              onChange={(value) => onChange({ manifoldCurvature: value as EntityFormData['manifoldCurvature'] })}
+              placeholder="Select curvature..."
+            />
           </div>
         </div>
 

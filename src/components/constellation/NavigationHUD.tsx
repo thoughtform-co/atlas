@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Denizen, DenizenType, Allegiance } from '@/lib/types';
+import { useMemo, useState, useEffect } from 'react';
+import { Denizen, DenizenType, Allegiance, Domain } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
 
 export interface FilterState {
   domains: Set<string>;
@@ -24,14 +25,93 @@ export function NavigationHUD({
   filteredCount,
   totalCount,
 }: NavigationHUDProps) {
+  const { isAdmin } = useAuth();
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [editingDomain, setEditingDomain] = useState<string | null>(null);
+  const [editingDomainName, setEditingDomainName] = useState<string>('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Fetch domains from API
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        const response = await fetch('/api/domains');
+        if (response.ok) {
+          const data = await response.json();
+          setDomains(data.domains || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch domains:', error);
+      }
+    };
+    fetchDomains();
+  }, []);
+
   // Extract unique values for filter options
   const availableDomains = useMemo(() => {
-    const domains = new Set<string>();
+    const domainSet = new Set<string>();
     denizens.forEach(d => {
-      if (d.domain) domains.add(d.domain);
+      if (d.domain) domainSet.add(d.domain);
     });
-    return Array.from(domains).sort();
+    return Array.from(domainSet).sort();
   }, [denizens]);
+
+  // Get domain ID by name
+  const getDomainId = (domainName: string): string | null => {
+    const domain = domains.find(d => d.name === domainName);
+    return domain?.id || null;
+  };
+
+  // Handle domain name update
+  const handleUpdateDomainName = async (oldName: string, newName: string) => {
+    if (!newName.trim() || newName.trim() === oldName) {
+      setEditingDomain(null);
+      return;
+    }
+
+    const domainId = getDomainId(oldName);
+    if (!domainId) {
+      alert('Domain not found in database');
+      setEditingDomain(null);
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const response = await fetch(`/api/domains/${domainId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update local domains state
+        setDomains(prev => prev.map(d => d.id === domainId ? data.domain : d));
+        // Refresh the page to update all denizens
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(`Failed to update domain: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating domain:', error);
+      alert('Failed to update domain');
+    } finally {
+      setIsUpdating(false);
+      setEditingDomain(null);
+    }
+  };
+
+  // Handle double-click to edit domain
+  const handleDomainDoubleClick = (domain: string, e: React.MouseEvent) => {
+    if (!isAdmin) return;
+    e.stopPropagation();
+    setEditingDomain(domain);
+    setEditingDomainName(domain);
+  };
 
   const availableEntityTypes = useMemo(() => {
     const types = new Set<DenizenType>();
@@ -136,7 +216,7 @@ export function NavigationHUD({
   };
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-40" data-navigation-hud>
+    <div className="fixed inset-0 pointer-events-none z-[60]" data-navigation-hud>
       {/* Corner Brackets */}
       <div className="hud-corner hud-corner-tl" />
       <div className="hud-corner hud-corner-tr" />
@@ -151,7 +231,7 @@ export function NavigationHUD({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 51,
+          zIndex: 70,
         }}
       >
         <div 
@@ -187,7 +267,7 @@ export function NavigationHUD({
       </header>
 
       {/* Left Rail - VECTOR Labels (Entity Types) */}
-      <aside className="hud-rail hud-rail-left pointer-events-none" style={{ zIndex: 51 }}>
+      <aside className="hud-rail hud-rail-left pointer-events-none" style={{ zIndex: 70 }}>
         <div className="rail-scale">
           <div className="scale-ticks">
             {Array.from({ length: tickCount + 1 }).map((_, i) => (
@@ -277,7 +357,7 @@ export function NavigationHUD({
       </aside>
 
       {/* Right Rail - Section Markers (Domains) */}
-      <aside className="hud-rail hud-rail-right pointer-events-none" style={{ zIndex: 51 }}>
+      <aside className="hud-rail hud-rail-right pointer-events-none" style={{ zIndex: 70 }}>
         <div className="rail-scale">
           <div className="scale-ticks">
             {Array.from({ length: tickCount + 1 }).map((_, i) => (
@@ -301,53 +381,194 @@ export function NavigationHUD({
           {availableDomains.map((domain, index) => {
             const isActive = filters.domains.has(domain);
             const domainCount = denizens.filter(d => d.domain === domain).length;
+            const isEditing = editingDomain === domain;
+            
             return (
-              <button
-                key={domain}
-                onClick={() => navigateToDomain(domain)}
-                className="transition-all"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  opacity: isActive ? 1 : 0.4,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.opacity = '0.7';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.opacity = '0.4';
-                  }
-                }}
-              >
-                <div
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
-                    background: isActive ? 'var(--gold)' : 'transparent',
-                    transform: isActive ? 'rotate(45deg)' : 'none',
-                    transition: 'transform 0.2s ease',
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '10px',
-                    letterSpacing: '0.08em',
-                    color: isActive ? 'var(--dawn-70)' : 'var(--dawn-30)',
-                  }}
-                >
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-              </button>
+              <div key={domain} style={{ position: 'relative' }}>
+                {isEditing ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '150px' }}>
+                    <input
+                      type="text"
+                      value={editingDomainName}
+                      onChange={(e) => setEditingDomainName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleUpdateDomainName(domain, editingDomainName);
+                        } else if (e.key === 'Escape') {
+                          setEditingDomain(null);
+                        }
+                      }}
+                      autoFocus
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '9px',
+                        letterSpacing: '0.08em',
+                        color: 'var(--dawn-50)',
+                        background: 'rgba(5, 4, 3, 0.9)',
+                        border: '1px solid var(--gold)',
+                        padding: '4px 8px',
+                        width: '100%',
+                        outline: 'none',
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        onClick={() => handleUpdateDomainName(domain, editingDomainName)}
+                        disabled={isUpdating}
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '8px',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          color: 'var(--gold)',
+                          background: 'none',
+                          border: '1px solid var(--gold)',
+                          padding: '2px 6px',
+                          cursor: isUpdating ? 'wait' : 'pointer',
+                        }}
+                      >
+                        {isUpdating ? '...' : 'SAVE'}
+                      </button>
+                      <button
+                        onClick={() => setEditingDomain(null)}
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '8px',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          color: 'var(--dawn-30)',
+                          background: 'none',
+                          border: '1px solid var(--dawn-30)',
+                          padding: '2px 6px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="group"
+                    style={{
+                      position: 'relative',
+                      opacity: isActive ? 1 : 0.4,
+                      transition: 'opacity 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.opacity = '0.7';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.opacity = '0.4';
+                      }
+                    }}
+                  >
+                    <button
+                      onClick={() => navigateToDomain(domain)}
+                      className="transition-all"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        gap: '4px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        width: '100%',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
+                            background: isActive ? 'var(--gold)' : 'transparent',
+                            transform: isActive ? 'rotate(45deg)' : 'none',
+                            transition: 'transform 0.2s ease',
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '10px',
+                            letterSpacing: '0.08em',
+                            color: isActive ? 'var(--dawn-70)' : 'var(--dawn-30)',
+                          }}
+                        >
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                      </div>
+                      {isAdmin && (
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '8px',
+                            letterSpacing: '0.05em',
+                            color: isActive ? 'var(--dawn-50)' : 'var(--dawn-20)',
+                            opacity: 0.6,
+                            maxWidth: '100px',
+                            textAlign: 'right',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {domain}
+                        </span>
+                      )}
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDomainDoubleClick(domain, e);
+                        }}
+                        className="group-hover:opacity-100 opacity-0 transition-opacity"
+                        title="Edit domain name"
+                        style={{
+                          position: 'absolute',
+                          right: '-20px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'rgba(5, 4, 3, 0.8)',
+                          border: '1px solid var(--dawn-30)',
+                          width: '16px',
+                          height: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--gold)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--dawn-30)';
+                        }}
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          style={{ color: 'var(--dawn-50)' }}
+                        >
+                          <path d="M8 2L10 4L3 11H1V9L8 2Z" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M6 4L10 8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
@@ -362,7 +583,7 @@ export function NavigationHUD({
           justifyContent: 'space-between',
           alignItems: 'center',
           background: 'linear-gradient(to top, var(--void) 60%, transparent)',
-          zIndex: 51,
+          zIndex: 70,
         }}
       >
         {/* Coordinates - Current position in semantic space */}
