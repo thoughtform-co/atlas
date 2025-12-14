@@ -102,3 +102,179 @@ body {
 .animate-pulse-threat {
   animation: pulse-threat 2s ease-in-out infinite;
 }
+
+/* ─── HUD CORNER BRACKETS ─── */
+.hud-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.hud-corner::before,
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  background: var(--gold);
+}
+
+.hud-corner-tl { top: clamp(32px, 5vw, 64px); left: clamp(32px, 5vw, 64px); }
+.hud-corner-tl::before { top: 0; left: 0; width: 20px; height: 1px; }
+.hud-corner-tl::after { top: 0; left: 0; width: 1px; height: 20px; }
+
+.hud-corner-tr { top: clamp(32px, 5vw, 64px); right: clamp(32px, 5vw, 64px); }
+.hud-corner-tr::before { top: 0; right: 0; width: 20px; height: 1px; }
+.hud-corner-tr::after { top: 0; right: 0; width: 1px; height: 20px; }
+
+.hud-corner-bl { bottom: clamp(32px, 5vw, 64px); left: clamp(32px, 5vw, 64px); }
+.hud-corner-bl::before { bottom: 0; left: 0; width: 20px; height: 1px; }
+.hud-corner-bl::after { bottom: 0; left: 0; width: 1px; height: 20px; }
+
+.hud-corner-br { bottom: clamp(32px, 5vw, 64px); right: clamp(32px, 5vw, 64px); }
+.hud-corner-br::before { bottom: 0; right: 0; width: 20px; height: 1px; }
+.hud-corner-br::after { bottom: 0; right: 0; width: 1px; height: 20px; }
+
+/* ─── NAVIGATION RAILS (Semantic Dawn) ─── */
+.hud-rail {
+  position: absolute;
+  top: calc(clamp(32px, 5vw, 64px) + 20px + 20px);
+  bottom: calc(clamp(32px, 5vw, 64px) + 20px + 20px);
+  width: clamp(48px, 8vw, 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-rail-left {
+  left: clamp(32px, 5vw, 64px);
+}
+
+.hud-rail-right {
+  right: clamp(32px, 5vw, 64px);
+}
+
+/* Faded vertical line using semantic dawn */
+.hud-rail-left::before,
+.hud-rail-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--dawn-30) 10%,
+    var(--dawn-30) 90%,
+    transparent 100%
+  );
+}
+
+.hud-rail-left::before {
+  left: 0;
+}
+
+.hud-rail-right::before {
+  right: 0;
+}
+
+/* Scale with ticks */
+.rail-scale {
+  flex: 1;
+  position: relative;
+  width: 100%;
+}
+
+.scale-ticks {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hud-rail-left .scale-ticks {
+  left: 0;
+}
+
+.hud-rail-right .scale-ticks {
+  right: 0;
+}
+
+/* Tick marks using semantic dawn */
+.tick {
+  height: 1px;
+  background: var(--dawn-30);
+}
+
+.tick-major {
+  width: 20px;
+  background: var(--dawn-50);
+}
+
+.tick-minor {
+  width: 10px;
+  background: var(--dawn-15);
+}
+
+.tick-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--dawn-30);
+  position: absolute;
+  white-space: nowrap;
+}
+
+.hud-rail-left .tick-label {
+  left: 24px;
+}
+
+.hud-rail-right .tick-label {
+  right: 24px;
+}
+
+/* Rail content */
+.rail-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.hud-rail-left .rail-content {
+  padding-left: 28px;
+}
+
+.hud-rail-right .rail-content {
+  padding-right: 28px;
+  align-items: flex-end;
+}
+
+/* Responsive: Hide rails on smaller screens */
+@media (max-width: 1100px) {
+  .hud-rail {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .hud-corner {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .hud-corner-tl::before,
+  .hud-corner-tr::before,
+  .hud-corner-bl::before,
+  .hud-corner-br::before {
+    width: 16px;
+  }
+  
+  .hud-corner-tl::after,
+  .hud-corner-tr::after,
+  .hud-corner-bl::after,
+  .hud-corner-br::after {
+    height: 16px;
+  }
+}

@@ -6,6 +6,7 @@ import { BackgroundCanvas } from './BackgroundCanvas';
 import { ConnectorCanvas } from './ConnectorCanvas';
 import { EntityCard } from './EntityCard';
 import { DenizenModalV3 } from './DenizenModalV3';
+import { NavigationHUD, FilterState } from './NavigationHUD';
 import { clamp } from '@/lib/utils';
 import { CONSTELLATION } from '@/lib/constants';
 
@@ -21,8 +22,55 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [hasCalculatedInitialView, setHasCalculatedInitialView] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    domains: new Set(),
+    entityTypes: new Set(),
+    allegiances: new Set(),
+  });
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Filter denizens based on active filters.
+   * If no filters are active, show all denizens.
+   * Filters use OR logic within a category, AND logic across categories.
+   */
+  const filteredDenizens = useMemo(() => {
+    const hasDomainFilter = filters.domains.size > 0;
+    const hasTypeFilter = filters.entityTypes.size > 0;
+    const hasAllegianceFilter = filters.allegiances.size > 0;
+
+    // If no filters are active, return all denizens
+    if (!hasDomainFilter && !hasTypeFilter && !hasAllegianceFilter) {
+      return denizens;
+    }
+
+    return denizens.filter(denizen => {
+      // Domain filter (OR logic: must match at least one selected domain)
+      if (hasDomainFilter) {
+        const domain = denizen.domain || 'default';
+        if (!filters.domains.has(domain)) {
+          return false;
+        }
+      }
+
+      // Entity type filter (OR logic: must match at least one selected type)
+      if (hasTypeFilter) {
+        if (!filters.entityTypes.has(denizen.type)) {
+          return false;
+        }
+      }
+
+      // Allegiance filter (OR logic: must match at least one selected allegiance)
+      if (hasAllegianceFilter) {
+        if (!filters.allegiances.has(denizen.allegiance)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [denizens, filters]);
 
   /**
    * Calculate clustered positions for entities based on their domain.
@@ -39,7 +87,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   const clusteredDenizens = useMemo(() => {
     // Group denizens by domain, preserving original order
     const domainGroups = new Map<string, Denizen[]>();
-    denizens.forEach(d => {
+    filteredDenizens.forEach(d => {
       const domain = d.domain || 'default';
       if (!domainGroups.has(domain)) {
         domainGroups.set(domain, []);
@@ -106,7 +154,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     }
 
     // Reposition entities within each domain cluster
-    return denizens.map(d => {
+    return filteredDenizens.map(d => {
       const domain = d.domain || 'default';
       const group = domainGroups.get(domain) || [];
       const center = domainCenters.get(domain)!;
@@ -139,7 +187,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
         },
       };
     });
-  }, [denizens]);
+  }, [filteredDenizens]);
 
   /**
    * Generate automatic connections between entities.
@@ -152,7 +200,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     
     // Build domain lookup
     const domainLookup = new Map<string, string>();
-    denizens.forEach(d => {
+    filteredDenizens.forEach(d => {
       domainLookup.set(d.id, d.domain || 'default');
     });
     
@@ -173,7 +221,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     
     // Group entities by domain
     const domainGroups = new Map<string, Denizen[]>();
-    denizens.forEach(d => {
+    filteredDenizens.forEach(d => {
       const domain = d.domain || 'default';
       if (!domainGroups.has(domain)) {
         domainGroups.set(domain, []);
@@ -203,7 +251,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     });
 
     return [...filteredConnections, ...autoConnections];
-  }, [denizens, connections]);
+  }, [filteredDenizens, connections]);
 
   const [currentDenizens, setCurrentDenizens] = useState<Denizen[]>(clusteredDenizens);
 
@@ -328,8 +376,9 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
 
   // Handle mouse down for dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only start drag if clicking on the canvas area, not on cards
+    // Only start drag if clicking on the canvas area, not on cards or HUD
     if ((e.target as HTMLElement).closest('.entity-card')) return;
+    if ((e.target as HTMLElement).closest('[data-navigation-hud]')) return;
 
     setIsDragging(true);
     lastMouseRef.current = { x: e.clientX, y: e.clientY };
@@ -405,6 +454,15 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       onWheel={handleWheel}
       style={{ cursor: isDragging ? 'grabbing' : 'default' }}
     >
+      {/* Navigation HUD */}
+      <NavigationHUD
+        denizens={denizens}
+        filters={filters}
+        onFiltersChange={setFilters}
+        filteredCount={filteredDenizens.length}
+        totalCount={denizens.length}
+      />
+
       {/* Background canvas layer - with domain nebulae */}
       <BackgroundCanvas 
         denizens={currentDenizens} 
