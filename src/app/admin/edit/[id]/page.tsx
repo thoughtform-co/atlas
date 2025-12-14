@@ -54,6 +54,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   const [editingMediaName, setEditingMediaName] = useState<string | null>(null);
   const [savingMediaName, setSavingMediaName] = useState<string | null>(null);
   const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
+  const [uploadMediaSuccess, setUploadMediaSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect non-admins (wait for role)
@@ -424,8 +425,9 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
         }));
       setAdditionalMedia(additional);
 
-      // Show success message
-      alert('Media added successfully!');
+      // Flash success on button (brief green highlight)
+      setUploadMediaSuccess(true);
+      setTimeout(() => setUploadMediaSuccess(false), 1500);
       
       // Reset file input
       if (fileInputRef.current) {
@@ -525,30 +527,36 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
               disabled={isUploadingMedia}
               style={{
                 padding: '0.5rem 1rem',
-                background: 'rgba(236, 227, 214, 0.1)',
-                border: '1px solid rgba(236, 227, 214, 0.2)',
-                color: 'rgba(236, 227, 214, 0.8)',
+                background: uploadMediaSuccess 
+                  ? 'rgba(91, 138, 122, 0.3)' 
+                  : 'rgba(236, 227, 214, 0.1)',
+                border: uploadMediaSuccess 
+                  ? '1px solid rgba(91, 138, 122, 0.6)' 
+                  : '1px solid rgba(236, 227, 214, 0.2)',
+                color: uploadMediaSuccess 
+                  ? 'rgba(91, 138, 122, 1)' 
+                  : 'rgba(236, 227, 214, 0.8)',
                 fontFamily: 'var(--font-mono, "PT Mono", monospace)',
                 fontSize: '0.5625rem',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 cursor: isUploadingMedia ? 'wait' : 'pointer',
-                transition: 'all 150ms ease',
+                transition: 'all 300ms ease',
               }}
               onMouseEnter={(e) => {
-                if (!isUploadingMedia) {
+                if (!isUploadingMedia && !uploadMediaSuccess) {
                   e.currentTarget.style.background = 'rgba(236, 227, 214, 0.15)';
                   e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.3)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isUploadingMedia) {
+                if (!isUploadingMedia && !uploadMediaSuccess) {
                   e.currentTarget.style.background = 'rgba(236, 227, 214, 0.1)';
                   e.currentTarget.style.borderColor = 'rgba(236, 227, 214, 0.2)';
                 }
               }}
             >
-              {isUploadingMedia ? 'UPLOADING...' : '+ ADD MEDIA'}
+              {isUploadingMedia ? 'UPLOADING...' : uploadMediaSuccess ? '✓ ADDED' : '+ ADD MEDIA'}
             </button>
             {uploadMediaError && (
               <span style={{ 
