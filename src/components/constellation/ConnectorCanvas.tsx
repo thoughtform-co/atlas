@@ -60,7 +60,7 @@ export function ConnectorCanvas({ connections, getPosition, denizens = [] }: Con
           baseOffset: (Math.random() - 0.5) * 6, // Slightly tighter spread
           phase: Math.random() * Math.PI * 2,
           size: 2 + Math.random() * 1.5,
-          speed: 0.0002 + Math.random() * 0.0002, // Very slow streaming speed (varied per particle)
+          speed: 0.0001 + Math.random() * 0.0001, // Ultra slow streaming speed (varied per particle)
         });
       }
 
