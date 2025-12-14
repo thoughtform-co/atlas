@@ -3,7 +3,7 @@
  * 
  * Provides Claude function calling tools for the Archivist:
  * - find_similar: Search for semantically similar entities
- * - analyze_image: Analyze uploaded images via Gemini
+ * - analyze_media: Analyze uploaded images OR videos via Gemini
  * - generate_description: Create mythopoetic descriptions
  * - find_by_sref: Find entities by Midjourney style reference (stub)
  */
@@ -38,17 +38,17 @@ export const ARCHIVIST_TOOLS: Tool[] = [
     },
   },
   {
-    name: 'analyze_image',
-    description: 'Analyze an uploaded image using Gemini Vision to extract visual characteristics, mood, colors, and suggested entity properties. Use when an image URL is available.',
+    name: 'analyze_media',
+    description: 'Analyze uploaded media (image OR video) using Gemini Vision to extract visual characteristics, mood, colors, and suggested entity properties. Supports both static images and video files. Use when a media URL is available.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        image_url: {
+        media_url: {
           type: 'string',
-          description: 'URL of the image to analyze',
+          description: 'URL of the image or video to analyze',
         },
       },
-      required: ['image_url'],
+      required: ['media_url'],
     },
   },
   {
@@ -193,34 +193,52 @@ async function handleFindSimilar(input: { query: string; limit?: number }): Prom
 }
 
 /**
- * analyze_image: Analyze image via Gemini Vision
+ * analyze_media: Analyze image or video via Gemini Vision
  */
-async function handleAnalyzeImage(input: { image_url: string }): Promise<string> {
+async function handleAnalyzeMedia(input: { media_url: string }): Promise<string> {
   if (!isGeminiConfigured()) {
     return JSON.stringify({
       success: false,
-      error: 'Image analysis is currently unavailable. Please describe the entity visually.',
+      error: 'Media analysis is currently unavailable. Please describe the entity visually.',
     });
   }
   
-  const { image_url } = input;
+  const { media_url } = input;
   
-  // Determine mime type from URL
-  const mimeType = image_url.match(/\.(png|jpg|jpeg|gif|webp)/i)
-    ? `image/${image_url.match(/\.(png|jpg|jpeg|gif|webp)/i)![1].toLowerCase().replace('jpg', 'jpeg')}`
-    : 'image/jpeg';
+  // Determine mime type from URL - support both images and videos
+  const videoMatch = media_url.match(/\.(mp4|webm|mov|avi|m4v)/i);
+  const imageMatch = media_url.match(/\.(png|jpg|jpeg|gif|webp)/i);
   
-  const result = await analyzeMediaUrl(image_url, mimeType);
+  let mimeType: string;
+  let mediaType: 'image' | 'video';
+  
+  if (videoMatch) {
+    const ext = videoMatch[1].toLowerCase();
+    mimeType = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
+    mediaType = 'video';
+  } else if (imageMatch) {
+    mimeType = `image/${imageMatch[1].toLowerCase().replace('jpg', 'jpeg')}`;
+    mediaType = 'image';
+  } else {
+    // Default to image/jpeg if unknown
+    mimeType = 'image/jpeg';
+    mediaType = 'image';
+  }
+  
+  console.log(`[Archivist] Analyzing ${mediaType} with mime type: ${mimeType}`);
+  
+  const result = await analyzeMediaUrl(media_url, mimeType);
   
   if (!result.success || !result.data) {
     return JSON.stringify({
       success: false,
-      error: result.error || 'Failed to analyze image',
+      error: result.error || `Failed to analyze ${mediaType}`,
     });
   }
   
   return JSON.stringify({
     success: true,
+    media_type: mediaType,
     analysis: {
       suggested_name: result.data.name,
       suggested_type: result.data.type,
@@ -305,14 +323,14 @@ async function handleFindBySref(input: { sref_code: string }): Promise<string> {
 
 export type ToolInput = {
   find_similar: { query: string; limit?: number };
-  analyze_image: { image_url: string };
+  analyze_media: { media_url: string };
   generate_description: { name: string; domain?: string; class_name?: string; visual_notes?: string };
   find_by_sref: { sref_code: string };
 };
 
 const toolHandlers: Record<string, (input: Record<string, unknown>) => Promise<string>> = {
   find_similar: (input) => handleFindSimilar(input as ToolInput['find_similar']),
-  analyze_image: (input) => handleAnalyzeImage(input as ToolInput['analyze_image']),
+  analyze_media: (input) => handleAnalyzeMedia(input as ToolInput['analyze_media']),
   generate_description: (input) => handleGenerateDescription(input as ToolInput['generate_description']),
   find_by_sref: (input) => handleFindBySref(input as ToolInput['find_by_sref']),
 };
@@ -404,8 +422,8 @@ function getUserFriendlyError(toolName: string, error: unknown): string {
   
   if (message.includes('not configured') || message.includes('API')) {
     switch (toolName) {
-      case 'analyze_image':
-        return 'Image analysis is currently unavailable. Please describe the entity visually instead.';
+      case 'analyze_media':
+        return 'Media analysis is currently unavailable. Please describe the entity visually instead.';
       case 'find_similar':
         return 'Semantic search is currently unavailable. I will rely on our conversation to understand this entity.';
       default:

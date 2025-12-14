@@ -55,6 +55,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   const [savingMediaName, setSavingMediaName] = useState<string | null>(null);
   const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
   const [uploadMediaSuccess, setUploadMediaSuccess] = useState(false);
+  const [geminiAnalysis, setGeminiAnalysis] = useState<Record<string, unknown> | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect non-admins (wait for role)
@@ -122,6 +123,12 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           midjourneyStylization: denizen.midjourneyStylization,
           midjourneyStyleWeight: denizen.midjourneyStyleWeight,
         });
+        
+        // Load cached Gemini analysis if available
+        if (denizen.geminiAnalysis) {
+          setGeminiAnalysis(denizen.geminiAnalysis as Record<string, unknown>);
+          console.log('[EditPage] Loaded cached Gemini analysis');
+        }
       } catch (error) {
         console.error('Error loading entity:', error);
         setLoadError(error instanceof Error ? error.message : 'Failed to load entity');
@@ -174,19 +181,32 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
   };
 
   // Handle media upload and analysis
-  const handleMediaAnalyzed = async (analysisResult: Partial<EntityFormData> & { visualNotes?: string }) => {
-    const { visualNotes, ...entityData } = analysisResult;
+  const handleMediaAnalyzed = async (analysisResult: Partial<EntityFormData> & { visualNotes?: string; rawGeminiAnalysis?: Record<string, unknown> }) => {
+    const { visualNotes, rawGeminiAnalysis, ...entityData } = analysisResult;
     setFormData(prev => ({ ...prev, ...entityData }));
     if (visualNotes) {
       setAnalysisNotes(visualNotes);
+    }
+    
+    // Store the raw Gemini analysis for ArchivistChat
+    if (rawGeminiAnalysis) {
+      setGeminiAnalysis(rawGeminiAnalysis);
+    } else if (visualNotes) {
+      // Create a simple analysis object from the visual notes
+      setGeminiAnalysis({
+        visualNotes,
+        suggestedType: entityData.type,
+        domain: entityData.domain,
+        description: entityData.description,
+      });
     }
 
     // If thumbnail was uploaded, save it immediately to database so it appears in ConstellationView
     // WHY: Thumbnails should update in the constellation view immediately when media is replaced,
     // not just when the entity is saved
-    if (entityData.thumbnailUrl || entityData.mediaUrl) {
+    if (entityData.thumbnailUrl || entityData.mediaUrl || rawGeminiAnalysis) {
       try {
-        const updatePayload: { thumbnail?: string; image?: string } = {};
+        const updatePayload: { thumbnail?: string; image?: string; gemini_analysis?: Record<string, unknown> } = {};
         
         if (entityData.thumbnailUrl) {
           updatePayload.thumbnail = entityData.thumbnailUrl;
@@ -196,6 +216,12 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
         if (entityData.mediaUrl) {
           updatePayload.image = entityData.mediaUrl;
           console.log('[EditPage] Updating image:', entityData.mediaUrl);
+        }
+        
+        // Save Gemini analysis to database
+        if (rawGeminiAnalysis) {
+          updatePayload.gemini_analysis = rawGeminiAnalysis;
+          console.log('[EditPage] Saving Gemini analysis to database');
         }
 
         const response = await fetch(`/api/admin/denizens/${id}`, {
@@ -208,10 +234,10 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.warn('[EditPage] Failed to update thumbnail/image immediately:', errorData);
+          console.warn('[EditPage] Failed to update thumbnail/image/analysis immediately:', errorData);
         } else {
           const result = await response.json();
-          console.log('[EditPage] Thumbnail/image updated in database:', result.data?.thumbnail, result.data?.image);
+          console.log('[EditPage] Thumbnail/image/analysis updated in database:', result.data?.thumbnail, result.data?.image);
           
           // Revalidate the home page so ConstellationView shows the updated thumbnail
           // WHY: The home page is server-rendered, so we need to invalidate its cache
@@ -234,7 +260,7 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
           }
         }
       } catch (error) {
-        console.error('[EditPage] Error updating thumbnail/image:', error);
+        console.error('[EditPage] Error updating thumbnail/image/analysis:', error);
         // Don't throw - this is a background update, main upload already succeeded
       }
     }
@@ -759,6 +785,10 @@ export default function EditEntityPage({ params }: EditEntityPageProps) {
             formData={formData}
             onApplyField={handleFormChange}
             analysisNotes={analysisNotes}
+            entityId={id}
+            mediaUrl={formData.mediaUrl}
+            geminiAnalysis={geminiAnalysis}
+            midjourneyPrompt={formData.midjourneyPrompt}
           />
         </div>
       </div>

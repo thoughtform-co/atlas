@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { archivist } from '@/lib/archivist/archivist';
-import type { MediaAnalysis } from '@/lib/archivist/types';
+import type { MediaAnalysis, SessionEntityContext } from '@/lib/archivist/types';
 import { getAuthUser } from '@/lib/supabase-server';
 
 /**
@@ -12,7 +12,7 @@ import { getAuthUser } from '@/lib/supabase-server';
  * {
  *   sessionId?: string,        // Existing session ID (omit to start new session)
  *   message?: string,          // User message (omit for new session)
- *   userId?: string,           // User identifier (optional - will use auth user if available)
+ *   entityId?: string,         // Entity ID for session resumption (new sessions)
  *   imageUrl?: string,         // Optional image URL for analysis
  *   mediaAnalysis?: {          // Optional media analysis for new sessions
  *     mediaUrl?: string,
@@ -21,6 +21,16 @@ import { getAuthUser } from '@/lib/supabase-server';
  *     mood?: string,
  *     suggestedName?: string,
  *     suggestedType?: string
+ *   },
+ *   entityContext?: {          // Entity context for Claude (includes MJ prompt, Gemini analysis, etc.)
+ *     name?: string,
+ *     domain?: string,
+ *     type?: string,
+ *     description?: string,
+ *     midjourneyPrompt?: string,
+ *     mediaUrl?: string,
+ *     geminiAnalysis?: object,
+ *     allFields?: object
  *   }
  * }
  *
@@ -43,7 +53,7 @@ import { getAuthUser } from '@/lib/supabase-server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, message, mediaAnalysis, imageUrl } = body;
+    const { sessionId, message, mediaAnalysis, imageUrl, entityId, entityContext } = body;
 
     // Get authenticated user from cookies
     const authUser = await getAuthUser();
@@ -58,17 +68,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Start new session
+    // Start new session or resume existing one for entity
     if (!sessionId) {
-      console.log('[archivist/chat] Starting new session for user:', userId);
-      const session = await archivist.startSession(userId!, mediaAnalysis as MediaAnalysis);
+      console.log('[archivist/chat] Starting/resuming session for user:', userId, 'entity:', entityId);
+      
+      let session;
+      if (entityId) {
+        // Use getOrCreateSessionForEntity to resume existing session if available
+        session = await archivist.getOrCreateSessionForEntity(
+          userId!,
+          entityId,
+          entityContext as SessionEntityContext,
+          mediaAnalysis as MediaAnalysis
+        );
+      } else {
+        // No entity ID - create new standalone session
+        session = await archivist.startSession(
+          userId!,
+          mediaAnalysis as MediaAnalysis,
+          undefined,
+          entityContext as SessionEntityContext
+        );
+      }
 
       return NextResponse.json({
         sessionId: session.id,
-        message: session.messages[0].content,
-        extractedFields: {},
-        confidence: 0,
+        message: session.messages[session.messages.length - 1].content,
+        extractedFields: session.extractedFields || {},
+        confidence: session.confidence || 0,
         isComplete: false,
+        isResumed: session.messages.length > 1, // Indicates if this was a resumed session
       });
     }
 
@@ -90,8 +119,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Pass image URL to chat if provided
-    const response = await archivist.chat(sessionId, message, imageUrl);
+    // Pass image URL and entity context to chat
+    const response = await archivist.chat(
+      sessionId, 
+      message, 
+      imageUrl,
+      entityContext as SessionEntityContext
+    );
 
     // Format tool usage for response (simplified for UI)
     const toolsUsed = response.toolsUsed?.map(tool => ({
@@ -133,32 +167,36 @@ export async function POST(request: NextRequest) {
 /**
  * Example usage from client:
  *
- * // Start new session
- * const newSession = await fetch('/api/archivist/chat', {
+ * // Start or resume session for an entity (with full context)
+ * const session = await fetch('/api/archivist/chat', {
  *   method: 'POST',
  *   headers: { 'Content-Type': 'application/json' },
  *   body: JSON.stringify({
- *     userId: 'user-123',
- *     mediaAnalysis: {
- *       visualDescription: 'A spectral figure at a threshold',
- *       mood: 'liminal, uncertain'
+ *     entityId: 'nullbringer-abc123',  // Will resume existing session if one exists
+ *     entityContext: {
+ *       name: 'Nullbringer',
+ *       domain: 'Starhaven Reaches',
+ *       midjourneyPrompt: 'cosmic entity golden throne --sref 1942457994',
+ *       mediaUrl: 'https://storage.example.com/media/entity.mp4',
+ *       geminiAnalysis: { ... },  // Pre-analyzed by Gemini
+ *       allFields: { ... }  // All form fields
  *     }
  *   })
  * }).then(r => r.json());
  *
- * console.log(newSession.message); // Archivist's greeting
+ * console.log(session.message); // Archivist's greeting (or last message if resumed)
+ * console.log(session.isResumed); // true if session was resumed
  *
- * // Continue conversation
+ * // Continue conversation (with updated context)
  * const response = await fetch('/api/archivist/chat', {
  *   method: 'POST',
  *   headers: { 'Content-Type': 'application/json' },
  *   body: JSON.stringify({
- *     sessionId: newSession.sessionId,
- *     message: 'It guards the threshold between dreams and waking'
+ *     sessionId: session.sessionId,
+ *     message: 'Tell me about connections to other entities',
+ *     entityContext: { ... }  // Can update context with latest form data
  *   })
  * }).then(r => r.json());
  *
- * console.log(response.message); // Archivist's response
- * console.log(response.extractedFields); // { type: 'Guardian', domain: 'Dream Threshold', ... }
- * console.log(response.confidence); // 0.65
+ * console.log(response.message); // Archivist's response (with full context awareness)
  */

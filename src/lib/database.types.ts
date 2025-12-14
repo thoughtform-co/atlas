@@ -52,6 +52,7 @@ export interface Database {
           latent_position: string | null
           manifold_curvature: number | null
           embedding_signature: string | null
+          gemini_analysis: Json | null
           created_at: string
           updated_at: string
         }
@@ -82,6 +83,7 @@ export interface Database {
           latent_position?: string | null
           manifold_curvature?: number | null
           embedding_signature?: string | null
+          gemini_analysis?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -112,6 +114,7 @@ export interface Database {
           latent_position?: string | null
           manifold_curvature?: number | null
           embedding_signature?: string | null
+          gemini_analysis?: Json | null
           created_at?: string
           updated_at?: string
         }

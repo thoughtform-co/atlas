@@ -91,6 +91,9 @@ export interface Denizen {
   // Metaphysical properties
   metaphysical?: MetaphysicalProperties;
 
+  // AI Analysis
+  geminiAnalysis?: Record<string, unknown>;  // Cached Gemini vision analysis
+
   // Relationships
   connections: string[];
 

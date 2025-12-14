@@ -81,6 +81,8 @@ interface DenizenRow {
   phase_state: string | null;
   hallucination_index: number | null;
   manifold_curvature: number | null;
+  // AI Analysis
+  gemini_analysis: Record<string, unknown> | null;
 }
 
 interface ConnectionRow {
@@ -136,6 +138,7 @@ function transformDenizenRow(row: DenizenRow, connectionIds: string[], media: De
     midjourneyProfile: row.midjourney_profile ?? undefined,
     midjourneyStylization: row.midjourney_stylization ?? undefined,
     midjourneyStyleWeight: row.midjourney_style_weight ?? undefined,
+    geminiAnalysis: row.gemini_analysis as Record<string, unknown> | undefined,
     connections: connectionIds,
     media: media.length > 0 ? media : undefined,
     metaphysical,
@@ -633,6 +636,7 @@ export async function updateDenizen(
       midjourney_profile?: string | null;
       midjourney_stylization?: number | null;
       midjourney_style_weight?: number | null;
+      gemini_analysis?: Record<string, unknown> | null;
     } = {};
     
     if (updates.name !== undefined) updateData.name = updates.name;
@@ -661,6 +665,7 @@ export async function updateDenizen(
     if (updates.midjourneyProfile !== undefined) updateData.midjourney_profile = updates.midjourneyProfile ?? null;
     if (updates.midjourneyStylization !== undefined) updateData.midjourney_stylization = updates.midjourneyStylization ?? null;
     if (updates.midjourneyStyleWeight !== undefined) updateData.midjourney_style_weight = updates.midjourneyStyleWeight ?? null;
+    if (updates.geminiAnalysis !== undefined) updateData.gemini_analysis = updates.geminiAnalysis ?? null;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (client as any)

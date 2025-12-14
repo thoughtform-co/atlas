@@ -34,9 +34,22 @@ interface ArchivistChatProps {
   formData: EntityFormData;
   onApplyField: (updates: Partial<EntityFormData>) => void;
   analysisNotes?: string;
+  // New props for entity context
+  entityId?: string;           // For session resumption
+  mediaUrl?: string;           // Primary media URL
+  geminiAnalysis?: Record<string, unknown>;  // Cached Gemini analysis
+  midjourneyPrompt?: string;   // Midjourney prompt for context
 }
 
-export function ArchivistChat({ formData, onApplyField, analysisNotes }: ArchivistChatProps) {
+export function ArchivistChat({ 
+  formData, 
+  onApplyField, 
+  analysisNotes,
+  entityId,
+  mediaUrl,
+  geminiAnalysis,
+  midjourneyPrompt,
+}: ArchivistChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -47,34 +60,83 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
   const processedAnalysisNotes = useRef<string | null>(null);
+  const lastEntityId = useRef<string | undefined>(undefined);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initialize session on mount
+  // Build entity context from current props
+  const buildEntityContext = useCallback(() => {
+    return {
+      name: formData.entityClass,
+      domain: formData.domain,
+      type: formData.type,
+      description: formData.description,
+      midjourneyPrompt: midjourneyPrompt,
+      mediaUrl: mediaUrl || formData.mediaUrl,
+      geminiAnalysis: geminiAnalysis,
+      allFields: {
+        subtitle: formData.subtitle,
+        allegiance: formData.allegiance,
+        abilities: formData.abilities,
+        phaseState: formData.phaseState,
+        hallucinationIndex: formData.hallucinationIndex,
+        manifoldCurvature: formData.manifoldCurvature,
+        superposition: formData.superposition,
+        embeddingSignature: formData.embeddingSignature,
+        coordinates: formData.coordinates,
+      },
+    };
+  }, [formData, midjourneyPrompt, mediaUrl, geminiAnalysis]);
+
+  // Initialize session on mount or when entityId changes
   useEffect(() => {
+    // If entityId changed, we need to re-initialize for the new entity
+    if (entityId !== lastEntityId.current) {
+      hasInitialized.current = false;
+      lastEntityId.current = entityId;
+    }
+    
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     initializeSession();
-  }, []);
+  }, [entityId]);
 
-  // Initialize a new Archivist session
+  // Initialize or resume Archivist session
   const initializeSession = async () => {
     try {
       setStatus('Connecting to Archivist...');
+      
+      // Build entity context for the session
+      const entityContext = buildEntityContext();
+      
       // Server will get user ID from cookie-based auth
       const response = await fetch('/api/archivist/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          entityId,
+          entityContext,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setSessionId(data.sessionId);
+        
+        // If session was resumed, show that status
+        if (data.isResumed) {
+          setStatus('Session resumed');
+          console.log('[ArchivistChat] Resumed existing session:', data.sessionId);
+        } else {
+          setStatus('Ready');
+          console.log('[ArchivistChat] Created new session:', data.sessionId);
+        }
+        
+        // Set the message from the response
         const greeting: Message = {
           id: 'greeting',
           role: 'archivist',
@@ -82,7 +144,6 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
           timestamp: formatTime(),
         };
         setMessages([greeting]);
-        setStatus('Ready');
       } else {
         // Fallback to local greeting if API fails
         const greeting: Message = {
@@ -200,13 +261,17 @@ export function ArchivistChat({ formData, onApplyField, analysisNotes }: Archivi
     try {
       // Call the Archivist API if we have a session
       if (sessionId) {
+        // Build fresh entity context with latest form data
+        const entityContext = buildEntityContext();
+        
         const response = await fetch('/api/archivist/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId,
             message: messageText,
-            imageUrl: formData.mediaUrl, // Pass image URL if available
+            imageUrl: mediaUrl || formData.mediaUrl, // Pass media URL if available
+            entityContext, // Pass updated entity context
           }),
         });
 

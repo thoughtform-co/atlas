@@ -58,18 +58,36 @@ export interface ExtractedFields {
 }
 
 /**
+ * Entity context for an Archivist session
+ */
+export interface SessionEntityContext {
+  name?: string;
+  domain?: string;
+  type?: string;
+  description?: string;
+  midjourneyPrompt?: string;
+  mediaUrl?: string;
+  geminiAnalysis?: Record<string, unknown>;
+  allFields?: Record<string, unknown>;
+}
+
+/**
  * An Archivist cataloguing session
  * Tracks the conversation and extracted fields
  */
 export interface ArchivistSession {
   id: string;
   userId: string;
+  entityId?: string;  // The denizen this session is about (for session resumption)
   startedAt: string;
   lastActivityAt: string;
   status: 'active' | 'completed' | 'abandoned';
 
   // Media that initiated this session
   initialMedia?: MediaAnalysis;
+
+  // Entity context (passed when starting/resuming session)
+  entityContext?: SessionEntityContext;
 
   // Conversation history
   messages: ArchivistMessage[];

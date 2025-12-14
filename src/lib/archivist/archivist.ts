@@ -9,6 +9,7 @@ import type {
   ArchivistMessage,
   MediaAnalysis,
   ExtractedFields,
+  SessionEntityContext,
 } from './types';
 import type { Denizen } from '@/lib/types';
 import {
@@ -16,6 +17,7 @@ import {
   ARCHIVIST_OPENING_WITH_MEDIA,
   ARCHIVIST_OPENING_WITHOUT_MEDIA,
   buildArchivistSystemPrompt,
+  type EntityContext,
 } from './system-prompt';
 import { buildArchivistWorldContext } from './utils';
 import {
@@ -71,6 +73,7 @@ function dbRowToSession(row: Database['public']['Tables']['archivist_sessions'][
   return {
     id: row.id,
     userId: row.user_id || '',
+    entityId: row.denizen_id || undefined,
     startedAt: row.created_at,
     lastActivityAt: row.updated_at,
     status: status as 'active' | 'completed' | 'abandoned',
@@ -88,6 +91,7 @@ function dbRowToSession(row: Database['public']['Tables']['archivist_sessions'][
 function sessionToDbRow(session: ArchivistSession): {
   id: string;
   user_id: string | null;
+  denizen_id: string | null;
   messages: unknown;
   extracted_fields: unknown;
   video_analysis: unknown;
@@ -99,6 +103,7 @@ function sessionToDbRow(session: ArchivistSession): {
   return {
     id: session.id,
     user_id: session.userId || null,
+    denizen_id: session.entityId || null,
     messages: session.messages as unknown,
     extracted_fields: session.extractedFields as unknown,
     video_analysis: (session.initialMedia || null) as unknown,
@@ -129,20 +134,73 @@ function sessionToDbRow(session: ArchivistSession): {
  */
 export class Archivist {
   /**
+   * Get or create a session for a specific entity
+   * Returns existing active session if one exists, otherwise creates new one
+   */
+  async getOrCreateSessionForEntity(
+    userId: string,
+    entityId: string,
+    entityContext?: SessionEntityContext,
+    initialMedia?: MediaAnalysis
+  ): Promise<ArchivistSession> {
+    const supabase = getSupabaseClient();
+
+    // Check for existing active session for this entity
+    const { data: existingRow } = await (supabase as any)
+      .from('archivist_sessions')
+      .select('*')
+      .eq('denizen_id', entityId)
+      .eq('user_id', userId)
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingRow) {
+      console.log(`[Archivist] Resuming existing session ${existingRow.id} for entity ${entityId}`);
+      const session = dbRowToSession(existingRow);
+      // Update entity context if provided (entity fields may have changed)
+      session.entityContext = entityContext;
+      return session;
+    }
+
+    // No existing session - create new one
+    console.log(`[Archivist] Creating new session for entity ${entityId}`);
+    return this.startSession(userId, initialMedia, entityId, entityContext);
+  }
+
+  /**
    * Start a new cataloguing session
    * The Archivist will provide an initial greeting based on any media provided
    */
-  async startSession(userId: string, initialMedia?: MediaAnalysis): Promise<ArchivistSession> {
+  async startSession(
+    userId: string,
+    initialMedia?: MediaAnalysis,
+    entityId?: string,
+    entityContext?: SessionEntityContext
+  ): Promise<ArchivistSession> {
     const sessionId = randomUUID();
     const supabase = getSupabaseClient();
 
-    // Generate opening message
+    // Generate opening message based on context
     let openingMessage: string;
-    if (initialMedia?.visualDescription) {
+    if (entityContext?.geminiAnalysis) {
+      // We have pre-analyzed media - reference it
+      const analysis = entityContext.geminiAnalysis as Record<string, unknown>;
+      const visualNotes = analysis.visualNotes || analysis.description || 'an intriguing entity';
+      openingMessage = ARCHIVIST_OPENING_WITH_MEDIA(
+        `I have already analyzed the visual signature. ${visualNotes}\n\nThe entity appears to be emerging from ${entityContext.domain || 'unknown territory'}.`
+      );
+    } else if (initialMedia?.visualDescription) {
       const mediaDesc = `The visual resonance reveals: ${initialMedia.visualDescription}${
         initialMedia.mood ? `. The ambient signature suggests: ${initialMedia.mood}.` : ''
       }`;
       openingMessage = ARCHIVIST_OPENING_WITH_MEDIA(mediaDesc);
+    } else if (entityContext?.name) {
+      // We have entity context but no analysis
+      openingMessage = ARCHIVIST_OPENING_WITH_MEDIA(
+        `I see we are discussing **${entityContext.name}**${entityContext.domain ? ` from ${entityContext.domain}` : ''}. What would you like to know?`
+      );
     } else {
       openingMessage = ARCHIVIST_OPENING_WITHOUT_MEDIA;
     }
@@ -151,10 +209,12 @@ export class Archivist {
     const session: ArchivistSession = {
       id: sessionId,
       userId,
+      entityId,
       startedAt: new Date().toISOString(),
       lastActivityAt: new Date().toISOString(),
       status: 'active',
       initialMedia,
+      entityContext,
       messages: [
         {
           role: 'archivist',
@@ -186,7 +246,12 @@ export class Archivist {
    * Sends user message and receives Archivist response with extracted fields
    * Now supports tool calling for grounded responses
    */
-  async chat(sessionId: string, userMessage: string, imageUrl?: string): Promise<ArchivistResponse & { toolsUsed?: ToolInvocation[] }> {
+  async chat(
+    sessionId: string, 
+    userMessage: string, 
+    imageUrl?: string,
+    entityContext?: SessionEntityContext
+  ): Promise<ArchivistResponse & { toolsUsed?: ToolInvocation[] }> {
     const supabase = getSupabaseClient();
     const toolConfig = getToolConfig();
 
@@ -206,6 +271,9 @@ export class Archivist {
     if (session.status !== 'active') {
       throw new Error('Session is not active');
     }
+
+    // Use provided entity context or session's stored context
+    const effectiveEntityContext = entityContext || session.entityContext;
 
     // Fetch existing denizens for world context
     let worldContext = '';
@@ -235,10 +303,20 @@ export class Archivist {
       console.warn('[Archivist] Failed to fetch world context, proceeding without it:', error);
     }
 
-    // Build system prompt with dynamic world context
-    const systemPrompt = worldContext 
-      ? buildArchivistSystemPrompt(worldContext)
-      : ARCHIVIST_SYSTEM_PROMPT;
+    // Build system prompt with dynamic world context AND entity context
+    const systemPrompt = buildArchivistSystemPrompt(
+      worldContext || undefined,
+      effectiveEntityContext ? {
+        name: effectiveEntityContext.name,
+        domain: effectiveEntityContext.domain,
+        type: effectiveEntityContext.type,
+        description: effectiveEntityContext.description,
+        midjourneyPrompt: effectiveEntityContext.midjourneyPrompt,
+        mediaUrl: effectiveEntityContext.mediaUrl,
+        geminiAnalysis: effectiveEntityContext.geminiAnalysis,
+        allFields: effectiveEntityContext.allFields,
+      } : undefined
+    );
 
     // Add user message to history
     const userMsg: ArchivistMessage = {

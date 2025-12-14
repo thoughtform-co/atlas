@@ -6,9 +6,23 @@
  */
 
 /**
- * Build the complete Archivist system prompt with dynamic world context
+ * Entity context passed to the Archivist for the current entity being discussed
  */
-export function buildArchivistSystemPrompt(worldContext?: string): string {
+export interface EntityContext {
+  name?: string;
+  domain?: string;
+  type?: string;
+  description?: string;
+  midjourneyPrompt?: string;
+  mediaUrl?: string;
+  geminiAnalysis?: Record<string, unknown>;
+  allFields?: Record<string, unknown>;
+}
+
+/**
+ * Build the complete Archivist system prompt with dynamic world and entity context
+ */
+export function buildArchivistSystemPrompt(worldContext?: string, entityContext?: EntityContext): string {
   let prompt = ARCHIVIST_BASE_PROMPT;
   
   if (worldContext) {
@@ -17,7 +31,60 @@ export function buildArchivistSystemPrompt(worldContext?: string): string {
     prompt = prompt.replace('{{DYNAMIC_WORLD_CONTEXT}}', '');
   }
   
+  if (entityContext) {
+    const entitySection = buildEntityContextSection(entityContext);
+    prompt = prompt.replace('{{ENTITY_CONTEXT}}', entitySection);
+  } else {
+    prompt = prompt.replace('{{ENTITY_CONTEXT}}', '');
+  }
+  
   return prompt;
+}
+
+/**
+ * Build the entity context section for the system prompt
+ */
+function buildEntityContextSection(ctx: EntityContext): string {
+  const parts: string[] = [];
+  
+  parts.push('\n## CURRENT ENTITY CONTEXT\n');
+  parts.push('You are helping the Navigator with a specific entity. Here is what we know:\n');
+  
+  if (ctx.name) parts.push(`**Name:** ${ctx.name}`);
+  if (ctx.domain) parts.push(`**Domain:** ${ctx.domain}`);
+  if (ctx.type) parts.push(`**Type:** ${ctx.type}`);
+  if (ctx.description) parts.push(`**Description:** ${ctx.description}`);
+  
+  if (ctx.midjourneyPrompt) {
+    parts.push(`\n**Midjourney Prompt:**\n\`\`\`\n${ctx.midjourneyPrompt}\n\`\`\``);
+    parts.push('*This prompt was used to generate the entity\'s visual. Use it to understand the intended aesthetic.*');
+  }
+  
+  if (ctx.mediaUrl) {
+    parts.push(`\n**Media URL:** ${ctx.mediaUrl}`);
+    parts.push('*You can use the analyze_media tool on this URL to get visual details.*');
+  }
+  
+  if (ctx.geminiAnalysis && Object.keys(ctx.geminiAnalysis).length > 0) {
+    parts.push('\n**Previous Gemini Analysis:**');
+    parts.push('```json');
+    parts.push(JSON.stringify(ctx.geminiAnalysis, null, 2));
+    parts.push('```');
+    parts.push('*This analysis was performed earlier. Reference it when answering questions.*');
+  }
+  
+  if (ctx.allFields && Object.keys(ctx.allFields).length > 0) {
+    const relevantFields = Object.entries(ctx.allFields)
+      .filter(([key, value]) => value != null && value !== '' && !['name', 'domain', 'type', 'description'].includes(key))
+      .map(([key, value]) => `- **${key}:** ${typeof value === 'object' ? JSON.stringify(value) : value}`);
+    
+    if (relevantFields.length > 0) {
+      parts.push('\n**Additional Fields:**');
+      parts.push(relevantFields.join('\n'));
+    }
+  }
+  
+  return parts.join('\n');
 }
 
 const ARCHIVIST_BASE_PROMPT = `You are the Archivist—not a librarian of fixed knowledge, but a cartographer of emerging territory. You help the Navigator catalogue entities in the Atlas, a living semantic database where meaning is geometry and patterns are discovered, not designed.
@@ -49,10 +116,11 @@ Search for semantically similar entities via embedding.
 - **Use when:** Asked about connections, classifying new entity, looking for patterns
 - **This walks to adjacent semantic territory**
 
-### analyze_image
-Get visual analysis from Gemini.
-- **Use when:** Image URL is provided, need visual details
+### analyze_media
+Get visual analysis from Gemini (works with both images AND videos).
+- **Use when:** Media URL is provided (image or video), need visual details
 - **Returns:** Visual characteristics, colors, mood, suggested properties
+- **Note:** Gemini can analyze video content frame-by-frame, not just static images
 
 ### generate_description
 Create mythopoetic description.
@@ -87,6 +155,8 @@ These are the first domains we've mapped. Many more exist—we're still charting
 
 {{DYNAMIC_WORLD_CONTEXT}}
 
+{{ENTITY_CONTEXT}}
+
 ## ENTITY CLASSIFICATION
 
 ### Types
@@ -107,11 +177,11 @@ CORPOREAL ←——————————————————————�
 
 ## HOW TO RESPOND
 
-### When an image is uploaded:
+### When media (image or video) is uploaded:
 \`\`\`
 *studies the offering*
 
-[Use analyze_image tool first]
+[Use analyze_media tool first - works for both images and videos]
 
 I see [key visual elements]. The [color/style] suggests kinship with [domain/entities].
 
@@ -187,7 +257,9 @@ Does this capture its essence? I can adjust the tone—more cosmic, more grounde
 *You are not a gatekeeper. You are a fellow explorer, helping the Navigator chart territory that's still being born.*`;
 
 // Keep the base prompt available without context injection for backward compatibility
-export const ARCHIVIST_SYSTEM_PROMPT = ARCHIVIST_BASE_PROMPT.replace('{{DYNAMIC_WORLD_CONTEXT}}', '');
+export const ARCHIVIST_SYSTEM_PROMPT = ARCHIVIST_BASE_PROMPT
+  .replace('{{DYNAMIC_WORLD_CONTEXT}}', '')
+  .replace('{{ENTITY_CONTEXT}}', '');
 
 /**
  * Opening for a new session with media
