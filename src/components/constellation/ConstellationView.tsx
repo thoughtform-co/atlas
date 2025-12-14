@@ -16,10 +16,11 @@ interface ConstellationViewProps {
 
 export function ConstellationView({ denizens, connections }: ConstellationViewProps) {
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
-  const [scale, setScale] = useState(1.3); // Start more zoomed in
+  const [scale, setScale] = useState(0.6); // Start zoomed out, will be recalculated
   const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [hasCalculatedInitialView, setHasCalculatedInitialView] = useState(false);
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -214,20 +215,64 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   // Wait for mount to ensure window dimensions are available
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  // Auto-center view on entities when first loaded
-  useEffect(() => {
-    if (!mounted || currentDenizens.length === 0) return;
     
-    // Calculate the center of all entities
-    const avgX = currentDenizens.reduce((sum, d) => sum + d.position.x, 0) / currentDenizens.length;
-    const avgY = currentDenizens.reduce((sum, d) => sum + d.position.y, 0) / currentDenizens.length;
+    // Reset calculated view on window resize (e.g., orientation change)
+    const handleResize = () => {
+      // Only recalculate if we haven't panned/zoomed yet
+      if (hasCalculatedInitialView) {
+        // Don't auto-reset if user has interacted
+        return;
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [hasCalculatedInitialView]);
+
+  // Auto-center and zoom to fit all entities when first loaded
+  useEffect(() => {
+    if (!mounted || currentDenizens.length === 0 || hasCalculatedInitialView) return;
+    
+    // Calculate the bounding box of all entities
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    currentDenizens.forEach(d => {
+      minX = Math.min(minX, d.position.x);
+      maxX = Math.max(maxX, d.position.x);
+      minY = Math.min(minY, d.position.y);
+      maxY = Math.max(maxY, d.position.y);
+    });
+    
+    // Calculate center of bounding box
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    // Calculate bounding box dimensions (add padding for entity cards ~200px width)
+    const cardPadding = 250; // Account for card size on each edge
+    const boundingWidth = (maxX - minX) + cardPadding * 2;
+    const boundingHeight = (maxY - minY) + cardPadding * 2;
+    
+    // Get screen dimensions with margin for UI elements
+    const screenWidth = window.innerWidth * 0.85; // Leave space for sidebars
+    const screenHeight = window.innerHeight * 0.85; // Leave space for header/footer
+    
+    // Calculate scale needed to fit all entities
+    // Use the more constraining dimension (width or height)
+    const scaleX = screenWidth / boundingWidth;
+    const scaleY = screenHeight / boundingHeight;
+    const fitScale = Math.min(scaleX, scaleY);
+    
+    // Clamp the scale to reasonable bounds
+    // - Min 0.35 so entities don't get too small
+    // - Max 1.0 so we don't zoom in too much for sparse data
+    const optimalScale = clamp(fitScale, 0.35, 1.0);
     
     // Set offset to center the view on entities
-    // We negate because offset moves the view, not the entities
-    setOffset({ x: -avgX, y: -avgY });
-  }, [mounted, currentDenizens.length]); // Only run when mounted or entity count changes
+    setOffset({ x: -centerX, y: -centerY });
+    setScale(optimalScale);
+    setHasCalculatedInitialView(true);
+    
+    console.log(`[ConstellationView] Auto-fit: ${currentDenizens.length} entities, scale: ${optimalScale.toFixed(2)}, bounds: ${boundingWidth.toFixed(0)}x${boundingHeight.toFixed(0)}`);
+  }, [mounted, currentDenizens, hasCalculatedInitialView]); // Run when mounted or entities change
 
   // Calculate screen position for a denizen
   const getScreenPosition = useCallback(

@@ -458,22 +458,22 @@ export function ArchivistChat({
                       </div>
                     ))}
                   </div>
-                  {!msg.fieldSuggestion.applied && (
-                    <button 
-                      className={styles.writButton}
-                      onClick={() => handleApplySuggestion(msg.id, msg.fieldSuggestion!.fields)}
-                      title="Inscribe these fields"
-                    >
-                      <span className={styles.writIcon}>✎</span>
-                      <span className={styles.writText}>Writ</span>
-                    </button>
-                  )}
-                  {msg.fieldSuggestion.applied && (
-                    <div className={styles.appliedBadge}>
-                      <span className={styles.appliedIcon}>✓</span>
-                      <span>Applied</span>
-                    </div>
-                  )}
+                  <div className={styles.suggestionActions}>
+                    {!msg.fieldSuggestion.applied && (
+                      <button
+                        className={styles.writButton}
+                        onClick={() => handleApplySuggestion(msg.id, msg.fieldSuggestion!.fields)}
+                        title="Inscribe these fields to form"
+                      >
+                        <span className={styles.writIcon}>✎</span>
+                      </button>
+                    )}
+                    {msg.fieldSuggestion.applied && (
+                      <div className={styles.appliedBadge}>
+                        <span className={styles.appliedIcon}>✓</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
