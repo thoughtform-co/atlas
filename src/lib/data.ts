@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { createClient } from '@supabase/supabase-js';
 import { Denizen, Connection, DenizenMedia, PhaseState } from './types';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
-import type { Database } from './database.types';
+import type { Database, Json } from './database.types';
 import { transformMediaRow as transformMediaRowFromMedia, type MediaRow } from './media';
 
 /**
@@ -636,7 +636,7 @@ export async function updateDenizen(
       midjourney_profile?: string | null;
       midjourney_stylization?: number | null;
       midjourney_style_weight?: number | null;
-      gemini_analysis?: Record<string, unknown> | null;
+      gemini_analysis?: Json | null;
     } = {};
     
     if (updates.name !== undefined) updateData.name = updates.name;
@@ -665,7 +665,7 @@ export async function updateDenizen(
     if (updates.midjourneyProfile !== undefined) updateData.midjourney_profile = updates.midjourneyProfile ?? null;
     if (updates.midjourneyStylization !== undefined) updateData.midjourney_stylization = updates.midjourneyStylization ?? null;
     if (updates.midjourneyStyleWeight !== undefined) updateData.midjourney_style_weight = updates.midjourneyStyleWeight ?? null;
-    if (updates.geminiAnalysis !== undefined) updateData.gemini_analysis = updates.geminiAnalysis ?? null;
+    if (updates.geminiAnalysis !== undefined) updateData.gemini_analysis = (updates.geminiAnalysis as Json) ?? null;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (client as any)
