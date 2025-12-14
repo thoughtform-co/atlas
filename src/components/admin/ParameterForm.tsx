@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { EntityFormData } from '@/app/admin/new-entity/page';
-import { fetchEntityClasses } from '@/lib/data';
+import { fetchEntityClasses, fetchEntityTypes } from '@/lib/data';
 import { parseMidjourneyPrompt } from '@/lib/midjourney-parser';
 import { Domain } from '@/lib/types';
 import { EntityClassDropdown } from './EntityClassDropdown';
+import { EntityTypeDropdown } from './EntityTypeDropdown';
 import styles from './ParameterForm.module.css';
 
 interface ParameterFormProps {
@@ -15,6 +16,7 @@ interface ParameterFormProps {
 
 export function ParameterForm({ formData, onChange }: ParameterFormProps) {
   const [entityClasses, setEntityClasses] = useState<string[]>([]);
+  const [entityTypes, setEntityTypes] = useState<string[]>(['Guardian', 'Wanderer', 'Architect', 'Void-Born', 'Hybrid']);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isAddingDomain, setIsAddingDomain] = useState(false);
   const [newDomainName, setNewDomainName] = useState('');
@@ -33,6 +35,13 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
   useEffect(() => {
     fetchEntityClasses().then(classes => {
       setEntityClasses(classes);
+    });
+  }, []);
+
+  // Fetch existing entity types for dropdown
+  useEffect(() => {
+    fetchEntityTypes().then(types => {
+      setEntityTypes(types);
     });
   }, []);
 
@@ -491,17 +500,18 @@ export function ParameterForm({ formData, onChange }: ParameterFormProps) {
           <span className={styles.fieldPrefix}>▸</span>
           Type
         </label>
-        <select
-          className={styles.fieldSelect}
+        <EntityTypeDropdown
           value={formData.type}
-          onChange={(e) => onChange({ type: e.target.value as EntityFormData['type'] })}
-        >
-          <option value="Guardian">Guardian</option>
-          <option value="Wanderer">Wanderer</option>
-          <option value="Architect">Architect</option>
-          <option value="Void-Born">Void-Born</option>
-          <option value="Hybrid">Hybrid</option>
-        </select>
+          options={entityTypes}
+          onChange={(value) => onChange({ type: value as EntityFormData['type'] })}
+          onAddNew={(newType) => {
+            // Add to local options
+            if (!entityTypes.includes(newType)) {
+              setEntityTypes(prev => [...prev, newType].sort());
+            }
+          }}
+          placeholder="Select type or type new..."
+        />
       </div>
 
       {/* Subtitle */}

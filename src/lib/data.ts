@@ -731,6 +731,49 @@ export async function deleteDenizen(id: string): Promise<boolean> {
 }
 
 /**
+ * Fetch all unique entity types from the database
+ * Used for populating the Type dropdown in the form
+ */
+export async function fetchEntityTypes(): Promise<string[]> {
+  const client = getDataClient();
+
+  if (!isSupabaseConfigured() || !client) {
+    console.warn('[fetchEntityTypes] Supabase not configured - returning defaults');
+    return ['Guardian', 'Wanderer', 'Architect', 'Void-Born', 'Hybrid'];
+  }
+
+  try {
+    const { data, error } = await client
+      .from('denizens')
+      .select('type')
+      .not('type', 'is', null);
+
+    if (error) {
+      console.error('[fetchEntityTypes] Error fetching entity types:', error);
+      return ['Guardian', 'Wanderer', 'Architect', 'Void-Born', 'Hybrid'];
+    }
+
+    // Extract unique, non-null types
+    const types = new Set<string>();
+    // Always include the base types
+    ['Guardian', 'Wanderer', 'Architect', 'Void-Born', 'Hybrid'].forEach(t => types.add(t));
+    
+    (data as Array<{ type: string | null }> || []).forEach(row => {
+      if (row.type && row.type.trim()) {
+        types.add(row.type.trim());
+      }
+    });
+
+    const result = Array.from(types).sort();
+    console.log(`[fetchEntityTypes] Found ${result.length} unique entity types`);
+    return result;
+  } catch (error) {
+    console.error('[fetchEntityTypes] Fatal error:', error);
+    return ['Guardian', 'Wanderer', 'Architect', 'Void-Born', 'Hybrid'];
+  }
+}
+
+/**
  * Fetch all unique entity classes from the database
  * Used for populating the Class dropdown in the form
  */
