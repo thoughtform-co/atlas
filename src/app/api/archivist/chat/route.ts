@@ -91,13 +91,18 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Return all messages when resuming, or just the greeting for new sessions
+      const isResumed = session.messages.length > 1;
+      
       return NextResponse.json({
         sessionId: session.id,
         message: session.messages[session.messages.length - 1].content,
+        // Include all messages when resuming so chat history is preserved
+        messages: isResumed ? session.messages : undefined,
         extractedFields: session.extractedFields || {},
         confidence: session.confidence || 0,
         isComplete: false,
-        isResumed: session.messages.length > 1, // Indicates if this was a resumed session
+        isResumed,
       });
     }
 

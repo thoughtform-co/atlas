@@ -41,6 +41,9 @@ interface ArchivistChatProps {
   midjourneyPrompt?: string;   // Midjourney prompt for context
 }
 
+// Session cache key prefix
+const SESSION_CACHE_PREFIX = 'archivist_session_';
+
 export function ArchivistChat({ 
   formData, 
   onApplyField, 
@@ -61,11 +64,41 @@ export function ArchivistChat({
   const hasInitialized = useRef(false);
   const processedAnalysisNotes = useRef<string | null>(null);
   const lastEntityId = useRef<string | undefined>(undefined);
+  
+  // Cache session state in sessionStorage to survive tab switches
+  const getCachedSession = useCallback(() => {
+    if (typeof window === 'undefined' || !entityId) return null;
+    try {
+      const cached = sessionStorage.getItem(`${SESSION_CACHE_PREFIX}${entityId}`);
+      if (cached) {
+        return JSON.parse(cached) as { sessionId: string; messages: Message[] };
+      }
+    } catch (e) {
+      console.warn('[ArchivistChat] Failed to parse cached session:', e);
+    }
+    return null;
+  }, [entityId]);
+  
+  const setCachedSession = useCallback((id: string, msgs: Message[]) => {
+    if (typeof window === 'undefined' || !entityId) return;
+    try {
+      sessionStorage.setItem(`${SESSION_CACHE_PREFIX}${entityId}`, JSON.stringify({ sessionId: id, messages: msgs }));
+    } catch (e) {
+      console.warn('[ArchivistChat] Failed to cache session:', e);
+    }
+  }, [entityId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+  
+  // Sync messages to cache whenever they change (so tab switches preserve state)
+  useEffect(() => {
+    if (sessionId && messages.length > 0) {
+      setCachedSession(sessionId, messages);
+    }
+  }, [sessionId, messages, setCachedSession]);
 
   // Build entity context from current props
   const buildEntityContext = useCallback(() => {
@@ -100,10 +133,21 @@ export function ArchivistChat({
     }
     
     if (hasInitialized.current) return;
+    
+    // Check if we have a cached session for this entity (survives tab switches)
+    const cached = getCachedSession();
+    if (cached && cached.sessionId && cached.messages.length > 0) {
+      console.log('[ArchivistChat] Restoring cached session:', cached.sessionId, 'with', cached.messages.length, 'messages');
+      setSessionId(cached.sessionId);
+      setMessages(cached.messages);
+      setStatus('Ready');
+      hasInitialized.current = true;
+      return;
+    }
+    
     hasInitialized.current = true;
-
     initializeSession();
-  }, [entityId]);
+  }, [entityId, getCachedSession]);
 
   // Initialize or resume Archivist session
   const initializeSession = async () => {
@@ -127,23 +171,34 @@ export function ArchivistChat({
         const data = await response.json();
         setSessionId(data.sessionId);
         
-        // If session was resumed, show that status
-        if (data.isResumed) {
+        // If session was resumed with full message history
+        if (data.isResumed && data.messages && data.messages.length > 0) {
           setStatus('Session resumed');
-          console.log('[ArchivistChat] Resumed existing session:', data.sessionId);
+          console.log('[ArchivistChat] Resumed existing session:', data.sessionId, 'with', data.messages.length, 'messages');
+          
+          // Convert API messages to our Message format
+          const loadedMessages: Message[] = data.messages.map((msg: { role: string; content: string; timestamp: string }, index: number) => ({
+            id: `msg-${index}`,
+            role: msg.role === 'user' ? 'user' : 'archivist',
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : formatTime(),
+          }));
+          setMessages(loadedMessages);
+          setCachedSession(data.sessionId, loadedMessages);
         } else {
+          // New session - just show the greeting
           setStatus('Ready');
           console.log('[ArchivistChat] Created new session:', data.sessionId);
+          
+          const greeting: Message = {
+            id: 'greeting',
+            role: 'archivist',
+            content: data.message,
+            timestamp: formatTime(),
+          };
+          setMessages([greeting]);
+          setCachedSession(data.sessionId, [greeting]);
         }
-        
-        // Set the message from the response
-        const greeting: Message = {
-          id: 'greeting',
-          role: 'archivist',
-          content: data.message,
-          timestamp: formatTime(),
-        };
-        setMessages([greeting]);
       } else {
         // Fallback to local greeting if API fails
         const greeting: Message = {
