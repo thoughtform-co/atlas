@@ -787,8 +787,8 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         // Account for nav bar - position modal below it
         top: `${LAYOUT.NAV_HEIGHT}px`,
         padding: `${LAYOUT.MODAL_PADDING}px`, 
-        background: 'rgba(5, 4, 3, 0.95)', 
-        backdropFilter: 'blur(20px)' 
+        background: 'rgba(5, 4, 3, 0.75)', 
+        backdropFilter: 'blur(8px)' 
       }}
     >
       {/* Hidden canvas component for export */}
@@ -824,7 +824,21 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
       <div
         ref={cardRef}
         data-atlas-card="true"
-        className="relative overflow-hidden"
+        className="relative overflow-hidden cursor-pointer"
+        onClick={(e) => {
+          // Click on card advances to next media (but not if clicking on interactive elements)
+          const target = e.target as HTMLElement;
+          // Don't advance if clicking on buttons, links, or other interactive elements
+          if (target.closest('button') || target.closest('a') || target.closest('[data-no-advance]')) {
+            return;
+          }
+          // Stop propagation to prevent backdrop click from closing modal
+          e.stopPropagation();
+          // Only advance if there are multiple media items
+          if (allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1) {
+            handleNextMedia();
+          }
+        }}
         style={{
           // Let aspect ratio and max constraints determine size
           // Height is primary constraint on small screens, width on large screens
@@ -935,63 +949,16 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
               [<span style={{ color: 'rgba(236, 227, 214, 0.5)' }}>{formatTime(elapsedTime)}</span>]
             </span>
             
-            {/* Media navigation (if multiple media) */}
+            {/* Media counter (no navigation arrows - click card to advance) */}
             {allMedia.filter(m => m.mediaType !== 'thumbnail').length > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
-                <button
-                  onClick={handlePrevMedia}
-                  title="Previous media"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    width: '20px',
-                    height: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: 'rgba(236, 227, 214, 0.5)',
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M7.5 9L4.5 6L7.5 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                <span style={{ 
-                  color: 'rgba(236, 227, 214, 0.4)', 
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '8px',
-                  minWidth: '30px',
-                  textAlign: 'center',
-                }}>
-                  {currentMediaIndex + 1} / {allMedia.filter(m => m.mediaType !== 'thumbnail').length}
-                </span>
-                <button
-                  onClick={handleNextMedia}
-                  title="Next media"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    width: '20px',
-                    height: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: 'rgba(236, 227, 214, 0.5)',
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.8)'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)'}
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M4.5 3L7.5 6L4.5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
+              <span style={{ 
+                color: 'rgba(236, 227, 214, 0.4)', 
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8px',
+                marginLeft: '8px',
+              }}>
+                {currentMediaIndex + 1} / {allMedia.filter(m => m.mediaType !== 'thumbnail').length}
+              </span>
             )}
             
             {/* Action buttons - consistent sizing, tighter spacing */}

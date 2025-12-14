@@ -41,27 +41,34 @@ export function NavigationHUD({
     return Array.from(types).sort();
   }, [denizens]);
 
-  const toggleDomain = (domain: string) => {
+  // Navigate to a domain landmark (move position in semantic space)
+  const navigateToDomain = (domain: string) => {
     const newDomains = new Set(filters.domains);
     if (newDomains.has(domain)) {
+      // Navigating away from this landmark
       newDomains.delete(domain);
     } else {
+      // Navigating toward this landmark
       newDomains.add(domain);
     }
     onFiltersChange({ ...filters, domains: newDomains });
   };
 
-  const toggleEntityType = (type: DenizenType) => {
+  // Navigate to an entity type vector (adjust position along type axis)
+  const navigateToVector = (type: DenizenType) => {
     const newTypes = new Set(filters.entityTypes);
     if (newTypes.has(type)) {
+      // Moving away from this vector
       newTypes.delete(type);
     } else {
+      // Moving toward this vector
       newTypes.add(type);
     }
     onFiltersChange({ ...filters, entityTypes: newTypes });
   };
 
-  const clearAllFilters = () => {
+  // Reset position to origin (clear navigation)
+  const resetToOrigin = () => {
     onFiltersChange({
       domains: new Set(),
       entityTypes: new Set(),
@@ -92,6 +99,32 @@ export function NavigationHUD({
   // Calculate signal strength (percentage of entities visible)
   const signalStrength = Math.round((filteredCount / totalCount) * 100);
 
+  // Calculate current position in semantic space based on active landmarks
+  // Position = meaning (coordinates show where you are in latent space)
+  const semanticPosition = useMemo(() => {
+    const activeDomainCount = filters.domains.size;
+    const activeTypeCount = filters.entityTypes.size;
+    const totalLandmarks = availableDomains.length + availableEntityTypes.length;
+    
+    // Position coordinates (0-1 range, like embedding space)
+    // X: Domain axis, Y: Type axis, Z: Depth (how many landmarks active)
+    const x = availableDomains.length > 0 
+      ? activeDomainCount / availableDomains.length 
+      : 0.5;
+    const y = availableEntityTypes.length > 0
+      ? activeTypeCount / availableEntityTypes.length
+      : 0.5;
+    const z = totalLandmarks > 0
+      ? (activeDomainCount + activeTypeCount) / totalLandmarks
+      : 0;
+    
+    return { 
+      x: Math.min(1, Math.max(0, x)), 
+      y: Math.min(1, Math.max(0, y)), 
+      z: Math.min(1, Math.max(0, z))
+    };
+  }, [filters, availableDomains.length, availableEntityTypes.length]);
+
   // Generate tick marks (matching Thoughtform implementation)
   const tickCount = 20;
   const tickLabels: Record<number, string> = {
@@ -103,7 +136,7 @@ export function NavigationHUD({
   };
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-50" data-navigation-hud>
+    <div className="fixed inset-0 pointer-events-none z-40" data-navigation-hud>
       {/* Corner Brackets */}
       <div className="hud-corner hud-corner-tl" />
       <div className="hud-corner hud-corner-tr" />
@@ -179,7 +212,7 @@ export function NavigationHUD({
           </div>
         </div>
 
-        {/* VECTOR Labels (Entity Types) */}
+        {/* VECTOR Labels (Entity Types) - Navigate to semantic regions */}
         <div 
           className="pointer-events-auto rail-content"
           style={{
@@ -190,11 +223,12 @@ export function NavigationHUD({
         >
           {availableEntityTypes.map((type) => {
             const isActive = filters.entityTypes.has(type);
+            const typeCount = denizens.filter(d => d.type === type).length;
             return (
               <button
                 key={type}
-                onClick={() => toggleEntityType(type)}
-                className="text-left transition-opacity"
+                onClick={() => navigateToVector(type)}
+                className="text-left transition-all"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: '9px',
@@ -208,6 +242,7 @@ export function NavigationHUD({
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '2px',
+                  position: 'relative',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
@@ -222,6 +257,19 @@ export function NavigationHUD({
               >
                 <span style={{ fontSize: '8px', opacity: 0.5 }}>VECTOR</span>
                 <span>{type}</span>
+                {isActive && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '-12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '2px',
+                      height: '16px',
+                      background: 'var(--gold)',
+                    }}
+                  />
+                )}
               </button>
             );
           })}
@@ -241,7 +289,7 @@ export function NavigationHUD({
           </div>
         </div>
 
-        {/* Section Markers (Domains) */}
+        {/* Section Markers (Domains) - Navigate to semantic territories */}
         <div 
           className="pointer-events-auto rail-content"
           style={{
@@ -252,11 +300,12 @@ export function NavigationHUD({
         >
           {availableDomains.map((domain, index) => {
             const isActive = filters.domains.has(domain);
+            const domainCount = denizens.filter(d => d.domain === domain).length;
             return (
               <button
                 key={domain}
-                onClick={() => toggleDomain(domain)}
-                className="transition-opacity"
+                onClick={() => navigateToDomain(domain)}
+                className="transition-all"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -284,6 +333,8 @@ export function NavigationHUD({
                     height: '6px',
                     border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
                     background: isActive ? 'var(--gold)' : 'transparent',
+                    transform: isActive ? 'rotate(45deg)' : 'none',
+                    transition: 'transform 0.2s ease',
                   }}
                 />
                 <span
@@ -314,43 +365,80 @@ export function NavigationHUD({
           zIndex: 51,
         }}
       >
-        {/* Coordinates */}
+        {/* Coordinates - Current position in semantic space */}
         <div 
           className="pointer-events-auto"
           style={{
             display: 'flex',
-            gap: '24px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
-            letterSpacing: '0.03em',
-            color: 'var(--dawn-30)',
+            flexDirection: 'column',
+            gap: '4px',
           }}
         >
-          <span>δ: <span style={{ color: 'var(--dawn-50)' }}>{filteredCount}</span></span>
-          <span>θ: <span style={{ color: 'var(--dawn-50)' }}>{totalCount}°</span></span>
-          <span>ρ: <span style={{ color: 'var(--dawn-50)' }}>{(filteredCount / totalCount).toFixed(2)}</span></span>
+          <div 
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--dawn-30)',
+            }}
+          >
+            POSITION
+          </div>
+          <div 
+            style={{
+              display: 'flex',
+              gap: '24px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.03em',
+              color: 'var(--dawn-30)',
+            }}
+          >
+          <span>δ: <span style={{ color: 'var(--dawn-50)' }}>{semanticPosition.x.toFixed(2)}</span></span>
+          <span>θ: <span style={{ color: 'var(--dawn-50)' }}>{semanticPosition.y.toFixed(2)}</span></span>
+          <span>ζ: <span style={{ color: 'var(--dawn-50)' }}>{semanticPosition.z.toFixed(2)}</span></span>
+          </div>
         </div>
 
-        {/* LANDMARK Label */}
+        {/* LANDMARK Label - Current location in semantic terrain */}
         <div 
           className="pointer-events-auto"
           style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
-            letterSpacing: '0.02em',
-            color: 'var(--dawn-30)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
             textAlign: 'right',
           }}
         >
-          <span style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>LANDMARK:</span>{' '}
-          <span style={{ color: 'var(--dawn-50)' }}>{landmarkLabel}</span>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--dawn-30)',
+            }}
+          >
+            LANDMARK
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.02em',
+              color: 'var(--dawn-50)',
+            }}
+          >
+            {landmarkLabel}
+          </div>
           {hasActiveFilters && (
             <button
-              onClick={clearAllFilters}
+              onClick={resetToOrigin}
               style={{
-                marginLeft: '16px',
+                marginTop: '4px',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '9px',
+                fontSize: '8px',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'var(--dawn-30)',
@@ -358,6 +446,7 @@ export function NavigationHUD({
                 border: 'none',
                 cursor: 'pointer',
                 padding: 0,
+                alignSelf: 'flex-end',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = 'var(--dawn-50)';
@@ -366,7 +455,7 @@ export function NavigationHUD({
                 e.currentTarget.style.color = 'var(--dawn-30)';
               }}
             >
-              CLEAR
+              RESET POSITION
             </button>
           )}
         </div>
