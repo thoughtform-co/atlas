@@ -9,6 +9,7 @@ interface Particle {
   baseOffset: number;
   phase: number;
   size: number;
+  speed: number; // Individual particle speed for streaming effect
 }
 
 interface ConnectorState {
@@ -59,6 +60,7 @@ export function ConnectorCanvas({ connections, getPosition, denizens = [] }: Con
           baseOffset: (Math.random() - 0.5) * 6, // Slightly tighter spread
           phase: Math.random() * Math.PI * 2,
           size: 2 + Math.random() * 1.5,
+          speed: 0.0008 + Math.random() * 0.0006, // Gentle streaming speed (varied per particle)
         });
       }
 
@@ -124,15 +126,21 @@ export function ConnectorCanvas({ connections, getPosition, denizens = [] }: Con
       const color = connector.domainColor || NEUTRAL_COLOR;
 
       connector.particles.forEach((p) => {
+        // Stream particles along the connection (update position)
+        p.t += p.speed;
+        if (p.t > 1) {
+          p.t -= 1; // Wrap around for continuous streaming
+        }
+        
         const x = fromPos.x + dx * p.t + nx * p.baseOffset;
         const y = fromPos.y + dy * p.t + ny * p.baseOffset;
 
-        // Individual particle pulse - more subtle variation
-        const particlePulse = Math.sin(connector.pulsePhase * 2 + p.phase) * 0.2 + 0.8;
+        // Subtle shimmer instead of harsh pulse
+        const shimmer = Math.sin(connector.pulsePhase * 1.5 + p.phase) * 0.1 + 0.9;
 
-        // Fade at endpoints - gentler fade
-        const edgeFade = Math.min(p.t, 1 - p.t) * 4;
-        const alpha = Math.min(1, edgeFade) * globalPulse * particlePulse * connector.strength;
+        // Fade at endpoints - gentler fade for smooth entry/exit
+        const edgeFade = Math.min(p.t, 1 - p.t) * 5;
+        const alpha = Math.min(1, edgeFade) * globalPulse * shimmer * connector.strength;
 
         // Pixelated rendering
         const px = Math.floor(x / gridSize) * gridSize;
