@@ -20,10 +20,8 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
   const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [orbitTime, setOrbitTime] = useState(0); // Time for orbital rotation
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const orbitAnimationRef = useRef<number | undefined>(undefined);
 
   /**
    * Calculate clustered positions for entities based on their domain.
@@ -218,28 +216,6 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     setMounted(true);
   }, []);
 
-  // Orbital rotation animation - gentle planetary motion
-  useEffect(() => {
-    const ORBIT_SPEED = 0.00015; // Very slow rotation (full rotation takes ~7 minutes)
-    let lastTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const deltaTime = currentTime - lastTime;
-      lastTime = currentTime;
-      
-      setOrbitTime(prev => prev + deltaTime * ORBIT_SPEED);
-      orbitAnimationRef.current = requestAnimationFrame(animate);
-    };
-
-    orbitAnimationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (orbitAnimationRef.current) {
-        cancelAnimationFrame(orbitAnimationRef.current);
-      }
-    };
-  }, []);
-
   // Auto-center view on entities when first loaded
   useEffect(() => {
     if (!mounted || currentDenizens.length === 0) return;
@@ -253,15 +229,7 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
     setOffset({ x: -avgX, y: -avgY });
   }, [mounted, currentDenizens.length]); // Only run when mounted or entity count changes
 
-  // Calculate the center of the constellation (for orbital rotation)
-  const constellationCenter = useMemo(() => {
-    if (currentDenizens.length === 0) return { x: 0, y: 0 };
-    const avgX = currentDenizens.reduce((sum, d) => sum + d.position.x, 0) / currentDenizens.length;
-    const avgY = currentDenizens.reduce((sum, d) => sum + d.position.y, 0) / currentDenizens.length;
-    return { x: avgX, y: avgY };
-  }, [currentDenizens]);
-
-  // Calculate screen position for a denizen (with orbital rotation)
+  // Calculate screen position for a denizen
   const getScreenPosition = useCallback(
     (id: string): Position | null => {
       if (!mounted) return null;
@@ -272,31 +240,12 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       const centerX = window.innerWidth / 2 + offset.x;
       const centerY = window.innerHeight / 2 + offset.y;
 
-      // Apply gentle orbital rotation around constellation center
-      const dx = denizen.position.x - constellationCenter.x;
-      const dy = denizen.position.y - constellationCenter.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      // Only rotate if there's distance from center
-      if (distance > 0) {
-        const currentAngle = Math.atan2(dy, dx);
-        const rotatedAngle = currentAngle + orbitTime;
-        
-        const rotatedX = constellationCenter.x + Math.cos(rotatedAngle) * distance;
-        const rotatedY = constellationCenter.y + Math.sin(rotatedAngle) * distance;
-        
-        return {
-          x: centerX + rotatedX * scale,
-          y: centerY + rotatedY * scale,
-        };
-      }
-
       return {
         x: centerX + denizen.position.x * scale,
         y: centerY + denizen.position.y * scale,
       };
     },
-    [currentDenizens, offset, scale, mounted, orbitTime, constellationCenter]
+    [currentDenizens, offset, scale, mounted]
   );
 
   // Handle card click
