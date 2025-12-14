@@ -64,6 +64,8 @@ export function ArchivistChat({
   const hasInitialized = useRef(false);
   const processedAnalysisNotes = useRef<string | null>(null);
   const lastEntityId = useRef<string | undefined>(undefined);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
   
   // Cache session state in sessionStorage to survive tab switches
   const getCachedSession = useCallback(() => {
@@ -87,6 +89,18 @@ export function ArchivistChat({
       console.warn('[ArchivistChat] Failed to cache session:', e);
     }
   }, [entityId]);
+
+  // Track mount state for async operations
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Abort any pending requests when unmounting
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -134,6 +148,9 @@ export function ArchivistChat({
     
     if (hasInitialized.current) return;
     
+    // Always reset loading state on mount (in case we switched tabs while loading)
+    setIsLoading(false);
+    
     // Check if we have a cached session for this entity (survives tab switches)
     const cached = getCachedSession();
     if (cached && cached.sessionId && cached.messages.length > 0) {
@@ -142,12 +159,49 @@ export function ArchivistChat({
       setMessages(cached.messages);
       setStatus('Ready');
       hasInitialized.current = true;
+      
+      // Check for newer messages from server (in case we missed a response while away)
+      refreshMessagesFromServer(cached.sessionId);
       return;
     }
     
     hasInitialized.current = true;
     initializeSession();
   }, [entityId, getCachedSession]);
+
+  // Check for newer messages from server (called when restoring from cache)
+  const refreshMessagesFromServer = async (cachedSessionId: string) => {
+    try {
+      const entityContext = buildEntityContext();
+      const response = await fetch('/api/archivist/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entityId,
+          entityContext,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // If this is the same session and has more messages than cached, update
+        if (data.sessionId === cachedSessionId && data.messages && data.messages.length > messages.length) {
+          console.log('[ArchivistChat] Found newer messages from server:', data.messages.length, 'vs cached:', messages.length);
+          const loadedMessages: Message[] = data.messages.map((msg: { role: string; content: string; timestamp: string }, index: number) => ({
+            id: `msg-${index}`,
+            role: msg.role === 'user' ? 'user' : 'archivist',
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : formatTime(),
+          }));
+          setMessages(loadedMessages);
+          setCachedSession(cachedSessionId, loadedMessages);
+        }
+      }
+    } catch (error) {
+      console.log('[ArchivistChat] Failed to refresh from server:', error);
+      // Not critical - we already have cached messages
+    }
+  };
 
   // Initialize or resume Archivist session
   const initializeSession = async () => {
@@ -307,11 +361,20 @@ export function ArchivistChat({
       timestamp: formatTime(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Add user message immediately and cache it
+    const messagesWithUser = [...messages, userMessage];
+    setMessages(messagesWithUser);
+    if (sessionId) {
+      setCachedSession(sessionId, messagesWithUser);
+    }
+    
     const messageText = inputValue;
     setInputValue('');
     setIsLoading(true);
     setStatus('Processing...');
+
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController();
 
     try {
       // Call the Archivist API if we have a session
@@ -328,7 +391,11 @@ export function ArchivistChat({
             imageUrl: mediaUrl || formData.mediaUrl, // Pass media URL if available
             entityContext, // Pass updated entity context
           }),
+          signal: abortControllerRef.current.signal,
         });
+
+        // Check if component is still mounted
+        if (!isMountedRef.current) return;
 
         if (response.ok) {
           const data = await response.json();
@@ -378,10 +445,20 @@ export function ArchivistChat({
         await handleLocalResponse(messageText);
       }
     } catch (error) {
+      // Don't handle aborted requests or if unmounted
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('[ArchivistChat] Request aborted');
+        return;
+      }
+      if (!isMountedRef.current) return;
+      
       console.error('Chat error:', error);
       await handleLocalResponse(messageText);
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+      abortControllerRef.current = null;
     }
   };
 

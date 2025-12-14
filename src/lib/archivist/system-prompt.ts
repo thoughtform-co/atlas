@@ -48,7 +48,8 @@ function buildEntityContextSection(ctx: EntityContext): string {
   const parts: string[] = [];
   
   parts.push('\n## CURRENT ENTITY CONTEXT\n');
-  parts.push('You are helping the Navigator with a specific entity. Here is what we know:\n');
+  parts.push('You are helping the Navigator with a specific entity. **All information below is already loaded from the database - you do NOT need to call tools to retrieve it.**\n');
+  parts.push('**IMPORTANT: Respond directly using this context. Only use tools if the Navigator asks about OTHER entities or needs NEW analysis.**\n');
   
   if (ctx.name) parts.push(`**Name:** ${ctx.name}`);
   if (ctx.domain) parts.push(`**Domain:** ${ctx.domain}`);
@@ -62,15 +63,19 @@ function buildEntityContextSection(ctx: EntityContext): string {
   
   if (ctx.mediaUrl) {
     parts.push(`\n**Media URL:** ${ctx.mediaUrl}`);
-    parts.push('*You can use the analyze_media tool on this URL to get visual details.*');
+    if (ctx.geminiAnalysis && Object.keys(ctx.geminiAnalysis).length > 0) {
+      parts.push('*Analysis already provided above - no need to re-analyze.*');
+    } else {
+      parts.push('*You can use the analyze_media tool on this URL if visual analysis is needed.*');
+    }
   }
   
   if (ctx.geminiAnalysis && Object.keys(ctx.geminiAnalysis).length > 0) {
-    parts.push('\n**Previous Gemini Analysis:**');
+    parts.push('\n**Gemini Vision Analysis (already complete - DO NOT re-analyze):**');
     parts.push('```json');
     parts.push(JSON.stringify(ctx.geminiAnalysis, null, 2));
     parts.push('```');
-    parts.push('*This analysis was performed earlier. Reference it when answering questions.*');
+    parts.push('*Use this analysis directly. No need to call analyze_media tool.*');
   }
   
   if (ctx.allFields && Object.keys(ctx.allFields).length > 0) {
