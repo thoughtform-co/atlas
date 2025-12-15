@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import styles from './ForgePromptBar.module.css';
 import { ForgeDenizenSelect } from './ForgeDenizenSelect';
-import type { VideoResolution, VideoDuration } from '@/lib/replicate';
+import type { VideoResolution, VideoDuration, VideoModel } from '@/lib/replicate';
+import { VIDEO_MODELS } from '@/lib/replicate';
 
 interface ForgePromptBarProps {
   sessionId: string;
@@ -22,8 +23,12 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
   const [denizenId, setDenizenId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [model, setModel] = useState<VideoModel>('wan-2.5-i2v');
+  const [showModelPicker, setShowModelPicker] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const modelPickerRef = useRef<HTMLDivElement>(null);
 
   // Handle image upload
   const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,6 +105,33 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
     }
   }, []);
 
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    
+    // Set height based on content, with min and max
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 200);
+    textarea.style.height = `${newHeight}px`;
+  }, [prompt]);
+
+  // Close model picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modelPickerRef.current && !modelPickerRef.current.contains(event.target as Node)) {
+        setShowModelPicker(false);
+      }
+    };
+
+    if (showModelPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showModelPicker]);
+
   // Submit generation
   const handleGenerate = async () => {
     if (!image || !prompt.trim() || generating || disabled) return;
@@ -119,6 +151,7 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
           negative_prompt: negativePrompt.trim() || undefined,
           resolution,
           duration,
+          model,
         }),
       });
 
@@ -149,7 +182,7 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
   const canGenerate = image && prompt.trim() && !generating && !disabled;
 
   return (
-    <div className={styles.promptBar}>
+    <div className={styles.promptBarContainer}>
       {/* Error Message */}
       {error && (
         <div className={styles.error}>
@@ -158,61 +191,92 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
         </div>
       )}
 
-      <div className={styles.content}>
-        {/* Image Upload Zone */}
-        <div 
-          className={styles.imageZone}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageSelect}
-            className={styles.fileInput}
-          />
-          
-          {imagePreview ? (
-            <div className={styles.imagePreview}>
-              <img src={imagePreview} alt="Selected" />
-              <button 
-                className={styles.clearImage} 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  clearImage();
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <div className={styles.uploadPlaceholder}>
-              <span className={styles.uploadIcon}>+</span>
-              <span className={styles.uploadText}>IMAGE</span>
+      <div className={styles.promptBarWrapper}>
+        {/* Model Picker Button - Left of prompt bar */}
+        <div className={styles.modelPickerContainer} ref={modelPickerRef}>
+          <button
+            className={styles.modelPickerButton}
+            onClick={() => setShowModelPicker(!showModelPicker)}
+            disabled={generating || disabled}
+          >
+            <span className={styles.modelPickerLabel}>
+              {VIDEO_MODELS[model].name}
+            </span>
+            <span className={styles.modelPickerChevron}>▼</span>
+          </button>
+
+          {/* Model Dropdown */}
+          {showModelPicker && (
+            <div className={styles.modelDropdown}>
+              {Object.entries(VIDEO_MODELS).map(([key, config]) => (
+                <button
+                  key={key}
+                  className={`${styles.modelOption} ${model === key ? styles.modelOptionActive : ''}`}
+                  onClick={() => {
+                    setModel(key as VideoModel);
+                    setShowModelPicker(false);
+                  }}
+                >
+                  {config.name}
+                </button>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Prompt Input Area */}
-        <div className={styles.inputArea}>
-          {/* Main Prompt */}
-          <div className={styles.promptWrapper}>
+        {/* Unified Prompt Container */}
+        <div className={styles.unifiedPromptContainer}>
+          {/* Image Upload Zone - Inside unified container */}
+          <div 
+            className={styles.imageZone}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className={styles.fileInput}
+            />
+            
+            {imagePreview ? (
+              <div className={styles.imagePreview}>
+                <img src={imagePreview} alt="Selected" />
+                <button 
+                  className={styles.clearImage} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearImage();
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className={styles.uploadPlaceholder}>
+                <span className={styles.uploadIcon}>+</span>
+                <span className={styles.uploadText}>IMAGE</span>
+              </div>
+            )}
+          </div>
+
+          {/* Prompt Text Area - Above icons */}
+          <div className={styles.promptTextArea}>
             <textarea
+              ref={textareaRef}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Describe the motion and animation..."
               className={styles.promptInput}
-              rows={2}
+              rows={1}
               disabled={generating || disabled}
             />
-          </div>
 
-          {/* Negative Prompt (collapsible) */}
-          {showNegative && (
-            <div className={styles.negativeWrapper}>
+            {/* Negative Prompt (collapsible) */}
+            {showNegative && (
               <textarea
                 value={negativePrompt}
                 onChange={(e) => setNegativePrompt(e.target.value)}
@@ -221,10 +285,10 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
                 rows={1}
                 disabled={generating || disabled}
               />
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Parameters Row */}
+          {/* Parameters Row - Below textarea */}
           <div className={styles.paramsRow}>
             {/* Negative Toggle */}
             <button
@@ -272,22 +336,22 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
               disabled={generating || disabled}
             />
           </div>
-        </div>
 
-        {/* Generate Button */}
-        <button
-          className={styles.generateButton}
-          onClick={handleGenerate}
-          disabled={!canGenerate}
-        >
-          {generating ? (
-            <span className={styles.generating}>
-              <span className={styles.spinner} />
-            </span>
-          ) : (
-            <span className={styles.generateIcon}>▶</span>
-          )}
-        </button>
+          {/* Generate Button */}
+          <button
+            className={styles.generateButton}
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+          >
+            {generating ? (
+              <span className={styles.generating}>
+                <span className={styles.spinner} />
+              </span>
+            ) : (
+              <span className={styles.generateIcon}>▶</span>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

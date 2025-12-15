@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       resolution = '720p',
       duration = 5,
       seed,
+      model = 'wan-2.5-i2v',
     } = body;
 
     // Validate session exists and belongs to user
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
       resolution,
       duration,
       seed,
+      model,
     };
 
     const validation = validateGenerateParams(params);

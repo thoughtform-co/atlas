@@ -18,6 +18,7 @@ export interface GenerateVideoParams {
   duration?: VideoDuration;
   seed?: number;
   enable_prompt_expansion?: boolean;
+  model?: VideoModel;      // Model selection
 }
 
 export interface ReplicatePrediction {
@@ -55,8 +56,27 @@ export interface ReplicateWebhookPayload {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════
 
-// Wan 2.5 i2v model version on Replicate
-const WAN_MODEL_VERSION = 'wan-video/wan-2.5-i2v';
+// Available video generation models on Replicate
+export type VideoModel = 'wan-2.5-i2v' | 'seedream-4.5' | 'kling-1.0';
+
+export const VIDEO_MODELS: Record<VideoModel, { name: string; version: string }> = {
+  'wan-2.5-i2v': {
+    name: 'Wan 2.5',
+    version: 'wan-video/wan-2.5-i2v',
+  },
+  'seedream-4.5': {
+    name: 'Seedream 4.5',
+    version: 'seedream/seedream-4.5',
+  },
+  'kling-1.0': {
+    name: 'Kling 1.0',
+    version: 'kling/kling-1.0',
+  },
+};
+
+// Default model
+const DEFAULT_MODEL: VideoModel = 'wan-2.5-i2v';
+const WAN_MODEL_VERSION = VIDEO_MODELS[DEFAULT_MODEL].version;
 
 // Approximate cost per second of video generation (in cents)
 // Based on Replicate's GPU pricing for video models
@@ -77,6 +97,13 @@ export async function generateVideo(
   
   if (!apiToken) {
     throw new Error('REPLICATE_API_TOKEN is not configured');
+  }
+
+  // Get model version
+  const model = params.model || DEFAULT_MODEL;
+  const modelConfig = VIDEO_MODELS[model];
+  if (!modelConfig) {
+    throw new Error(`Unknown model: ${model}`);
   }
 
   const input: Record<string, unknown> = {
@@ -102,7 +129,7 @@ export async function generateVideo(
   }
 
   const body: Record<string, unknown> = {
-    version: WAN_MODEL_VERSION,
+    version: modelConfig.version,
     input,
   };
 

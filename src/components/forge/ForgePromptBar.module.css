@@ -1,17 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════
    FORGE PROMPT BAR
-   Bottom-fixed input area with image upload and parameters
+   Bottom-fixed input area with unified background for prompt and controls
    ═══════════════════════════════════════════════════════════════ */
 
-.promptBar {
+.promptBarContainer {
   position: fixed;
   bottom: calc(clamp(32px, 5vw, 64px) + 20px);
-  left: calc(clamp(32px, 5vw, 64px) + clamp(48px, 8vw, 120px) + 80px);
-  right: calc(clamp(32px, 5vw, 64px) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 100;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+  max-width: 900px;
+  padding: 0 clamp(32px, 5vw, 64px);
+  pointer-events: none;
 }
 
 /* ─── ERROR MESSAGE ─── */
@@ -26,6 +30,7 @@
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.05em;
+  pointer-events: auto;
 }
 
 .error button {
@@ -37,13 +42,113 @@
   padding: 0 4px;
 }
 
-/* ─── MAIN CONTENT ─── */
-.content {
+/* ─── PROMPT BAR WRAPPER ─── */
+.promptBarWrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+/* ─── MODEL PICKER ─── */
+.modelPickerContainer {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.modelPickerButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface-0);
+  border: 1px solid var(--dawn-15);
+  color: var(--dawn-70);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.modelPickerButton:hover:not(:disabled) {
+  border-color: var(--dawn-30);
+  color: var(--dawn);
+  background: rgba(236, 227, 214, 0.05);
+}
+
+.modelPickerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modelPickerLabel {
+  min-width: 80px;
+  text-align: left;
+}
+
+.modelPickerChevron {
+  font-size: 8px;
+  color: var(--dawn-30);
+  transition: transform 150ms ease;
+}
+
+.modelPickerButton:hover:not(:disabled) .modelPickerChevron {
+  color: var(--dawn-50);
+}
+
+.modelDropdown {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  background: var(--surface-0);
+  border: 1px solid var(--dawn-15);
+  min-width: 140px;
+  z-index: 101;
+}
+
+.modelOption {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--dawn-08);
+  color: var(--dawn-50);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.modelOption:last-child {
+  border-bottom: none;
+}
+
+.modelOption:hover {
+  background: rgba(236, 227, 214, 0.08);
+  color: var(--dawn);
+}
+
+.modelOptionActive {
+  color: var(--gold);
+  background: rgba(202, 165, 84, 0.1);
+}
+
+/* ─── UNIFIED PROMPT CONTAINER ─── */
+.unifiedPromptContainer {
+  flex: 1;
   display: flex;
   gap: 12px;
   background: var(--surface-0);
   border: 1px solid var(--dawn-15);
   padding: 12px;
+  min-width: 0;
 }
 
 /* ─── IMAGE ZONE ─── */
@@ -124,8 +229,8 @@
   color: var(--dawn);
 }
 
-/* ─── INPUT AREA ─── */
-.inputArea {
+/* ─── PROMPT TEXT AREA ─── */
+.promptTextArea {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -133,28 +238,21 @@
   min-width: 0;
 }
 
-.promptWrapper {
-  flex: 1;
-}
-
 .promptInput {
   width: 100%;
-  height: 100%;
   min-height: 48px;
-  background: var(--surface-1);
-  border: 1px solid var(--dawn-08);
+  max-height: 200px;
+  background: transparent;
+  border: none;
   color: var(--dawn);
   font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.4;
-  padding: 10px 12px;
+  padding: 0;
   resize: none;
   outline: none;
-  transition: border-color 150ms ease;
-}
-
-.promptInput:focus {
-  border-color: var(--dawn-30);
+  overflow-y: auto;
+  transition: none;
 }
 
 .promptInput::placeholder {
@@ -166,40 +264,49 @@
   cursor: not-allowed;
 }
 
-.negativeWrapper {
-  animation: slideDown 150ms ease;
+/* Custom scrollbar for textarea */
+.promptInput::-webkit-scrollbar {
+  width: 4px;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.promptInput::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.promptInput::-webkit-scrollbar-thumb {
+  background: var(--dawn-15);
+  border-radius: 0;
+}
+
+.promptInput::-webkit-scrollbar-thumb:hover {
+  background: var(--dawn-30);
 }
 
 .negativeInput {
   width: 100%;
-  background: var(--surface-1);
-  border: 1px solid rgba(139, 90, 90, 0.3);
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(139, 90, 90, 0.3);
   color: var(--dawn-70);
   font-family: var(--font-sans);
   font-size: 11px;
   line-height: 1.3;
-  padding: 8px 10px;
+  padding: 8px 0 0 0;
   resize: none;
   outline: none;
 }
 
-.negativeInput:focus {
-  border-color: rgba(139, 90, 90, 0.5);
-}
-
 .negativeInput::placeholder {
   color: var(--dawn-30);
+}
+
+.negativeInput:focus {
+  border-top-color: rgba(139, 90, 90, 0.5);
+}
+
+.negativeInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ─── PARAMETERS ROW ─── */
@@ -208,6 +315,8 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--dawn-08);
 }
 
 .paramButton {
@@ -235,7 +344,7 @@
 
 .paramSelect {
   padding: 6px 10px;
-  background: var(--surface-1);
+  background: transparent;
   border: 1px solid var(--dawn-08);
   color: var(--dawn-70);
   font-family: var(--font-mono);
@@ -339,20 +448,29 @@
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 1100px) {
-  .promptBar {
-    left: var(--space-lg);
-    right: var(--space-lg);
+  .promptBarContainer {
+    max-width: 100%;
+    padding: 0 clamp(24px, 4vw, 48px);
   }
 }
 
 @media (max-width: 768px) {
-  .promptBar {
-    left: var(--space-md);
-    right: var(--space-md);
-    bottom: var(--space-lg);
+  .promptBarContainer {
+    bottom: clamp(24px, 4vw, 48px);
+    padding: 0 16px;
   }
   
-  .content {
+  .promptBarWrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modelPickerButton {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .unifiedPromptContainer {
     flex-direction: column;
     padding: 10px;
   }
