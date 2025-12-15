@@ -464,21 +464,41 @@ export function ConstellationView({ denizens, connections }: ConstellationViewPr
       />
 
       {/* Background canvas layer - with domain nebulae */}
-      <BackgroundCanvas 
-        denizens={currentDenizens} 
-        offset={offset} 
-        scale={scale} 
-      />
+      <div 
+        style={{ 
+          filter: selectedDenizen ? 'blur(8px)' : 'none',
+          transition: 'filter 0.3s ease',
+        }}
+      >
+        <BackgroundCanvas 
+          denizens={currentDenizens} 
+          offset={offset} 
+          scale={scale} 
+        />
+      </div>
 
       {/* Connector canvas layer - includes auto-generated domain connections */}
-      <ConnectorCanvas 
-        connections={allConnections} 
-        getPosition={getScreenPosition}
-        denizens={currentDenizens}
-      />
+      <div 
+        style={{ 
+          filter: selectedDenizen ? 'blur(8px)' : 'none',
+          transition: 'filter 0.3s ease',
+        }}
+      >
+        <ConnectorCanvas 
+          connections={allConnections} 
+          getPosition={getScreenPosition}
+          denizens={currentDenizens}
+        />
+      </div>
 
       {/* Cards container */}
-      <div className="absolute inset-0 z-[3]">
+      <div 
+        className="absolute inset-0 z-[3]"
+        style={{ 
+          filter: selectedDenizen ? 'blur(8px)' : 'none',
+          transition: 'filter 0.3s ease',
+        }}
+      >
         {currentDenizens.map((denizen) => {
           const pos = getScreenPosition(denizen.id);
           if (!pos) return null;

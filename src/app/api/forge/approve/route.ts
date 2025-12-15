@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify generation belongs to user's session
-    // @ts-expect-error - forge_generations table not in generated types yet
+    // @ts-ignore - forge_generations table not in generated types yet
     const { data: generation, error: findError } = await supabase
       .from('forge_generations')
       .select('id, session_id')
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify session ownership
-    // @ts-expect-error - forge_sessions table not in generated types yet
+    // @ts-ignore - forge_sessions table not in generated types yet
     const { data: session, error: sessionError } = await supabase
       .from('forge_sessions')
       .select('user_id')
@@ -64,9 +64,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Update approval status
-    // @ts-expect-error - forge_generations table not in generated types yet
+    // @ts-ignore - forge_generations table not in generated types yet
     const { data: updated, error: updateError } = await supabase
       .from('forge_generations')
+      // @ts-ignore - forge_generations table not in generated types yet
       .update({ approved })
       .eq('id', generation_id)
       .select('id, approved')

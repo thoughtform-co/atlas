@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 
+// Type for session with generations (not yet in generated types)
+interface SessionWithGenerations {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  forge_generations?: Array<{
+    id: string;
+    thumbnail_url: string | null;
+    video_url: string | null;
+    status: string;
+    created_at: string;
+  }>;
+}
+
 /**
  * GET /api/forge/sessions
  * List all sessions for the authenticated user
@@ -16,7 +31,7 @@ export async function GET() {
     }
 
     // Fetch sessions with generation count and latest thumbnail
-    // @ts-expect-error - forge_sessions table not in generated types yet
+    // @ts-ignore - forge_sessions table not in generated types yet
     const { data: sessions, error } = await supabase
       .from('forge_sessions')
       .select(`
@@ -33,7 +48,7 @@ export async function GET() {
         )
       `)
       .eq('user_id', user.id)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false }) as { data: SessionWithGenerations[] | null; error: unknown };
 
     if (error) {
       console.error('Error fetching sessions:', error);
@@ -89,9 +104,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create session
-    // @ts-expect-error - forge_sessions table not in generated types yet
+    // @ts-ignore - forge_sessions table not in generated types yet
     const { data: session, error } = await supabase
       .from('forge_sessions')
+      // @ts-ignore - forge_sessions table not in generated types yet
       .insert({
         user_id: user.id,
         name: name.trim(),

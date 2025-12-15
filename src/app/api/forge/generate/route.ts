@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    // @ts-expect-error - forge_sessions table not in generated types yet
+    // @ts-ignore - forge_sessions table not in generated types yet
     const { data: session, error: sessionError } = await supabase
       .from('forge_sessions')
       .select('id')
@@ -73,9 +73,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create generation record in pending state
-    // @ts-expect-error - forge_generations table not in generated types yet
+    // @ts-ignore - forge_generations table not in generated types yet
     const { data: generation, error: insertError } = await supabase
       .from('forge_generations')
+      // @ts-ignore - forge_generations table not in generated types yet
       .insert({
         session_id,
         denizen_id: denizen_id || null,
@@ -103,9 +104,10 @@ export async function POST(request: NextRequest) {
       const prediction = await generateVideo(params, webhookUrl);
 
       // Update generation with prediction ID
-      // @ts-expect-error - forge_generations table not in generated types yet
+      // @ts-ignore - forge_generations table not in generated types yet
       await supabase
         .from('forge_generations')
+        // @ts-ignore - forge_generations table not in generated types yet
         .update({
           replicate_prediction_id: prediction.id,
           status: 'processing',
@@ -113,9 +115,10 @@ export async function POST(request: NextRequest) {
         .eq('id', generation.id);
 
       // Update session's updated_at
-      // @ts-expect-error - forge_sessions table not in generated types yet
+      // @ts-ignore - forge_sessions table not in generated types yet
       await supabase
         .from('forge_sessions')
+        // @ts-ignore - forge_sessions table not in generated types yet
         .update({ updated_at: new Date().toISOString() })
         .eq('id', session_id);
 
@@ -130,9 +133,10 @@ export async function POST(request: NextRequest) {
 
     } catch (replicateError) {
       // Mark generation as failed
-      // @ts-expect-error - forge_generations table not in generated types yet
+      // @ts-ignore - forge_generations table not in generated types yet
       await supabase
         .from('forge_generations')
+        // @ts-ignore - forge_generations table not in generated types yet
         .update({
           status: 'failed',
           error_message: replicateError instanceof Error ? replicateError.message : 'Unknown error',
@@ -172,7 +176,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch generation
-    // @ts-expect-error - forge_generations table not in generated types yet
+    // @ts-ignore - forge_generations table not in generated types yet
     const { data: generation, error } = await supabase
       .from('forge_generations')
       .select('*')
@@ -184,7 +188,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user owns the session
-    // @ts-expect-error - forge_sessions table not in generated types yet
+    // @ts-ignore - forge_sessions table not in generated types yet
     const { data: session } = await supabase
       .from('forge_sessions')
       .select('user_id')

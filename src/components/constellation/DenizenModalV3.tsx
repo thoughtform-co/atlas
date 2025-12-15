@@ -781,14 +781,14 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
         }
       `}</style>
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[50] flex items-center justify-center"
       onClick={handleBackdropClick}
       style={{ 
         // Account for nav bar - position modal below it
         top: `${LAYOUT.NAV_HEIGHT}px`,
         padding: `${LAYOUT.MODAL_PADDING}px`, 
-        background: 'rgba(5, 4, 3, 0.75)', 
-        backdropFilter: 'blur(8px)' 
+        background: 'rgba(5, 4, 3, 0.3)', 
+        backdropFilter: 'blur(12px)' 
       }}
     >
       {/* Hidden canvas component for export */}
@@ -851,7 +851,7 @@ export function DenizenModalV3({ denizen, onClose, onDenizenUpdate }: DenizenMod
           gridTemplateRows: '32px 1fr 110px',
           gap: '1px',
           border: '1px solid rgba(236, 227, 214, 0.08)',
-          zIndex: 50, // Main card on top
+          zIndex: 55, // Main card above backdrop but below HUD interactive elements
           transform: animatingIndex !== null
             ? 'translateZ(-30px) rotateY(10deg)'
             : 'translateZ(0) rotateY(0deg)',

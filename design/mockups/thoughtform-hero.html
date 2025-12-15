@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thoughtform - Navigate Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=PT+Mono&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* PP Mondwest font - update path as needed */
+    @font-face {
+      font-family: 'PP Mondwest';
+      src: url('../../../12_Thoughtform.co/public/fonts/PPMondwest-Regular.woff2') format('woff2'),
+           url('../../../12_Thoughtform.co/public/fonts/PPMondwest-Regular.woff') format('woff');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS (from thoughtform-brand/tokens/tokens.css)
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      /* Backgrounds (Void) */
+      --void: #050403;
+      --surface-0: #0A0908;
+      --surface-1: #0F0E0C;
+      --surface-2: #141210;
+      
+      /* Text (Dawn) */
+      --dawn: #ECE3D6;
+      --dawn-70: rgba(236, 227, 214, 0.7);
+      --dawn-50: rgba(236, 227, 214, 0.5);
+      --dawn-30: rgba(236, 227, 214, 0.3);
+      --dawn-15: rgba(236, 227, 214, 0.15);
+      --dawn-08: rgba(236, 227, 214, 0.08);
+      --dawn-04: rgba(236, 227, 214, 0.04);
+      
+      /* Accent (Gold) */
+      --gold: #CAA554;
+      --gold-dim: rgba(202, 165, 84, 0.4);
+      --gold-15: rgba(202, 165, 84, 0.15);
+      --gold-10: rgba(202, 165, 84, 0.10);
+      
+      /* Spacing */
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 48px;
+      --space-4xl: 64px;
+      
+      /* Typography */
+      --font-mono: 'PT Mono', monospace;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+      --font-display: 'Playfair Display', serif;
+      --font-mondwest: 'PP Mondwest', 'IBM Plex Sans', sans-serif;
+      
+      /* Animation */
+      --ease-out: cubic-bezier(0.19, 1, 0.22, 1);
+      --duration-fast: 150ms;
+      --duration-base: 300ms;
+      --duration-slow: 500ms;
+    }
+    
+    /* Global reset - Sharp geometry */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important;
+    }
+    
+    html, body {
+      height: 100%;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--dawn);
+      overflow-x: hidden;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       NAVIGATION BAR (Glass pill, centered)
+       ═══════════════════════════════════════════════════════════════ */
+    .nav {
+      position: fixed;
+      top: var(--space-lg);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-xs) var(--space-sm);
+      background: rgba(10, 9, 8, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--dawn-08);
+    }
+    
+    .nav-link {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+      text-decoration: none;
+      padding: var(--space-xs) var(--space-sm);
+      transition: color var(--duration-fast) var(--ease-out);
+    }
+    
+    .nav-link:hover {
+      color: var(--dawn);
+    }
+    
+    .nav-utils {
+      position: fixed;
+      top: var(--space-lg);
+      right: clamp(48px, 8vw, 120px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    
+    .nav-util-link {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      text-decoration: none;
+      padding: var(--space-xs) var(--space-sm);
+      border: 1px solid var(--dawn-08);
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    
+    .nav-util-link:hover {
+      color: var(--dawn-50);
+      border-color: var(--dawn-15);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       HERO SECTION (Split layout)
+       ═══════════════════════════════════════════════════════════════ */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      min-height: 100vh;
+      position: relative;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 clamp(48px, 8vw, 120px);
+    }
+    
+    /* Left column - Content */
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--space-4xl) var(--space-3xl);
+      padding-right: var(--space-4xl);
+      position: relative;
+      z-index: 10;
+    }
+    
+    /* Right column - Visualization (just for HUD labels positioning) */
+    .hero-visualization {
+      position: relative;
+    }
+    
+    /* Terrain canvas - fixed position on right side */
+    .terrain-canvas {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 60vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    
+    /* Background canvas (full screen - particles + connecting lines) */
+    .background-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       WORDMARK (SVG)
+       ═══════════════════════════════════════════════════════════════ */
+    .wordmark {
+      margin-bottom: var(--space-3xl);
+      max-width: 380px;
+    }
+    
+    .wordmark svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       TAGLINE & DESCRIPTION
+       ═══════════════════════════════════════════════════════════════ */
+    .hero-tagline {
+      font-family: var(--font-mondwest);
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--dawn);
+      line-height: 1.4;
+      margin-bottom: var(--space-md);
+    }
+    
+    .hero-description {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      color: var(--dawn-70);
+      line-height: 1.6;
+      max-width: 340px;
+      margin-bottom: var(--space-3xl);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       CTA BUTTONS
+       ═══════════════════════════════════════════════════════════════ */
+    .hero-ctas {
+      display: flex;
+      gap: var(--space-md);
+    }
+    
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: var(--space-sm) var(--space-xl);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--dawn-30);
+      color: var(--dawn);
+    }
+    
+    .btn-ghost:hover {
+      border-color: var(--dawn-50);
+      background: var(--dawn-04);
+    }
+    
+    .btn-primary {
+      background: var(--gold);
+      border: 1px solid var(--gold);
+      color: var(--void);
+    }
+    
+    .btn-primary:hover {
+      background: var(--dawn);
+      border-color: var(--dawn);
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       HUD ELEMENTS
+       ═══════════════════════════════════════════════════════════════ */
+    .hud-label {
+      position: fixed;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      pointer-events: none;
+      z-index: 20;
+      transition: opacity 0.3s ease;
+    }
+    
+    .hud-top-right {
+      top: 100px;
+      right: clamp(48px, 8vw, 120px);
+      text-align: right;
+    }
+    
+    .hud-bottom-right {
+      bottom: var(--space-4xl);
+      right: clamp(48px, 8vw, 120px);
+      text-align: right;
+    }
+    
+    .hud-status {
+      color: var(--dawn-50);
+      display: block;
+      margin-top: 4px;
+    }
+    
+    .hud-blink {
+      animation: blink 1.5s infinite;
+    }
+    
+    @keyframes blink {
+      0%, 50%, 100% { opacity: 1; }
+      25%, 75% { opacity: 0.3; }
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       SCROLL INDICATOR
+       ═══════════════════════════════════════════════════════════════ */
+    .scroll-indicator {
+      position: fixed;
+      bottom: var(--space-2xl);
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      animation: float 2s ease-in-out infinite;
+      z-index: 50;
+      transition: opacity 0.3s ease;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(4px); }
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       DECORATIVE LINES (connecting content to visualization)
+       ═══════════════════════════════════════════════════════════════ */
+    .connector-line {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 200px;
+      height: 1px;
+      background: linear-gradient(to right, var(--dawn-15), transparent);
+      pointer-events: none;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       MANIFESTO SECTION
+       ═══════════════════════════════════════════════════════════════ */
+    .manifesto {
+      position: relative;
+      min-height: 100vh;
+      padding: var(--space-4xl) clamp(48px, 8vw, 120px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 5;
+    }
+    
+    .section-label {
+      position: absolute;
+      top: var(--space-4xl);
+      left: clamp(48px, 8vw, 120px);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    
+    .section-label::before {
+      content: '/ ';
+    }
+    
+    .manifesto-content {
+      max-width: 720px;
+      text-align: center;
+      margin-top: 120px;
+      margin-bottom: var(--space-3xl);
+    }
+    
+    .manifesto-headline {
+      font-family: var(--font-mono);
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dawn);
+      margin-bottom: var(--space-3xl);
+    }
+    
+    .manifesto-text {
+      font-family: var(--font-mondwest);
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--dawn-70);
+      margin-bottom: var(--space-xl);
+    }
+    
+    .manifesto-text strong {
+      color: var(--dawn);
+      font-weight: 400;
+    }
+    
+    .manifesto-text em {
+      color: var(--gold);
+      font-style: normal;
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════
+       TERMINAL / COURSE PLOTTING CONTAINER
+       ═══════════════════════════════════════════════════════════════ */
+    .terminal {
+      width: 100%;
+      max-width: 800px;
+      border: 1px solid var(--dawn-15);
+      background: rgba(10, 9, 8, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      margin-bottom: var(--space-3xl);
+    }
+    
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--dawn-08);
+      background: rgba(10, 9, 8, 0.4);
+    }
+    
+    .terminal-title {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+    }
+    
+    .terminal-status {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .terminal-status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--gold);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    
+    .terminal-body {
+      padding: var(--space-xl);
+      min-height: 280px;
+      position: relative;
+    }
+    
+    .terminal-canvas {
+      width: 100%;
+      height: 220px;
+    }
+    
+    .terminal-readouts {
+      display: flex;
+      justify-content: space-between;
+      margin-top: var(--space-md);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--dawn-08);
+    }
+    
+    .readout {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      color: var(--dawn-30);
+    }
+    
+    .readout-label {
+      color: var(--dawn-50);
+      margin-right: 8px;
+    }
+    
+    .readout-value {
+      color: var(--dawn);
+    }
+    
+    .readout-value.gold {
+      color: var(--gold);
+    }
+  </style>
+</head>
+<body>
+  <!-- Background (full screen - particles + connecting lines) -->
+  <canvas id="backgroundCanvas" class="background-canvas"></canvas>
+  
+  <!-- Terrain visualization (positioned on right) -->
+  <canvas id="terrainCanvas" class="terrain-canvas"></canvas>
+  
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="#manifesto" class="nav-link">Manifesto</a>
+    <a href="#services" class="nav-link">Services</a>
+    <a href="#about" class="nav-link">About</a>
+    <a href="#musings" class="nav-link">Musings</a>
+    <a href="#contact" class="nav-link">Contact</a>
+  </nav>
+  
+  <div class="nav-utils">
+    <a href="#" class="nav-util-link">Sign Out</a>
+    <a href="#" class="nav-util-link">Edit Page</a>
+  </div>
+  
+  <!-- Hero Section -->
+  <section class="hero">
+    <!-- Left: Content -->
+    <div class="hero-content">
+      <div class="wordmark">
+        <!-- Thoughtform Word Mark SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1178.18 494.93">
+          <defs>
+            <style>
+              .wm-dawn { fill: #ebe3d6; }
+              .wm-gold { fill: #caa554; }
+            </style>
+          </defs>
+          <path class="wm-dawn" d="M517.7,108.78c0,59.15-39.04,108.78-107.06,108.78s-107.06-49.63-107.06-108.78S342.62,0,410.64,0s107.06,49.63,107.06,108.78ZM491.63,108.78c0-56.24-28.32-103.49-80.86-103.49s-80.86,47.38-80.86,103.49,28.32,103.49,80.86,103.49,80.86-47.38,80.86-103.49Z"/>
+          <path class="wm-gold" d="M421.49,374.38l-2.51,8.47h-93.83l-1.19,6.62h-8.87l-20.38,105.47h-11.38l18.26-97.13h-4.23l1.46-8.34h-9.93l1.19-6.62H0l2.51-8.47h294.31l1.19-6.62h8.87l18.39-97.93h11.38l-16.28,89.59h4.23l-1.46,8.34h9.93l-1.19,6.62h89.72-.13Z"/>
+          <path class="wm-dawn" d="M598.29,273.54v9.93h-106.93v210.02h-25.94v-219.94h133-.13Z"/>
+          <path class="wm-dawn" d="M557,373.58h-70.27v9.93h70.27v-9.93Z"/>
+          <path class="wm-dawn" d="M734.59,483.95h-89.72v9.79h89.72v-9.79Z"/>
+          <path class="wm-dawn" d="M618.54,316.94h-25.94v133.39h25.94v-133.39h0Z"/>
+          <path class="wm-dawn" d="M786.47,316.94h-25.94v133.39h25.94v-133.39h0Z"/>
+          <path class="wm-dawn" d="M734.59,283.46v-9.53h-89.99v9.53h-25.94v33.48h25.94v-33.22h89.99v33.22h25.94v-33.48h-25.94Z"/>
+          <path class="wm-dawn" d="M644.87,450.47h-25.94v33.48h25.94v-33.48Z"/>
+          <path class="wm-dawn" d="M760.53,450.47h-25.94v33.48h25.94v-33.48Z"/>
+          <path class="wm-dawn" d="M912.58,283.46v100.31h-85.09v-100.31h85.09v-10.45h-111.16v220.74h26.07v-99.25h40.89v33.48h25.28v44.07h25.94v-44.07h-25.94v-33.48h18.92v-10.85h21.84v-100.31h-21.84v.13Z"/>
+          <path class="wm-dawn" d="M930.98,472.17h-11.38v21.7h11.38v-21.7Z"/>
+          <path class="wm-dawn" d="M1117.7,273.01v44.73h-25.67v43.27h-10.45v44.73h10.45v-44.73h25.67v132.6h25.81v-220.74h-25.81v.13Z"/>
+          <path class="wm-dawn" d="M1009.06,361.14v-43.27h-25.67v-44.73h-25.81v220.74h25.81v-132.6h25.67v44.73h10.45v-44.73h-10.45v-.13Z"/>
+          <path class="wm-dawn" d="M1035.26,405.87h-15.75v44.33h15.75v-44.33h0Z"/>
+          <path class="wm-dawn" d="M1081.84,405.87h-15.75v44.33h15.75v-44.33h0Z"/>
+          <path class="wm-dawn" d="M1066.09,450.2h-30.83v43.67h30.83v-43.67h0Z"/>
+          <path class="wm-dawn" d="M877.38,1.85v4.9c7.68-.13,15.62-.66,16.54,8.73l-.26,188.45c-1.72,8.2-9.66,6.48-16.28,6.48v4.9h59.68v-4.9c-14.03.93-16.54-.79-17.47-14.56v-87.47h68.95v95.68c0,6.48-12.04,6.88-16.54,6.22v4.9h59.82v-4.9c-7.28,0-15.48,1.72-16.54-7.81l.66-190.56c2.12-6.22,10.72-5.16,15.88-5.29V1.59h-59.68v4.9c3.97,0,9.4-.53,13.1,1.46,1.06.66,3.57,3.97,3.57,4.76v85.75h-67.62l-1.32-1.32V19.19c0-.26.79-5.69.93-6.35,1.72-7.54,10.32-6.35,16.41-6.35V1.46h-59.82.13l-.13.4Z"/>
+          <path class="wm-dawn" d="M301.33,1.72h-59.82v4.9h.93c1.99,0,4.76,0,7.41.26h.66c2.91.4,5.56,1.32,6.75,3.44.4.53,1.72,4.63,1.72,4.9v83.24h-69.87V15.22c0-.26,1.46-4.5,1.72-4.9,1.19-2.12,3.84-3.04,6.75-3.44h.66c2.65-.4,5.43-.26,7.41-.26h.93V1.72h-59.82v4.9h0c3.57.13,6.75,0,9.26.53h.53c4.1.79,6.88,3.18,7.68,9.93v181.43c-.93,12.57-5.96,12.44-17.47,11.91v4.9h59.82v-4.9h-7.68c-.66,0-1.46,0-2.12-.26-2.51-.4-4.63-1.32-5.96-3.71-.26-.66-1.72-4.63-1.72-4.9v-92.37h69.87v92.37c0,.26-1.46,4.23-1.72,4.9-1.32,2.38-3.57,3.31-5.96,3.71h-9.79v4.9h59.82v-4.9c-11.65.53-16.54.66-17.47-11.91V16.81c.79-6.75,3.44-9.13,7.68-9.93h.53c2.65-.4,5.82-.26,9.26-.26h0V1.59h0v.13Z"/>
+          <path class="wm-dawn" d="M744.52,107.32l1.85,1.32,79.93.66c4.5,1.72,4.9,9.53,5.29,13.9,1.59,22.76-1.32,47.51,0,70.53l-.53,2.12c-32.29,25.94-80.86,21.31-107.99-9.93-45.13-52.27-30.83-175.87,51.48-180.64,14.16-.79,48.7,5.43,53.07,21.7,4.1,15.88-8.87,23.03-18.13,32.95v1.59l2.51,2.38,38.51-38.51c-43.01-37.72-119.37-32.95-155.23,12.44-34.27,43.54-31.89,123.47,14.16,158.14,38.64,29.11,111.96,29.91,147.29-5.43l.66-75.43c1.46-8.07,10.19-6.22,16.41-6.35v-9.93h-129.56v8.6h.4l-.13-.13Z"/>
+          <path class="wm-dawn" d="M1178.18,28.19h-4.5s-5.56-11.65-10.32-14.82c-6.88-4.76-16.54-6.75-25.01-6.62h-2.25c-2.25.13-3.97.53-5.43,1.06-.26,0-.53.13-.66.26-.13,0-.26.13-.53.26-1.99,1.06-3.04,2.65-3.57,4.76h0c0,.26-.13.4-.26.66v186.99c-.13,3.97,3.04,9.53,7.15,9.53h12.7v4.9h-66.17v-4.9h12.7c4.1,0,7.28-5.56,7.15-9.53V13.76c0-.26-.13-.4-.26-.66h0c-.53-2.12-1.59-3.71-3.57-4.76-.13,0-.26-.13-.53-.26-.26,0-.4-.13-.66-.26-1.32-.53-3.18-.93-5.29-1.06h-2.25c-8.47-.26-18.13,1.85-25.01,6.62-4.63,3.18-10.32,14.82-10.32,14.82h-4.5l4.5-20.78,1.19-5.43h119.76l1.19,5.43,4.5,20.78h.26Z"/>
+          <path class="wm-dawn" d="M134.19,28.19h-4.5s-5.56-11.65-10.32-14.82c-6.88-4.76-16.54-6.75-25.01-6.62h-2.25c-2.25.13-3.97.53-5.43,1.06-.26,0-.53.13-.66.26-.13,0-.26.13-.53.26-1.99,1.06-3.04,2.65-3.57,4.76h0c0,.26-.13.4-.26.66v186.99c-.13,3.97,3.04,9.53,7.15,9.53h12.7v4.9H35.2v-4.9h12.7c4.1,0,7.28-5.56,7.15-9.53V13.76c0-.26-.13-.4-.26-.66h0c-.53-2.12-1.46-3.71-3.57-4.76-.13,0-.26-.13-.53-.26-.26,0-.4-.13-.66-.26-1.32-.53-3.18-.93-5.43-1.06h-2.25c-8.47-.26-18,1.85-25.01,6.62-4.63,3.18-10.32,14.82-10.32,14.82H2.65L7.15,7.41l1.19-5.43h119.76l1.19,5.43,4.5,20.78h.4Z"/>
+          <path class="wm-dawn" d="M631.5,1.85v4.9c8.47,0,15.48-.66,16.54,9.53-2.38,49.36,3.18,101.63,0,150.86-1.85,29.11-18.26,47.38-48.7,45.13-24.09-1.72-33.61-20.11-36-41.82V15.62c.26-9.4,9.26-8.87,16.54-8.73V1.98h-59.68v4.9c11.65-.66,15.22.79,16.81,8.73v137.76c-.26,34.27,13.1,60.87,53.46,63.92,35.86,2.65,60.08-10.72,62.73-48.43,3.31-49.1-2.51-101.9,0-151.39,1.32-10.98,6.88-10.45,16.54-10.45V2.12h-38.24v-.26Z"/>
+        </svg>
+      </div>
+      
+      <p class="hero-tagline">
+        Thoughtform pioneers intuitive human-AI collaboration.
+      </p>
+      
+      <p class="hero-description">
+        We teach teams how to navigate AI for creative and strategic work.
+      </p>
+      
+      <div class="hero-ctas">
+        <a href="#learn" class="btn btn-ghost">Learn More</a>
+        <a href="#guide" class="btn btn-primary">Guide Me</a>
+      </div>
+    </div>
+    
+    <!-- Right: empty column for layout balance -->
+    <div class="hero-visualization"></div>
+  </section>
+  
+  <!-- HUD Labels (fixed position) -->
+  <div class="hud-label hud-top-right">
+    // Latent Space<br>
+    <span class="hud-status">◆ Semantic Manifold</span>
+  </div>
+  
+  <div class="hud-label hud-bottom-right">
+    // Status<br>
+    <span class="hud-status hud-blink">Navigating...</span>
+  </div>
+  
+  <!-- Scroll indicator -->
+  <div class="scroll-indicator">Scroll</div>
+  
+  <!-- Manifesto Section -->
+  <section class="manifesto" id="manifesto">
+    <span class="section-label">Manifesto</span>
+    
+    <div class="manifesto-content">
+      <h2 class="manifesto-headline">AI Isn't Software</h2>
+      
+      <p class="manifesto-text">
+        Most companies struggle with their AI adoption because they treat AI like normal software.
+      </p>
+      
+      <p class="manifesto-text">
+        <strong>But AI isn't a tool to command.</strong>
+      </p>
+      
+      <p class="manifesto-text">
+        It's a strange, new intelligence we have to learn how to <em>navigate</em>. 
+        It leaps across dimensions we can't fathom. It hallucinates. It surprises.
+      </p>
+      
+      <p class="manifesto-text">
+        In technical work, that strangeness must be constrained.<br>
+        But in creative and strategic work? <strong>It's the source of truly novel ideas.</strong>
+      </p>
+      
+      <p class="manifesto-text">
+        Thoughtform teaches teams to think <em>with</em> that intelligence—navigating its strangeness for creative breakthroughs.
+      </p>
+    </div>
+    
+    <!-- Terminal / Course Plotting -->
+    <div class="terminal">
+      <div class="terminal-header">
+        <span class="terminal-title">// Trajectory Plotting</span>
+        <span class="terminal-status">Active</span>
+      </div>
+      <div class="terminal-body">
+        <canvas id="trajectoryCanvas" class="terminal-canvas"></canvas>
+        <div class="terminal-readouts">
+          <div class="readout">
+            <span class="readout-label">▸ Origin:</span>
+            <span class="readout-value">Tool Mindset</span>
+          </div>
+          <div class="readout">
+            <span class="readout-label">▸ Destination:</span>
+            <span class="readout-value gold">Creative Breakthroughs</span>
+          </div>
+          <div class="readout">
+            <span class="readout-label">▸ Method:</span>
+            <span class="readout-value">Intuition</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <a href="#contact" class="btn btn-ghost">Guide Us</a>
+  </section>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // PARTICLE SYSTEM CONSTANTS (from thoughtform-brand/skills/brand/PARTICLES.md)
+    // ═══════════════════════════════════════════════════════════════
+    const GRID = 3;
+    const GOLD = '202, 165, 84';
+    const DAWN = '236, 227, 214';
+    const VOID = '5, 4, 3';
+    
+    // ═══════════════════════════════════════════════════════════════
+    // UTILITY FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+    function drawPixel(ctx, x, y, color, alpha, size = GRID) {
+      const px = Math.floor(x / GRID) * GRID;
+      const py = Math.floor(y / GRID) * GRID;
+      ctx.fillStyle = `rgba(${color}, ${alpha})`;
+      ctx.fillRect(px, py, size - 1, size - 1);
+    }
+    
+    function setupCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      return { ctx, width: rect.width, height: rect.height };
+    }
+    
+    // Simple noise function for terrain
+    function noise(x, y, seed = 0) {
+      const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453;
+      return n - Math.floor(n);
+    }
+    
+    function smoothNoise(x, y, scale = 0.1) {
+      const x0 = Math.floor(x * scale);
+      const y0 = Math.floor(y * scale);
+      const fx = (x * scale) - x0;
+      const fy = (y * scale) - y0;
+      
+      const n00 = noise(x0, y0);
+      const n10 = noise(x0 + 1, y0);
+      const n01 = noise(x0, y0 + 1);
+      const n11 = noise(x0 + 1, y0 + 1);
+      
+      const nx0 = n00 * (1 - fx) + n10 * fx;
+      const nx1 = n01 * (1 - fx) + n11 * fx;
+      
+      return nx0 * (1 - fy) + nx1 * fy;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // ISOMETRIC TERRAIN VISUALIZATION
+    // ═══════════════════════════════════════════════════════════════
+    const terrainCanvas = document.getElementById('terrainCanvas');
+    let terrainCtx, terrainWidth, terrainHeight;
+    let terrainTime = 0;
+    
+    // Terrain mesh data
+    const gridSizeX = 40;
+    const gridSizeY = 30;
+    const cellSize = 20;
+    let terrainMesh = [];
+    
+    // Isometric projection
+    function toIsometric(x, y, z) {
+      const angle = Math.PI / 6;
+      const isoX = (x - y) * Math.cos(angle);
+      const isoY = (x + y) * Math.sin(angle) - z;
+      return { x: isoX, y: isoY };
+    }
+    
+    function initTerrain() {
+      terrainMesh = [];
+      for (let y = 0; y < gridSizeY; y++) {
+        for (let x = 0; x < gridSizeX; x++) {
+          // Multiple octaves of noise for organic terrain
+          const n1 = smoothNoise(x, y, 0.08);
+          const n2 = smoothNoise(x, y, 0.15) * 0.5;
+          const n3 = smoothNoise(x, y, 0.3) * 0.25;
+          const height = (n1 + n2 + n3) * 80;
+          
+          terrainMesh.push({
+            gridX: x,
+            gridY: y,
+            baseHeight: height,
+            x: x * cellSize,
+            y: y * cellSize,
+            z: height
+          });
+        }
+      }
+    }
+    
+    function drawTerrain() {
+      const setup = setupCanvas(terrainCanvas);
+      if (!setup) return;
+      terrainCtx = setup.ctx;
+      terrainWidth = setup.width;
+      terrainHeight = setup.height;
+      
+      // Clear with transparent (let background show through)
+      terrainCtx.clearRect(0, 0, terrainWidth, terrainHeight);
+      
+      // Position terrain in center of this canvas area
+      const offsetX = terrainWidth * 0.45;
+      const offsetY = terrainHeight * 0.4;
+      
+      // Update heights with animation
+      terrainMesh.forEach(point => {
+        const wave = Math.sin(terrainTime * 0.5 + point.gridX * 0.2 + point.gridY * 0.15) * 8;
+        point.z = point.baseHeight + wave;
+      });
+      
+      // Draw grid lines (horizontal)
+      for (let y = 0; y < gridSizeY; y++) {
+        for (let x = 0; x < gridSizeX - 1; x++) {
+          const idx = y * gridSizeX + x;
+          const p1 = terrainMesh[idx];
+          const p2 = terrainMesh[idx + 1];
+          
+          const iso1 = toIsometric(p1.x, p1.y, p1.z);
+          const iso2 = toIsometric(p2.x, p2.y, p2.z);
+          
+          const screenX1 = offsetX + iso1.x;
+          const screenY1 = offsetY + iso1.y;
+          const screenX2 = offsetX + iso2.x;
+          const screenY2 = offsetY + iso2.y;
+          
+          // Draw as particles along line
+          const dist = Math.sqrt((screenX2 - screenX1) ** 2 + (screenY2 - screenY1) ** 2);
+          const steps = Math.floor(dist / (GRID * 2));
+          
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const px = screenX1 + (screenX2 - screenX1) * t;
+            const py = screenY1 + (screenY2 - screenY1) * t;
+            
+            // Fade based on depth (y position in grid) - increased visibility
+            const depthAlpha = 0.2 + (y / gridSizeY) * 0.5;
+            const heightAlpha = 0.25 + (p1.z / 100) * 0.35;
+            const alpha = Math.min(depthAlpha, heightAlpha);
+            
+            drawPixel(terrainCtx, px, py, GOLD, alpha);
+          }
+        }
+      }
+      
+      // Draw grid lines (vertical)
+      for (let x = 0; x < gridSizeX; x++) {
+        for (let y = 0; y < gridSizeY - 1; y++) {
+          const idx = y * gridSizeX + x;
+          const p1 = terrainMesh[idx];
+          const p2 = terrainMesh[idx + gridSizeX];
+          
+          const iso1 = toIsometric(p1.x, p1.y, p1.z);
+          const iso2 = toIsometric(p2.x, p2.y, p2.z);
+          
+          const screenX1 = offsetX + iso1.x;
+          const screenY1 = offsetY + iso1.y;
+          const screenX2 = offsetX + iso2.x;
+          const screenY2 = offsetY + iso2.y;
+          
+          const dist = Math.sqrt((screenX2 - screenX1) ** 2 + (screenY2 - screenY1) ** 2);
+          const steps = Math.floor(dist / (GRID * 2));
+          
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const px = screenX1 + (screenX2 - screenX1) * t;
+            const py = screenY1 + (screenY2 - screenY1) * t;
+            
+            const depthAlpha = 0.2 + (y / gridSizeY) * 0.5;
+            const heightAlpha = 0.25 + (p1.z / 100) * 0.35;
+            const alpha = Math.min(depthAlpha, heightAlpha);
+            
+            drawPixel(terrainCtx, px, py, GOLD, alpha);
+          }
+        }
+      }
+      
+      // Draw vertex points (brighter)
+      terrainMesh.forEach(point => {
+        const iso = toIsometric(point.x, point.y, point.z);
+        const screenX = offsetX + iso.x;
+        const screenY = offsetY + iso.y;
+        
+        const heightAlpha = 0.4 + (point.z / 100) * 0.4;
+        drawPixel(terrainCtx, screenX, screenY, GOLD, heightAlpha, GRID);
+        
+        // Add subtle glow around high points
+        if (point.z > 60) {
+          drawPixel(terrainCtx, screenX - GRID, screenY, GOLD, 0.1);
+          drawPixel(terrainCtx, screenX + GRID, screenY, GOLD, 0.1);
+          drawPixel(terrainCtx, screenX, screenY - GRID, GOLD, 0.1);
+        }
+      });
+      
+      // Draw some flowing particles along the terrain
+      for (let i = 0; i < 20; i++) {
+        const t = (terrainTime * 0.25 + i * 0.4) % gridSizeX;
+        const x = Math.floor(t);
+        const y = Math.floor((Math.sin(t * 0.5 + i) * 0.5 + 0.5) * (gridSizeY - 1));
+        const idx = y * gridSizeX + Math.min(x, gridSizeX - 1);
+        
+        if (terrainMesh[idx]) {
+          const point = terrainMesh[idx];
+          const iso = toIsometric(point.x, point.y, point.z + 12);
+          const screenX = offsetX + iso.x;
+          const screenY = offsetY + iso.y;
+          
+          // Glowing particle with halo
+          drawPixel(terrainCtx, screenX, screenY, DAWN, 0.9, GRID * 2);
+          drawPixel(terrainCtx, screenX - GRID, screenY, DAWN, 0.4);
+          drawPixel(terrainCtx, screenX + GRID, screenY, DAWN, 0.4);
+          drawPixel(terrainCtx, screenX, screenY - GRID, DAWN, 0.3);
+          drawPixel(terrainCtx, screenX, screenY + GRID, DAWN, 0.2);
+        }
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // BACKGROUND: PARTICLES + CONNECTING LINES
+    // ═══════════════════════════════════════════════════════════════
+    const backgroundCanvas = document.getElementById('backgroundCanvas');
+    let bgCtx, bgWidth, bgHeight;
+    const driftParticles = [];
+    const connectingLines = [];
+    const lineNodes = [];
+    
+    function initBackgroundParticles() {
+      const setup = setupCanvas(backgroundCanvas);
+      if (!setup) return;
+      bgCtx = setup.ctx;
+      bgWidth = setup.width;
+      bgHeight = setup.height;
+      
+      // Initialize drift particles
+      driftParticles.length = 0;
+      for (let i = 0; i < 50; i++) {
+        driftParticles.push({
+          x: Math.random() * bgWidth,
+          y: Math.random() * bgHeight,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.15,
+          alpha: 0.03 + Math.random() * 0.08,
+          size: Math.random() > 0.85 ? GRID * 2 : GRID
+        });
+      }
+      
+      // Initialize line nodes (anchor points for connecting lines)
+      lineNodes.length = 0;
+      for (let i = 0; i < 25; i++) {
+        lineNodes.push({
+          x: Math.random() * bgWidth,
+          y: Math.random() * bgHeight,
+          vx: (Math.random() - 0.5) * 0.08,
+          vy: (Math.random() - 0.5) * 0.08
+        });
+      }
+      
+      // Generate connecting lines between nearby nodes
+      connectingLines.length = 0;
+      for (let i = 0; i < lineNodes.length; i++) {
+        // Connect to 1-3 nearby nodes
+        const connections = 1 + Math.floor(Math.random() * 3);
+        for (let c = 0; c < connections; c++) {
+          const j = Math.floor(Math.random() * lineNodes.length);
+          if (i !== j) {
+            connectingLines.push({
+              from: i,
+              to: j,
+              alpha: 0.03 + Math.random() * 0.06
+            });
+          }
+        }
+      }
+    }
+    
+    function drawBackgroundParticles() {
+      if (!bgCtx) return;
+      
+      // Very slow fade
+      bgCtx.fillStyle = `rgba(${VOID}, 0.02)`;
+      bgCtx.fillRect(0, 0, bgWidth, bgHeight);
+      
+      // Update and draw line nodes (they move slowly)
+      lineNodes.forEach(node => {
+        node.x += node.vx;
+        node.y += node.vy;
+        
+        // Bounce off edges
+        if (node.x < 0 || node.x > bgWidth) node.vx *= -1;
+        if (node.y < 0 || node.y > bgHeight) node.vy *= -1;
+        
+        // Keep in bounds
+        node.x = Math.max(0, Math.min(bgWidth, node.x));
+        node.y = Math.max(0, Math.min(bgHeight, node.y));
+      });
+      
+      // Draw connecting lines as particles
+      connectingLines.forEach(line => {
+        const from = lineNodes[line.from];
+        const to = lineNodes[line.to];
+        
+        const dist = Math.sqrt((to.x - from.x) ** 2 + (to.y - from.y) ** 2);
+        const steps = Math.floor(dist / (GRID * 4));
+        
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const px = from.x + (to.x - from.x) * t;
+          const py = from.y + (to.y - from.y) * t;
+          
+          // Sparse particles along line
+          if (Math.random() > 0.7) {
+            drawPixel(bgCtx, px, py, GOLD, line.alpha);
+          }
+        }
+        
+        // Draw node endpoints slightly brighter
+        drawPixel(bgCtx, from.x, from.y, DAWN, 0.08, GRID);
+        drawPixel(bgCtx, to.x, to.y, DAWN, 0.08, GRID);
+      });
+      
+      // Draw drift particles
+      driftParticles.forEach(p => {
+        drawPixel(bgCtx, p.x, p.y, DAWN, p.alpha, p.size);
+        
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        // Wrap around
+        if (p.x < 0) p.x = bgWidth;
+        if (p.x > bgWidth) p.x = 0;
+        if (p.y < 0) p.y = bgHeight;
+        if (p.y > bgHeight) p.y = 0;
+      });
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // TRAJECTORY / COURSE PLOTTING VISUALIZATION
+    // ═══════════════════════════════════════════════════════════════
+    const trajectoryCanvas = document.getElementById('trajectoryCanvas');
+    let trajCtx, trajWidth, trajHeight;
+    let trajTime = 0;
+    
+    // Waypoints for the navigation path
+    const waypoints = [
+      { x: 0.1, y: 0.7, label: 'ORIGIN', sublabel: 'Tool Mindset' },
+      { x: 0.35, y: 0.4, label: 'CONSTRAIN', sublabel: 'Technical Work' },
+      { x: 0.65, y: 0.5, label: 'NAVIGATE', sublabel: 'Intuition' },
+      { x: 0.9, y: 0.3, label: 'DESTINATION', sublabel: 'Breakthroughs' }
+    ];
+    
+    // Current position (animated along path)
+    let currentPathPosition = 0;
+    
+    function initTrajectory() {
+      if (!trajectoryCanvas) return;
+      const rect = trajectoryCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      trajectoryCanvas.width = rect.width * dpr;
+      trajectoryCanvas.height = rect.height * dpr;
+      trajCtx = trajectoryCanvas.getContext('2d');
+      trajCtx.scale(dpr, dpr);
+      trajWidth = rect.width;
+      trajHeight = rect.height;
+    }
+    
+    function drawTrajectory() {
+      if (!trajCtx || !trajWidth) return;
+      
+      // Clear
+      trajCtx.clearRect(0, 0, trajWidth, trajHeight);
+      
+      // Draw subtle grid
+      trajCtx.strokeStyle = `rgba(236, 227, 214, 0.03)`;
+      trajCtx.lineWidth = 1;
+      const gridSpacing = 30;
+      for (let x = 0; x < trajWidth; x += gridSpacing) {
+        for (let y = 0; y < trajHeight; y += gridSpacing) {
+          drawPixel(trajCtx, x, y, DAWN, 0.05);
+        }
+      }
+      
+      // Draw path between waypoints
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const p1 = waypoints[i];
+        const p2 = waypoints[i + 1];
+        
+        const x1 = p1.x * trajWidth;
+        const y1 = p1.y * trajHeight;
+        const x2 = p2.x * trajWidth;
+        const y2 = p2.y * trajHeight;
+        
+        // Draw curved path using bezier-like interpolation
+        const midX = (x1 + x2) / 2;
+        const midY = Math.min(y1, y2) - 30 - Math.sin(trajTime + i) * 5;
+        
+        const segments = 40;
+        for (let s = 0; s <= segments; s++) {
+          const t = s / segments;
+          // Quadratic bezier
+          const px = (1-t)*(1-t)*x1 + 2*(1-t)*t*midX + t*t*x2;
+          const py = (1-t)*(1-t)*y1 + 2*(1-t)*t*midY + t*t*y2;
+          
+          // Animated dashes
+          const dashPhase = (trajTime * 2 + s * 0.1) % 1;
+          const alpha = dashPhase > 0.5 ? 0.4 : 0.15;
+          
+          drawPixel(trajCtx, px, py, GOLD, alpha);
+        }
+      }
+      
+      // Draw waypoint nodes
+      waypoints.forEach((wp, i) => {
+        const x = wp.x * trajWidth;
+        const y = wp.y * trajHeight;
+        
+        // Outer ring
+        const ringRadius = 12;
+        const ringPoints = 16;
+        for (let r = 0; r < ringPoints; r++) {
+          const angle = (r / ringPoints) * Math.PI * 2;
+          const rx = x + Math.cos(angle) * ringRadius;
+          const ry = y + Math.sin(angle) * ringRadius;
+          drawPixel(trajCtx, rx, ry, DAWN, 0.3);
+        }
+        
+        // Center dot
+        const pulse = 0.5 + Math.sin(trajTime * 2 + i) * 0.3;
+        drawPixel(trajCtx, x, y, GOLD, pulse, GRID * 2);
+        
+        // Label above
+        trajCtx.font = '9px "PT Mono", monospace';
+        trajCtx.fillStyle = `rgba(236, 227, 214, 0.5)`;
+        trajCtx.textAlign = 'center';
+        trajCtx.fillText(wp.label, x, y - 22);
+      });
+      
+      // Draw current position (animated along path)
+      currentPathPosition = (trajTime * 0.15) % 1;
+      
+      // Find which segment we're on
+      const totalSegments = waypoints.length - 1;
+      const segmentProgress = currentPathPosition * totalSegments;
+      const currentSegment = Math.floor(segmentProgress);
+      const segmentT = segmentProgress - currentSegment;
+      
+      if (currentSegment < totalSegments) {
+        const p1 = waypoints[currentSegment];
+        const p2 = waypoints[currentSegment + 1];
+        
+        const x1 = p1.x * trajWidth;
+        const y1 = p1.y * trajHeight;
+        const x2 = p2.x * trajWidth;
+        const y2 = p2.y * trajHeight;
+        
+        const midX = (x1 + x2) / 2;
+        const midY = Math.min(y1, y2) - 30;
+        
+        // Current position on curve
+        const t = segmentT;
+        const curX = (1-t)*(1-t)*x1 + 2*(1-t)*t*midX + t*t*x2;
+        const curY = (1-t)*(1-t)*y1 + 2*(1-t)*t*midY + t*t*y2;
+        
+        // Draw current position marker (bright, pulsing)
+        const markerPulse = 0.7 + Math.sin(trajTime * 4) * 0.3;
+        drawPixel(trajCtx, curX, curY, DAWN, markerPulse, GRID * 3);
+        drawPixel(trajCtx, curX - GRID * 2, curY, GOLD, 0.4);
+        drawPixel(trajCtx, curX + GRID * 2, curY, GOLD, 0.4);
+        drawPixel(trajCtx, curX, curY - GRID * 2, GOLD, 0.4);
+        drawPixel(trajCtx, curX, curY + GRID * 2, GOLD, 0.4);
+        
+        // Trail behind current position
+        for (let trail = 1; trail < 8; trail++) {
+          const trailT = Math.max(0, t - trail * 0.03);
+          const trailX = (1-trailT)*(1-trailT)*x1 + 2*(1-trailT)*trailT*midX + trailT*trailT*x2;
+          const trailY = (1-trailT)*(1-trailT)*y1 + 2*(1-trailT)*trailT*midY + trailT*trailT*y2;
+          drawPixel(trajCtx, trailX, trailY, DAWN, 0.3 - trail * 0.03);
+        }
+      }
+      
+      // Draw coordinate axes labels
+      trajCtx.font = '8px "PT Mono", monospace';
+      trajCtx.fillStyle = `rgba(236, 227, 214, 0.2)`;
+      trajCtx.textAlign = 'left';
+      trajCtx.fillText('← CONSTRAINED', 10, trajHeight - 10);
+      trajCtx.textAlign = 'right';
+      trajCtx.fillText('CREATIVE →', trajWidth - 10, trajHeight - 10);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // ANIMATION LOOP
+    // ═══════════════════════════════════════════════════════════════
+    function animate() {
+      terrainTime += 0.016;
+      trajTime += 0.016;
+      
+      drawTerrain();
+      drawBackgroundParticles();
+      drawTrajectory();
+      
+      requestAnimationFrame(animate);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════════════════
+    function init() {
+      initTerrain();
+      initBackgroundParticles();
+      initTrajectory();
+      animate();
+    }
+    
+    // Handle resize
+    window.addEventListener('resize', () => {
+      initBackgroundParticles();
+      initTrajectory();
+      // Terrain canvas will recalculate on next frame
+    });
+    
+    // Hide scroll indicator and HUD labels when scrolling past hero
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      const heroHeight = window.innerHeight;
+      
+      // Fade out scroll indicator
+      const scrollIndicator = document.querySelector('.scroll-indicator');
+      if (scrollIndicator) {
+        scrollIndicator.style.opacity = Math.max(0, 1 - scrollY / (heroHeight * 0.3));
+      }
+      
+      // Fade out HUD labels
+      const hudLabels = document.querySelectorAll('.hud-label');
+      hudLabels.forEach(label => {
+        label.style.opacity = Math.max(0, 1 - scrollY / (heroHeight * 0.5));
+      });
+      
+      // Fade out terrain canvas
+      const terrainCanvas = document.getElementById('terrainCanvas');
+      if (terrainCanvas) {
+        terrainCanvas.style.opacity = Math.max(0, 1 - scrollY / heroHeight);
+      }
+    });
+    
+    // Start
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
