@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerClient } from '@/lib/supabase-server';
 
 /**
  * GET /api/forge/sessions
@@ -7,7 +7,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server';
  */
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -72,7 +72,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

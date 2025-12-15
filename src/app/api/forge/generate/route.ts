@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerClient } from '@/lib/supabase-server';
 import { generateVideo, validateGenerateParams, estimateCost, type GenerateVideoParams } from '@/lib/replicate';
 
 /**
@@ -8,7 +8,7 @@ import { generateVideo, validateGenerateParams, estimateCost, type GenerateVideo
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
