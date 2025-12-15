@@ -1,0 +1,519 @@
+/* ═══════════════════════════════════════════════════════════════
+   FORGE LOADING OVERLAY
+   Latent space navigation visualization during video generation
+   ═══════════════════════════════════════════════════════════════ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 4, 3, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ─── PARTICLE FIELD ─── */
+.particleField {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--gold);
+  opacity: 0;
+  animation: particleDrift 8s ease-in-out infinite;
+}
+
+.particle::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: var(--gold);
+  opacity: 0.3;
+  filter: blur(2px);
+}
+
+@keyframes particleDrift {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  10% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate(20px, -30px) scale(1);
+  }
+  90% {
+    opacity: 0.6;
+  }
+}
+
+/* ─── GRID OVERLAY ─── */
+.gridOverlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, var(--dawn-04) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--dawn-04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, transparent 30%, black 100%);
+  pointer-events: none;
+}
+
+/* ─── CENTER CONTENT ─── */
+.centerContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  z-index: 1;
+}
+
+/* ─── MANIFOLD ICON ─── */
+.manifoldIcon {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manifoldOuter {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--dawn-15);
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rotateOuter 20s linear infinite;
+}
+
+.manifoldInner {
+  width: 70%;
+  height: 70%;
+  border: 1px solid var(--dawn-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rotateInner 15s linear infinite reverse;
+}
+
+.manifoldCore {
+  width: 60%;
+  height: 60%;
+  background: var(--surface-1);
+  border: 1px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseCore 2s ease-in-out infinite;
+}
+
+.progressValue {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--gold);
+  transform: rotate(-45deg);
+}
+
+@keyframes rotateOuter {
+  from { transform: rotate(45deg); }
+  to { transform: rotate(405deg); }
+}
+
+@keyframes rotateInner {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseCore {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(202, 165, 84, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(202, 165, 84, 0.2);
+  }
+}
+
+/* ─── ORBITAL PARTICLES ─── */
+.orbital {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  animation: orbit 4s linear infinite;
+}
+
+.orbital::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--gold);
+  filter: blur(4px);
+  opacity: 0.6;
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(70px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(70px) rotate(-360deg);
+  }
+}
+
+/* ─── STATUS BLOCK ─── */
+.statusBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.timeRemaining {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.timeValue {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  letter-spacing: 0.05em;
+  color: var(--dawn);
+}
+
+.timeLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+}
+
+.phaseMessage {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--dawn-50);
+  max-width: 320px;
+  animation: fadeMessage 4s ease-in-out infinite;
+}
+
+@keyframes fadeMessage {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.technicalStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── PROGRESS BAR ─── */
+.progressBar {
+  width: 280px;
+  height: 2px;
+  background: var(--dawn-08);
+  position: relative;
+  overflow: visible;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--gold);
+  transition: width 1s ease-out;
+}
+
+.progressGlow {
+  position: absolute;
+  top: -4px;
+  width: 8px;
+  height: 10px;
+  background: var(--gold);
+  filter: blur(4px);
+  opacity: 0.8;
+  transition: left 1s ease-out;
+}
+
+/* ─── CANCEL BUTTON ─── */
+.cancelButton {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--dawn-15);
+  color: var(--dawn-30);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.cancelButton:hover {
+  border-color: var(--dawn-30);
+  color: var(--dawn-50);
+  background: var(--dawn-04);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ERROR STATE
+   When traversal fails / manifold breach
+   ═══════════════════════════════════════════════════════════════ */
+
+.overlayError {
+  /* Subtle red tint in background */
+}
+
+.particleFieldError .particleError {
+  background: var(--existential-threat);
+}
+
+.particleError::before {
+  background: var(--existential-threat);
+}
+
+.gridOverlayError {
+  background-image: 
+    linear-gradient(to right, rgba(139, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(139, 0, 0, 0.04) 1px, transparent 1px);
+}
+
+/* ─── ERROR ICON ─── */
+.errorIcon {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.errorOuter {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--dawn-15);
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: errorPulse 3s ease-in-out infinite;
+}
+
+.errorInner {
+  width: 70%;
+  height: 70%;
+  border: 1px solid rgba(139, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.errorCore {
+  width: 60%;
+  height: 60%;
+  background: var(--surface-1);
+  border: 1px solid var(--existential-threat);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.errorX {
+  width: 20px;
+  height: 20px;
+  color: var(--existential-threat);
+  transform: rotate(-45deg);
+}
+
+@keyframes errorPulse {
+  0%, 100% {
+    border-color: var(--dawn-15);
+  }
+  50% {
+    border-color: rgba(139, 0, 0, 0.3);
+  }
+}
+
+/* ─── SCATTERED FRAGMENTS ─── */
+.fragment {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--existential-threat);
+  opacity: 0.6;
+  transform: rotate(var(--angle)) translateX(var(--distance));
+  animation: fragmentFloat 4s ease-in-out infinite;
+}
+
+@keyframes fragmentFloat {
+  0%, 100% {
+    opacity: 0.6;
+    transform: rotate(var(--angle)) translateX(var(--distance));
+  }
+  50% {
+    opacity: 0.3;
+    transform: rotate(calc(var(--angle) + 10deg)) translateX(calc(var(--distance) + 10px));
+  }
+}
+
+/* ─── ERROR TEXT BLOCK ─── */
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  max-width: 360px;
+}
+
+.errorTitle {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--existential-threat);
+  margin: 0;
+}
+
+.errorDescription {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: 0.05em;
+  color: var(--dawn-50);
+  margin: 0;
+}
+
+.errorDetail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--dawn-30);
+  background: var(--dawn-04);
+  padding: 8px 12px;
+  margin: 8px 0 0 0;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+/* ─── ERROR ACTIONS ─── */
+.errorActions {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.retryButton {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.retryButton:hover {
+  background: rgba(202, 165, 84, 0.1);
+  box-shadow: 0 0 12px rgba(202, 165, 84, 0.2);
+}
+
+.dismissButton {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--dawn-20);
+  color: var(--dawn-40);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.dismissButton:hover {
+  border-color: var(--dawn-30);
+  color: var(--dawn-50);
+  background: var(--dawn-04);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .manifoldIcon {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .progressValue {
+    font-size: 12px;
+  }
+  
+  .timeValue {
+    font-size: 24px;
+  }
+  
+  .phaseMessage {
+    font-size: 11px;
+    max-width: 260px;
+  }
+  
+  .progressBar {
+    width: 220px;
+  }
+  
+  .errorIcon {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .errorTitle {
+    font-size: 16px;
+  }
+  
+  .errorDescription {
+    font-size: 11px;
+  }
+  
+  .errorActions {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

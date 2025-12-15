@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 import { generateVideo, validateGenerateParams, type GenerateVideoParams } from '@/lib/replicate';
 
+// For App Router, increase the max duration for video generation requests
+export const maxDuration = 60;
+
 /**
  * POST /api/forge/generate
  * Start a new video generation

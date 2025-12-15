@@ -6,9 +6,40 @@ import { ForgeDenizenSelect } from './ForgeDenizenSelect';
 import type { VideoResolution, VideoDuration, VideoModel } from '@/lib/replicate';
 import { VIDEO_MODELS } from '@/lib/replicate';
 
+// Compress image to reduce payload size for API
+async function compressImage(base64: string, maxWidth = 1920, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      
+      // Scale down if larger than maxWidth
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed);
+      } else {
+        resolve(base64); // Fallback to original
+      }
+    };
+    img.onerror = () => resolve(base64);
+    img.src = base64;
+  });
+}
+
 interface ForgePromptBarProps {
   sessionId: string;
-  onGenerate?: () => void;
+  onGenerate?: (generationId?: string, duration?: number) => void;
   disabled?: boolean;
 }
 
@@ -51,11 +82,13 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
 
-    // Convert to base64
+    // Convert to base64 and compress
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const base64 = reader.result as string;
-      setImage(base64);
+      // Compress to reduce payload size (max 1920px width, 85% quality)
+      const compressed = await compressImage(base64, 1920, 0.85);
+      setImage(compressed);
       setError(null);
     };
     reader.readAsDataURL(file);
@@ -83,9 +116,10 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
     setImagePreview(previewUrl);
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const base64 = reader.result as string;
-      setImage(base64);
+      const compressed = await compressImage(base64, 1920, 0.85);
+      setImage(compressed);
       setError(null);
     };
     reader.readAsDataURL(file);
@@ -155,8 +189,9 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
         }),
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to start generation');
       }
 
@@ -164,7 +199,9 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
       setPrompt('');
       setNegativePrompt('');
       clearImage();
-      onGenerate?.();
+      
+      // Pass generation ID and duration to parent
+      onGenerate?.(data.generation?.id, duration);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed');
