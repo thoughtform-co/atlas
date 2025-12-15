@@ -339,6 +339,10 @@ SUPABASE_SERVICE_ROLE_KEY=
 ANTHROPIC_API_KEY=          # Claude
 GOOGLE_GEMINI_API_KEY=      # Gemini
 VOYAGE_API_KEY=             # Embeddings
+
+# Replicate (Forge - Video Generation)
+REPLICATE_API_TOKEN=        # Replicate API token
+NEXT_PUBLIC_APP_URL=        # App URL for webhooks
 ```
 
 ---
