@@ -137,7 +137,7 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
     return (
       <div className={styles.error}>
         <span>{error}</span>
-        <button onClick={fetchGenerations}>Retry</button>
+        <button onClick={() => fetchGenerations()}>Retry</button>
       </div>
     );
   }
