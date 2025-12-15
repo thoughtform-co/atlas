@@ -39,7 +39,7 @@ async function compressImage(base64: string, maxWidth = 1920, quality = 0.85): P
 
 interface ForgePromptBarProps {
   sessionId: string;
-  onGenerate?: (generationId?: string, duration?: number) => void;
+  onGenerate?: () => void;
   disabled?: boolean;
 }
 
@@ -200,8 +200,8 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
       setNegativePrompt('');
       clearImage();
       
-      // Pass generation ID and duration to parent
-      onGenerate?.(data.generation?.id, duration);
+      // Trigger gallery refresh to show the new generation
+      onGenerate?.();
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed');

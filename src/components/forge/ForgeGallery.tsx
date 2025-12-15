@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import styles from './ForgeGallery.module.css';
 import { ForgeVideoCard, type ForgeGeneration } from './ForgeVideoCard';
 
@@ -14,18 +14,19 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
   const [generations, setGenerations] = useState<ForgeGeneration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch generations
-  const fetchGenerations = useCallback(async () => {
+  const fetchGenerations = useCallback(async (silent = false) => {
     try {
+      if (!silent) setLoading(true);
+      
       let url: string;
       
       if (sessionId) {
         // Fetch specific session
         url = `/api/forge/sessions/${sessionId}`;
       } else {
-        // This would need a separate endpoint for all approved videos
-        // For now, we'll handle this in the home page differently
         url = `/api/forge/sessions`;
       }
 
@@ -41,39 +42,60 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
         if (approvedOnly) {
           gens = gens.filter((g: ForgeGeneration) => g.approved);
         }
+        // Sort by created_at descending (newest first)
+        gens.sort((a: ForgeGeneration, b: ForgeGeneration) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
         setGenerations(gens);
       } else {
         // Aggregate all generations from all sessions
         const allGenerations: ForgeGeneration[] = [];
         for (const session of data.sessions || []) {
           // Would need to fetch each session's generations
-          // This is a limitation - better to have a dedicated endpoint
         }
         setGenerations(allGenerations);
       }
 
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      if (!silent) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [sessionId, approvedOnly]);
 
+  // Initial fetch
   useEffect(() => {
     fetchGenerations();
-    
-    // Poll for updates every 5 seconds (for pending generations)
-    const interval = setInterval(() => {
-      const hasPending = generations.some(g => 
-        g.status === 'pending' || g.status === 'processing'
-      );
-      if (hasPending) {
-        fetchGenerations();
-      }
-    }, 5000);
+  }, [fetchGenerations]);
 
-    return () => clearInterval(interval);
-  }, [fetchGenerations, generations]);
+  // Polling for in-progress generations (separate effect to avoid dependency issues)
+  useEffect(() => {
+    const hasPending = generations.some(g => 
+      g.status === 'pending' || g.status === 'processing'
+    );
+
+    // Clear existing interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    // Set up polling if there are pending generations
+    if (hasPending) {
+      pollIntervalRef.current = setInterval(() => {
+        fetchGenerations(true); // Silent fetch
+      }, 3000); // Poll every 3 seconds for better UX
+    }
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, [generations, fetchGenerations]);
 
   // Handle approval toggle
   const handleApprove = useCallback(async (generationId: string, approved: boolean) => {

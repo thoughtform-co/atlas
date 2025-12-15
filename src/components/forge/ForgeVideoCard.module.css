@@ -105,8 +105,26 @@
   object-fit: cover;
 }
 
-/* ─── LOADING STATE ─── */
-.loadingOverlay {
+/* ─── CARD STATES ─── */
+.cardProcessing {
+  border-color: var(--gold-20, rgba(202, 165, 84, 0.2));
+}
+
+.cardFailed {
+  border-color: rgba(139, 0, 0, 0.3);
+}
+
+/* ─── PROCESSING STATE ─── */
+.sourceImageBackground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.4);
+}
+
+.processingOverlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -114,26 +132,83 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: var(--surface-1);
+  padding: 16px;
 }
 
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--dawn-15);
-  border-top-color: var(--gold);
-  animation: spin 1s linear infinite;
+.progressIcon {
+  position: relative;
+  width: 48px;
+  height: 48px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.progressDiamond {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--gold);
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: diamondPulse 2s ease-in-out infinite;
 }
 
-.loadingText {
+@keyframes diamondPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(202, 165, 84, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px rgba(202, 165, 84, 0.2);
+  }
+}
+
+.progressPercent {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  transform: rotate(-45deg);
+}
+
+.progressInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.timeRemaining {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  color: var(--dawn);
+}
+
+.phaseMessage {
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.15em;
-  color: var(--dawn-30);
+  letter-spacing: 0.08em;
+  color: var(--dawn-50);
+  max-width: 180px;
+  animation: messageGlow 4s ease-in-out infinite;
+}
+
+@keyframes messageGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.progressBarContainer {
+  width: 100%;
+  max-width: 160px;
+  height: 2px;
+  background: var(--dawn-15);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--gold);
+  transition: width 1s ease-out;
 }
 
 /* ─── FAILED STATE ─── */
@@ -145,25 +220,36 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(139, 90, 90, 0.2);
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .failedIcon {
-  font-size: 24px;
-  color: #d4a5a5;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--existential-threat);
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--existential-threat);
 }
 
-.failedText {
+.failedIcon svg {
+  transform: rotate(-45deg);
+}
+
+.failedTitle {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.15em;
-  color: #d4a5a5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--existential-threat);
 }
 
 .errorMessage {
   font-family: var(--font-mono);
   font-size: 8px;
-  color: rgba(212, 165, 165, 0.6);
+  color: var(--dawn-40);
   max-width: 80%;
   text-align: center;
   overflow: hidden;
