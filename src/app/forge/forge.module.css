@@ -17,53 +17,66 @@
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 0;
+  gap: 24px;
   z-index: 100;
-  border: 1px solid var(--dawn-15);
-  background: var(--surface-0);
+  /* No border or background - ghost style */
 }
 
 .tab {
-  padding: 10px 24px;
+  padding: 8px 0;
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--dawn-30);
   text-decoration: none;
   cursor: pointer;
   transition: all 150ms ease;
-  border-right: 1px solid var(--dawn-08);
   position: relative;
+  background: transparent;
+  border: none;
 }
 
-.tab:last-child {
-  border-right: none;
+.tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: transparent;
+  transition: background 150ms ease;
 }
 
 .tab:hover:not(.tabDisabled) {
-  color: var(--dawn-70);
-  background: var(--dawn-04);
+  color: var(--dawn-50);
+}
+
+.tab:hover:not(.tabDisabled)::after {
+  background: var(--dawn-15);
 }
 
 .tabActive {
   color: var(--dawn);
-  background: var(--dawn-08);
+}
+
+.tabActive::after {
+  background: var(--gold);
 }
 
 .tabDisabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .tabBadge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  font-size: 7px;
+  top: -2px;
+  right: -24px;
+  font-size: 6px;
   padding: 2px 4px;
-  background: var(--gold);
-  color: var(--void);
+  background: var(--dawn-15);
+  color: var(--dawn-50);
   letter-spacing: 0.05em;
 }
 
@@ -72,7 +85,7 @@
   position: absolute;
   /* Account for: HUD corners + sidebar + padding */
   top: 140px;
-  left: calc(clamp(32px, 5vw, 64px) + 80px); /* HUD rail + sidebar width */
+  left: calc(clamp(32px, 5vw, 64px) + 96px); /* HUD rail + sidebar width (72px + 24px padding) */
   right: clamp(32px, 5vw, 64px);
   bottom: 140px; /* Space for prompt bar */
   overflow-y: auto;
@@ -108,11 +121,11 @@
 @media (max-width: 768px) {
   .tabBar {
     top: 70px;
+    gap: 16px;
   }
   
   .tab {
-    padding: 8px 16px;
-    font-size: 10px;
+    font-size: 9px;
   }
   
   .mainContent {
@@ -121,6 +134,13 @@
     right: var(--space-md);
     bottom: 160px;
   }
+  
+  .filterBar {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-bottom: 8px;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -128,45 +148,53 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .homePage {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+  padding-top: 24px; /* Space for filter */
 }
 
 /* ─── FILTER BAR ─── */
 .filterBar {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
-  gap: 0;
-  border: 1px solid var(--dawn-08);
-  align-self: flex-start;
+  gap: 12px;
+  align-items: center;
 }
 
 .filterButton {
-  padding: 8px 16px;
+  padding: 4px 0;
   background: transparent;
   border: none;
-  border-right: 1px solid var(--dawn-08);
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--dawn-30);
+  color: var(--dawn-20);
   cursor: pointer;
   transition: all 150ms ease;
-}
-
-.filterButton:last-child {
-  border-right: none;
+  position: relative;
 }
 
 .filterButton:hover {
-  color: var(--dawn-50);
-  background: var(--dawn-04);
+  color: var(--dawn-40);
 }
 
 .filterActive {
-  color: var(--gold);
-  background: rgba(202, 165, 84, 0.1);
+  color: var(--dawn-50);
+}
+
+.filterActive::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--dawn-30);
 }
 
 /* ─── GALLERY GRID ─── */

@@ -229,13 +229,21 @@
   color: var(--dawn);
 }
 
-/* ─── PROMPT TEXT AREA ─── */
-.promptTextArea {
+/* ─── PROMPT AND PARAMS CONTAINER ─── */
+.promptAndParams {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+}
+
+/* ─── PROMPT TEXT AREA ─── */
+.promptTextArea {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
 
 .promptInput {
@@ -315,6 +323,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: 100%;
   padding-top: 8px;
   border-top: 1px solid var(--dawn-08);
 }

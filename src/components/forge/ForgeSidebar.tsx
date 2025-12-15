@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import styles from './ForgeSidebar.module.css';
 
@@ -22,6 +22,11 @@ export function ForgeSidebar() {
   const [creating, setCreating] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
   const [showNewInput, setShowNewInput] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   // Extract current session ID from path
   const currentSessionId = pathname.startsWith('/forge/') 
@@ -83,6 +88,86 @@ export function ForgeSidebar() {
     }
   };
 
+  // Start editing a session name
+  const handleStartEdit = (session: ForgeSession, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingSessionId(session.id);
+    setEditingName(session.name);
+    // Focus input after render
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  };
+
+  // Save renamed session
+  const handleSaveRename = async () => {
+    if (!editingSessionId || !editingName.trim() || saving) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/forge/sessions/${editingSessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingName.trim() }),
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setSessions(prev => 
+          prev.map(s => 
+            s.id === editingSessionId 
+              ? { ...s, name: editingName.trim() } 
+              : s
+          )
+        );
+        setEditingSessionId(null);
+        setEditingName('');
+      }
+    } catch (error) {
+      console.error('Failed to rename session:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle rename input keydown
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveRename();
+    } else if (e.key === 'Escape') {
+      setEditingSessionId(null);
+      setEditingName('');
+    }
+  };
+
+  // Delete session
+  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!confirm('Delete this session? All generations will be permanently deleted.')) {
+      return;
+    }
+    
+    setDeleting(sessionId);
+    try {
+      const response = await fetch(`/api/forge/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Remove from local state
+        setSessions(prev => prev.filter(s => s.id !== sessionId));
+        
+        // If we're deleting the current session, navigate away
+        if (currentSessionId === sessionId) {
+          router.push('/forge');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <aside className={styles.sidebar}>
       {/* New Session Button */}
@@ -124,43 +209,99 @@ export function ForgeSidebar() {
           </div>
         ) : (
           sessions.map((session) => (
-            <button
-              key={session.id}
-              className={`${styles.sessionItem} ${
-                currentSessionId === session.id ? styles.sessionActive : ''
-              }`}
-              onClick={() => router.push(`/forge/${session.id}`)}
-              title={session.name}
-            >
-              {/* Thumbnail */}
-              <div className={styles.thumbnail}>
-                {session.thumbnail_url ? (
-                  <video
-                    src={session.thumbnail_url}
-                    className={styles.thumbnailVideo}
-                    muted
-                    playsInline
-                    onMouseEnter={(e) => e.currentTarget.play()}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.pause();
-                      e.currentTarget.currentTime = 0;
-                    }}
-                  />
-                ) : (
-                  <div className={styles.thumbnailPlaceholder}>
-                    <span>{session.completed_count}</span>
-                  </div>
-                )}
-              </div>
+            <div key={session.id} className={styles.sessionItemWrapper}>
+              <button
+                className={`${styles.sessionItem} ${
+                  currentSessionId === session.id ? styles.sessionActive : ''
+                }`}
+                onClick={() => router.push(`/forge/${session.id}`)}
+                title={session.name}
+              >
+                {/* Thumbnail */}
+                <div className={styles.thumbnail}>
+                  {session.thumbnail_url ? (
+                    <video
+                      src={session.thumbnail_url}
+                      className={styles.thumbnailVideo}
+                      muted
+                      playsInline
+                      onMouseEnter={(e) => e.currentTarget.play()}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.pause();
+                        e.currentTarget.currentTime = 0;
+                      }}
+                    />
+                  ) : (
+                    <div className={styles.thumbnailPlaceholder}>
+                      <span>{session.completed_count}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action buttons overlay */}
+                <div className={styles.actionButtons}>
+                  <button
+                    className={styles.editButton}
+                    onClick={(e) => handleStartEdit(session, e)}
+                    title="Rename session"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path 
+                        d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" 
+                        stroke="currentColor" 
+                        strokeWidth="1.2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    className={styles.deleteButton}
+                    onClick={(e) => handleDeleteSession(session.id, e)}
+                    title="Delete session"
+                    disabled={deleting === session.id}
+                  >
+                    {deleting === session.id ? (
+                      <span className={styles.deletingDot} />
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path 
+                          d="M2 3H10M4 3V2H8V3M5 5V9M7 5V9M3 3L3.5 10H8.5L9 3" 
+                          stroke="currentColor" 
+                          strokeWidth="1.2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </button>
 
               {/* Session Info (shown on hover) */}
               <div className={styles.sessionInfo}>
-                <span className={styles.sessionName}>{session.name}</span>
-                <span className={styles.sessionCount}>
-                  {session.completed_count} / {session.generation_count}
-                </span>
+                {editingSessionId === session.id ? (
+                  <input
+                    ref={editInputRef}
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onKeyDown={handleRenameKeyDown}
+                    onBlur={handleSaveRename}
+                    className={styles.renameInput}
+                    disabled={saving}
+                    autoFocus
+                  />
+                ) : (
+                  <>
+                    <span className={styles.sessionName}>{session.name}</span>
+                    <span className={styles.sessionCount}>
+                      {session.completed_count} / {session.generation_count}
+                    </span>
+                  </>
+                )}
               </div>
-            </button>
+            </div>
           ))
         )}
       </div>

@@ -262,34 +262,36 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
             )}
           </div>
 
-          {/* Prompt Text Area - Above icons */}
-          <div className={styles.promptTextArea}>
-            <textarea
-              ref={textareaRef}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Describe the motion and animation..."
-              className={styles.promptInput}
-              rows={1}
-              disabled={generating || disabled}
-            />
-
-            {/* Negative Prompt (collapsible) */}
-            {showNegative && (
+          {/* Middle Section: Text Area Above Parameters */}
+          <div className={styles.promptAndParams}>
+            {/* Prompt Text Area - Above icons */}
+            <div className={styles.promptTextArea}>
               <textarea
-                value={negativePrompt}
-                onChange={(e) => setNegativePrompt(e.target.value)}
-                placeholder="Negative prompt (what to avoid)..."
-                className={styles.negativeInput}
+                ref={textareaRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe the motion and animation..."
+                className={styles.promptInput}
                 rows={1}
                 disabled={generating || disabled}
               />
-            )}
-          </div>
 
-          {/* Parameters Row - Below textarea */}
-          <div className={styles.paramsRow}>
+              {/* Negative Prompt (collapsible) */}
+              {showNegative && (
+                <textarea
+                  value={negativePrompt}
+                  onChange={(e) => setNegativePrompt(e.target.value)}
+                  placeholder="Negative prompt (what to avoid)..."
+                  className={styles.negativeInput}
+                  rows={1}
+                  disabled={generating || disabled}
+                />
+              )}
+            </div>
+
+            {/* Parameters Row - Below textarea */}
+            <div className={styles.paramsRow}>
             {/* Negative Toggle */}
             <button
               className={`${styles.paramButton} ${showNegative ? styles.paramActive : ''}`}
@@ -335,6 +337,7 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
               onChange={setDenizenId}
               disabled={generating || disabled}
             />
+            </div>
           </div>
 
           {/* Generate Button */}
