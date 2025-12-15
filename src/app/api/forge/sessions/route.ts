@@ -16,6 +16,7 @@ export async function GET() {
     }
 
     // Fetch sessions with generation count and latest thumbnail
+    // @ts-expect-error - forge_sessions table not in generated types yet
     const { data: sessions, error } = await supabase
       .from('forge_sessions')
       .select(`
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create session
+    // @ts-expect-error - forge_sessions table not in generated types yet
     const { data: session, error } = await supabase
       .from('forge_sessions')
       .insert({

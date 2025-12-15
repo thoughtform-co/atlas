@@ -21,6 +21,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Fetch session with generations
+    // @ts-expect-error - forge_sessions table not in generated types yet
     const { data: session, error } = await supabase
       .from('forge_sessions')
       .select(`
@@ -98,6 +99,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update session
+    // @ts-expect-error - forge_sessions table not in generated types yet
     const { data: session, error } = await supabase
       .from('forge_sessions')
       .update({ name: name.trim() })
@@ -137,6 +139,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete session (cascade will delete generations)
+    // @ts-expect-error - forge_sessions table not in generated types yet
     const { error } = await supabase
       .from('forge_sessions')
       .delete()

@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
+    // @ts-expect-error - forge_costs table not in generated types yet
     let query = supabase
       .from('forge_costs')
       .select('amount_cents, model, created_at')
