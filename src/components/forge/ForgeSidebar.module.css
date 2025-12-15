@@ -1,0 +1,244 @@
+/* ═══════════════════════════════════════════════════════════════
+   FORGE SIDEBAR
+   Session list with thumbnails, positioned right of HUD rail
+   ═══════════════════════════════════════════════════════════════ */
+
+.sidebar {
+  position: fixed;
+  top: calc(clamp(32px, 5vw, 64px) + 40px);
+  left: calc(clamp(32px, 5vw, 64px) + clamp(48px, 8vw, 120px) + 12px);
+  bottom: calc(clamp(32px, 5vw, 64px) + 40px);
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+  padding: 8px 0;
+}
+
+/* ─── NEW SESSION BUTTON ─── */
+.newButton {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--dawn-15);
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.newButton:hover {
+  border-color: var(--gold);
+  background: rgba(202, 165, 84, 0.1);
+}
+
+.newIcon {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--dawn-50);
+  transition: color 150ms ease;
+}
+
+.newButton:hover .newIcon {
+  color: var(--gold);
+}
+
+/* ─── NEW SESSION INPUT ─── */
+.newInputContainer {
+  position: absolute;
+  left: 56px;
+  top: 8px;
+  width: 200px;
+  z-index: 100;
+}
+
+.newInput {
+  width: 100%;
+  padding: 12px;
+  background: var(--surface-0);
+  border: 1px solid var(--dawn-15);
+  color: var(--dawn);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+
+.newInput:focus {
+  border-color: var(--gold);
+}
+
+.newInput::placeholder {
+  color: var(--dawn-30);
+}
+
+/* ─── SESSION LIST ─── */
+.sessionList {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sessionList::-webkit-scrollbar {
+  width: 2px;
+}
+
+.sessionList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sessionList::-webkit-scrollbar-thumb {
+  background: var(--dawn-15);
+}
+
+/* ─── SESSION ITEM ─── */
+.sessionItem {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--dawn-08);
+  cursor: pointer;
+  transition: all 150ms ease;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.sessionItem:hover {
+  border-color: var(--dawn-30);
+}
+
+.sessionActive {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+/* ─── THUMBNAIL ─── */
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.thumbnailVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnailPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-1);
+}
+
+.thumbnailPlaceholder span {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--dawn-30);
+}
+
+/* ─── SESSION INFO (hover tooltip) ─── */
+.sessionInfo {
+  position: absolute;
+  left: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--surface-0);
+  border: 1px solid var(--dawn-15);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+.sessionItem:hover .sessionInfo {
+  opacity: 1;
+}
+
+.sessionName {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dawn);
+}
+
+.sessionCount {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--dawn-30);
+}
+
+/* ─── LOADING STATE ─── */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+}
+
+.loadingDot {
+  width: 4px;
+  height: 4px;
+  background: var(--dawn-30);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loadingDot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loadingDot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* ─── EMPTY STATE ─── */
+.empty {
+  padding: 16px 0;
+  text-align: center;
+}
+
+.emptyText {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .sidebar {
+    left: var(--space-md);
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+}

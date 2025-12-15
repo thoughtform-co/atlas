@@ -1,0 +1,333 @@
+/* ═══════════════════════════════════════════════════════════════
+   FORGE LAYOUT STYLES
+   Video generation interface with sidebar and prompt bar
+   ═══════════════════════════════════════════════════════════════ */
+
+.forgeContainer {
+  position: fixed;
+  inset: 0;
+  background: var(--void);
+  overflow: hidden;
+}
+
+/* ─── TAB BAR ─── */
+.tabBar {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0;
+  z-index: 100;
+  border: 1px solid var(--dawn-15);
+  background: var(--surface-0);
+}
+
+.tab {
+  padding: 10px 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 150ms ease;
+  border-right: 1px solid var(--dawn-08);
+  position: relative;
+}
+
+.tab:last-child {
+  border-right: none;
+}
+
+.tab:hover:not(.tabDisabled) {
+  color: var(--dawn-70);
+  background: var(--dawn-04);
+}
+
+.tabActive {
+  color: var(--dawn);
+  background: var(--dawn-08);
+}
+
+.tabDisabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.tabBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 7px;
+  padding: 2px 4px;
+  background: var(--gold);
+  color: var(--void);
+  letter-spacing: 0.05em;
+}
+
+/* ─── MAIN CONTENT ─── */
+.mainContent {
+  position: absolute;
+  /* Account for: HUD corners + sidebar + padding */
+  top: 140px;
+  left: calc(clamp(32px, 5vw, 64px) + 80px); /* HUD rail + sidebar width */
+  right: clamp(32px, 5vw, 64px);
+  bottom: 140px; /* Space for prompt bar */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-lg);
+}
+
+/* Custom scrollbar */
+.mainContent::-webkit-scrollbar {
+  width: 4px;
+}
+
+.mainContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mainContent::-webkit-scrollbar-thumb {
+  background: var(--dawn-15);
+}
+
+.mainContent::-webkit-scrollbar-thumb:hover {
+  background: var(--dawn-30);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .mainContent {
+    left: var(--space-lg);
+    right: var(--space-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  .tabBar {
+    top: 70px;
+  }
+  
+  .tab {
+    padding: 8px 16px;
+    font-size: 10px;
+  }
+  
+  .mainContent {
+    top: 120px;
+    left: var(--space-md);
+    right: var(--space-md);
+    bottom: 160px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOME PAGE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.homePage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ─── FILTER BAR ─── */
+.filterBar {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--dawn-08);
+  align-self: flex-start;
+}
+
+.filterButton {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--dawn-08);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.filterButton:last-child {
+  border-right: none;
+}
+
+.filterButton:hover {
+  color: var(--dawn-50);
+  background: var(--dawn-04);
+}
+
+.filterActive {
+  color: var(--gold);
+  background: rgba(202, 165, 84, 0.1);
+}
+
+/* ─── GALLERY GRID ─── */
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── LOADING STATE ─── */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px;
+  color: var(--dawn-30);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--dawn-15);
+  border-top-color: var(--gold);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── EMPTY STATE ─── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 32px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  color: var(--dawn-15);
+}
+
+.emptyTitle {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dawn-50);
+}
+
+.emptyText {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--dawn-30);
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+.createButton {
+  margin-top: 8px;
+  padding: 12px 24px;
+  background: var(--gold);
+  border: none;
+  color: var(--void);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.createButton:hover {
+  background: #d4b064;
+}
+
+/* ─── ERROR STATE ─── */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px;
+  color: #d4a5a5;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.error button {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #d4a5a5;
+  color: #d4a5a5;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.error button:hover {
+  background: rgba(139, 90, 90, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SESSION PAGE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.sessionPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  height: 100%;
+}
+
+.sessionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sessionTitle {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dawn-70);
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .homePage {
+    gap: var(--space-md);
+  }
+  
+  .empty {
+    padding: 48px 24px;
+  }
+  
+  .emptyIcon {
+    font-size: 36px;
+  }
+  
+  .emptyTitle {
+    font-size: 12px;
+  }
+  
+  .gallery {
+    gap: 12px;
+  }
+}

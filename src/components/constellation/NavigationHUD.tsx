@@ -176,9 +176,6 @@ export function NavigationHUD({
     return parts.join(' / ') || 'semantic terrain / latent topology';
   }, [filters, hasActiveFilters]);
 
-  // Calculate signal strength (percentage of entities visible)
-  const signalStrength = Math.round((filteredCount / totalCount) * 100);
-
   // Calculate current position in semantic space based on active landmarks
   // Position = meaning (coordinates show where you are in latent space)
   const semanticPosition = useMemo(() => {
@@ -251,19 +248,7 @@ export function NavigationHUD({
           </span>
         </div>
 
-        <div 
-          className="pointer-events-auto"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'var(--dawn-30)',
-          }}
-        >
-          <span>SIGNAL</span>
-          <span style={{ color: 'var(--gold)', marginLeft: '8px' }}>{signalStrength}%</span>
-        </div>
+        {/* User menu is now in Navigation.tsx - this space left intentionally empty */}
       </header>
 
       {/* Left Rail - VECTOR Labels (Entity Types) */}

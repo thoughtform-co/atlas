@@ -1,0 +1,369 @@
+/* ═══════════════════════════════════════════════════════════════
+   FORGE PROMPT BAR
+   Bottom-fixed input area with image upload and parameters
+   ═══════════════════════════════════════════════════════════════ */
+
+.promptBar {
+  position: fixed;
+  bottom: calc(clamp(32px, 5vw, 64px) + 20px);
+  left: calc(clamp(32px, 5vw, 64px) + clamp(48px, 8vw, 120px) + 80px);
+  right: calc(clamp(32px, 5vw, 64px) + 20px);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ─── ERROR MESSAGE ─── */
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(139, 90, 90, 0.2);
+  border: 1px solid rgba(139, 90, 90, 0.4);
+  color: #d4a5a5;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.error button {
+  background: none;
+  border: none;
+  color: #d4a5a5;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+/* ─── MAIN CONTENT ─── */
+.content {
+  display: flex;
+  gap: 12px;
+  background: var(--surface-0);
+  border: 1px solid var(--dawn-15);
+  padding: 12px;
+}
+
+/* ─── IMAGE ZONE ─── */
+.imageZone {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border: 1px dashed var(--dawn-15);
+  cursor: pointer;
+  transition: all 150ms ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.imageZone:hover {
+  border-color: var(--gold);
+  background: rgba(202, 165, 84, 0.05);
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.uploadIcon {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  color: var(--dawn-30);
+}
+
+.uploadText {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: var(--dawn-30);
+}
+
+.imagePreview {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clearImage {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--void);
+  border: 1px solid var(--dawn-15);
+  color: var(--dawn-50);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+}
+
+.clearImage:hover {
+  background: var(--surface-1);
+  color: var(--dawn);
+}
+
+/* ─── INPUT AREA ─── */
+.inputArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.promptWrapper {
+  flex: 1;
+}
+
+.promptInput {
+  width: 100%;
+  height: 100%;
+  min-height: 48px;
+  background: var(--surface-1);
+  border: 1px solid var(--dawn-08);
+  color: var(--dawn);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.promptInput:focus {
+  border-color: var(--dawn-30);
+}
+
+.promptInput::placeholder {
+  color: var(--dawn-30);
+}
+
+.promptInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.negativeWrapper {
+  animation: slideDown 150ms ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.negativeInput {
+  width: 100%;
+  background: var(--surface-1);
+  border: 1px solid rgba(139, 90, 90, 0.3);
+  color: var(--dawn-70);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 8px 10px;
+  resize: none;
+  outline: none;
+}
+
+.negativeInput:focus {
+  border-color: rgba(139, 90, 90, 0.5);
+}
+
+.negativeInput::placeholder {
+  color: var(--dawn-30);
+}
+
+/* ─── PARAMETERS ROW ─── */
+.paramsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.paramButton {
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--dawn-08);
+  color: var(--dawn-30);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.paramButton:hover {
+  border-color: var(--dawn-30);
+  color: var(--dawn-50);
+}
+
+.paramActive {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(202, 165, 84, 0.1);
+}
+
+.paramSelect {
+  padding: 6px 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--dawn-08);
+  color: var(--dawn-70);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  outline: none;
+}
+
+.paramSelect:focus {
+  border-color: var(--dawn-30);
+}
+
+.paramSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Duration Toggle */
+.durationToggle {
+  display: flex;
+  border: 1px solid var(--dawn-08);
+}
+
+.durationBtn {
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--dawn-08);
+  color: var(--dawn-30);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.durationBtn:last-child {
+  border-right: none;
+}
+
+.durationBtn:hover:not(:disabled) {
+  color: var(--dawn-50);
+  background: var(--dawn-04);
+}
+
+.durationActive {
+  color: var(--gold);
+  background: rgba(202, 165, 84, 0.1);
+}
+
+.durationBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── GENERATE BUTTON ─── */
+.generateButton {
+  width: 48px;
+  height: 80px;
+  flex-shrink: 0;
+  background: var(--gold);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+}
+
+.generateButton:hover:not(:disabled) {
+  background: #d4b064;
+}
+
+.generateButton:disabled {
+  background: var(--dawn-15);
+  cursor: not-allowed;
+}
+
+.generateIcon {
+  color: var(--void);
+  font-size: 16px;
+}
+
+.generating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--void);
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .promptBar {
+    left: var(--space-lg);
+    right: var(--space-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  .promptBar {
+    left: var(--space-md);
+    right: var(--space-md);
+    bottom: var(--space-lg);
+  }
+  
+  .content {
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  .imageZone {
+    width: 100%;
+    height: 60px;
+  }
+  
+  .generateButton {
+    width: 100%;
+    height: 44px;
+  }
+}

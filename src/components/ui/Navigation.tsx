@@ -43,12 +43,9 @@ export function Navigation() {
   const addIconRef = useRef<HTMLCanvasElement>(null);
   const atlasIconRef = useRef<HTMLCanvasElement>(null);
   const archiveIconRef = useRef<HTMLCanvasElement>(null);
-  const userIconRef = useRef<HTMLCanvasElement>(null);
+  const forgeIconRef = useRef<HTMLCanvasElement>(null);
   const adminIconRef = useRef<HTMLCanvasElement>(null);
   const logoutIconRef = useRef<HTMLCanvasElement>(null);
-
-  // Note: Role is already fetched in AuthContext on mount and auth state changes
-  // No need to refresh here as it causes flashing
 
   // Dropdown hover handlers with delay to prevent flicker
   const handleDropdownEnter = useCallback(() => {
@@ -62,7 +59,7 @@ export function Navigation() {
   const handleDropdownLeave = useCallback(() => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setShowUserDropdown(false);
-    }, 150); // Small delay to allow mouse to move to dropdown
+    }, 150);
   }, []);
 
   // Mark mounted (client only)
@@ -79,9 +76,8 @@ export function Navigation() {
     };
   }, []);
 
-  // Draw icons (redraw when auth state changes, but only after auth is resolved)
+  // Draw icons
   useEffect(() => {
-    // Wait until mounted and auth state is fully resolved to prevent flicker
     if (!mounted || loading || roleLoading) return;
     
     // Add icon (+)
@@ -130,7 +126,7 @@ export function Navigation() {
       drawPixel(ctx, cx, cy, GOLD, 0.8);
     }
 
-    // Archive icon (grid)
+    // Archive/Lore icon (grid)
     const archiveSetup = setupIcon(archiveIconRef, 17);
     if (archiveSetup) {
       const { ctx } = archiveSetup;
@@ -144,17 +140,24 @@ export function Navigation() {
       }
     }
 
-    // User icon
-    const userSetup = setupIcon(userIconRef, 17);
-    if (userSetup) {
-      const { ctx, size } = userSetup;
+    // Forge icon (flame/anvil shape)
+    const forgeSetup = setupIcon(forgeIconRef, 17);
+    if (forgeSetup) {
+      const { ctx, size } = forgeSetup;
       const cx = size / 2;
-      drawPixel(ctx, cx, 3, DAWN, 0.7);
-      for (let y = 6; y <= 10; y += GRID) {
-        drawPixel(ctx, cx, y, DAWN, 0.5);
+      // Draw flame-like shape
+      drawPixel(ctx, cx, 2, GOLD, 0.7);
+      drawPixel(ctx, cx - 2, 4, GOLD, 0.5);
+      drawPixel(ctx, cx + 2, 4, GOLD, 0.5);
+      drawPixel(ctx, cx, 4, GOLD, 0.6);
+      drawPixel(ctx, cx - 2, 6, GOLD, 0.4);
+      drawPixel(ctx, cx, 6, GOLD, 0.5);
+      drawPixel(ctx, cx + 2, 6, GOLD, 0.4);
+      // Base
+      for (let x = 2; x <= size - 4; x += GRID) {
+        drawPixel(ctx, x, 10, DAWN, 0.4);
       }
-      drawPixel(ctx, cx - 3, 7, DAWN, 0.35);
-      drawPixel(ctx, cx + 3, 7, DAWN, 0.35);
+      drawPixel(ctx, cx, 8, DAWN, 0.3);
     }
 
     // Admin icon (gear)
@@ -194,9 +197,11 @@ export function Navigation() {
 
   const isLoreActive = pathname === '/lore';
   const isAtlasActive = pathname === '/';
+  const isForgeActive = pathname.startsWith('/forge');
 
   return (
     <>
+      {/* Main Navigation Bar (Center) */}
       <div
         style={{
           position: 'fixed',
@@ -237,7 +242,6 @@ export function Navigation() {
                 e.currentTarget.style.background = 'transparent';
               }}
               onClick={(e) => {
-                // Ensure click works
                 e.stopPropagation();
               }}
               title="New Entity"
@@ -304,123 +308,118 @@ export function Navigation() {
               <span>Lore</span>
             </Link>
 
-            {/* User Dropdown */}
-            {isAuthenticated ? (
+            {/* Forge */}
+            <Link
+              href="/forge"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '0 18px',
+                height: '100%',
+                fontSize: '12px',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: isForgeActive ? 'var(--dawn, #ECE3D6)' : 'rgba(202, 165, 84, 0.4)',
+                textDecoration: 'none',
+                background: isForgeActive ? 'rgba(202, 165, 84, 0.15)' : 'transparent',
+                transition: 'all 150ms ease',
+              }}
+            >
+              <canvas ref={forgeIconRef} width={17} height={17} style={{ width: '17px', height: '17px' }} />
+              <span>Forge</span>
+            </Link>
+          </nav>
+        </div>
+      </div>
+
+      {/* User Menu (Top Right - where Signal used to be) */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: 'clamp(48px, 8vw, 120px)',
+          zIndex: 1000,
+          pointerEvents: 'auto',
+        }}
+      >
+        {isAuthenticated ? (
+          <div
+            style={{ position: 'relative' }}
+            onMouseEnter={handleDropdownEnter}
+            onMouseLeave={handleDropdownLeave}
+          >
+            {/* User Button */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                padding: '8px 0',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: showUserDropdown ? 'var(--gold, #CAA554)' : 'var(--dawn, #ECE3D6)',
+                  transition: 'color 150ms ease',
+                }}
+              >
+                {user?.email?.split('@')[0] || 'Navigator'}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8px',
+                  color: 'rgba(91, 138, 122, 0.8)',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                ACTIVE
+              </span>
+              <span
+                style={{
+                  fontSize: '8px',
+                  color: 'rgba(236, 227, 214, 0.3)',
+                  transition: 'transform 150ms ease',
+                  transform: showUserDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              >
+                ▼
+              </span>
+            </div>
+
+            {/* Dropdown Menu */}
+            {showUserDropdown && (
               <div
                 style={{
-                  position: 'relative',
-                  height: '100%',
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  paddingTop: '4px',
+                  zIndex: 1001,
                 }}
                 onMouseEnter={handleDropdownEnter}
                 onMouseLeave={handleDropdownLeave}
               >
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '0 18px',
-                    height: '100%',
-                    fontSize: '12px',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: showUserDropdown ? 'var(--dawn, #ECE3D6)' : 'rgba(236, 227, 214, 0.5)',
-                    cursor: 'pointer',
-                    transition: 'color 150ms ease',
+                    background: 'var(--surface-0, #0A0908)',
+                    border: '1px solid rgba(236, 227, 214, 0.1)',
+                    minWidth: '120px',
                   }}
                 >
-                  <canvas ref={userIconRef} width={17} height={17} style={{ width: '17px', height: '17px' }} />
-                  <span>
-                    {user?.email?.split('@')[0] || 'Navigator'}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      color: 'rgba(236, 227, 214, 0.2)',
-                      marginLeft: '4px',
-                      transition: 'transform 150ms ease',
-                      transform: showUserDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
-                  >
-                    ▼
-                  </span>
-                </div>
-
-                {/* Dropdown Menu */}
-                {showUserDropdown && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      right: 0,
-                      paddingTop: '4px', // Creates visual gap but keeps hover area connected
-                      zIndex: 1001, // Ensure dropdown is above everything
-                    }}
-                    onMouseEnter={handleDropdownEnter}
-                    onMouseLeave={handleDropdownLeave}
-                  >
-                    <div
-                      style={{
-                        background: 'var(--surface-0, #0A0908)',
-                        border: '1px solid rgba(236, 227, 214, 0.1)',
-                        minWidth: '120px',
-                      }}
-                    >
-                      {isAdmin && (
-                        <>
-                          <button
-                            onClick={() => {
-                              router.push('/admin/prompts');
-                              setShowUserDropdown(false);
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              padding: '12px 14px',
-                              fontSize: '10px',
-                              letterSpacing: '0.08em',
-                              textTransform: 'uppercase',
-                              color: 'rgba(236, 227, 214, 0.3)',
-                              cursor: 'pointer',
-                              border: 'none',
-                              background: 'transparent',
-                              width: '100%',
-                              fontFamily: 'var(--font-mono)',
-                              textAlign: 'left',
-                              transition: 'all 150ms ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
-                              e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
-                              e.currentTarget.style.background = 'transparent';
-                            }}
-                          >
-                            <canvas ref={adminIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
-                            <span>Admin</span>
-                          </button>
-                          <div style={{ height: '1px', background: 'rgba(236, 227, 214, 0.08)' }} />
-                        </>
-                      )}
+                  {isAdmin && (
+                    <>
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          // Clear any pending timeout
-                          if (dropdownTimeoutRef.current) {
-                            clearTimeout(dropdownTimeoutRef.current);
-                            dropdownTimeoutRef.current = null;
-                          }
+                        onClick={() => {
+                          router.push('/admin/prompts');
                           setShowUserDropdown(false);
-                          signOut();
-                        }}
-                        onMouseDown={(e) => {
-                          // Prevent dropdown from closing on mousedown
-                          e.preventDefault();
-                          e.stopPropagation();
                         }}
                         style={{
                           display: 'flex',
@@ -448,39 +447,85 @@ export function Navigation() {
                           e.currentTarget.style.background = 'transparent';
                         }}
                       >
-                        <canvas ref={logoutIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
-                        <span>Log out</span>
+                        <canvas ref={adminIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+                        <span>Admin</span>
                       </button>
-                    </div>
-                  </div>
-                )}
+                      <div style={{ height: '1px', background: 'rgba(236, 227, 214, 0.08)' }} />
+                    </>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (dropdownTimeoutRef.current) {
+                        clearTimeout(dropdownTimeoutRef.current);
+                        dropdownTimeoutRef.current = null;
+                      }
+                      setShowUserDropdown(false);
+                      signOut();
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '12px 14px',
+                      fontSize: '10px',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(236, 227, 214, 0.3)',
+                      cursor: 'pointer',
+                      border: 'none',
+                      background: 'transparent',
+                      width: '100%',
+                      fontFamily: 'var(--font-mono)',
+                      textAlign: 'left',
+                      transition: 'all 150ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
+                      e.currentTarget.style.background = 'rgba(236, 227, 214, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'rgba(236, 227, 214, 0.3)';
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <canvas ref={logoutIconRef} width={14} height={14} style={{ width: '14px', height: '14px' }} />
+                    <span>Log out</span>
+                  </button>
+                </div>
               </div>
-            ) : (
-              <button
-                onClick={() => setShowLoginModal(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  padding: '0 18px',
-                  height: '100%',
-                  fontSize: '12px',
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(236, 227, 214, 0.5)',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-mono)',
-                  transition: 'color 150ms ease',
-                }}
-              >
-                <span>Sign In</span>
-              </button>
             )}
-          </nav>
-        </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowLoginModal(true)}
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'rgba(236, 227, 214, 0.5)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px 0',
+              transition: 'color 150ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--dawn, #ECE3D6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'rgba(236, 227, 214, 0.5)';
+            }}
+          >
+            Sign In
+          </button>
+        )}
       </div>
 
       {/* Login Modal */}

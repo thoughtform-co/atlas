@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════════════
+   FORGE GALLERY
+   Grid display of video generations
+   ═══════════════════════════════════════════════════════════════ */
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── LOADING STATE ─── */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 64px;
+  color: var(--dawn-30);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--dawn-15);
+  border-top-color: var(--gold);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── ERROR STATE ─── */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 64px;
+  color: #d4a5a5;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.error button {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #d4a5a5;
+  color: #d4a5a5;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.error button:hover {
+  background: rgba(139, 90, 90, 0.2);
+}
+
+/* ─── EMPTY STATE ─── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 32px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  color: var(--dawn-15);
+}
+
+.emptyTitle {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dawn-50);
+}
+
+.emptyText {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--dawn-30);
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .gallery {
+    gap: 12px;
+  }
+  
+  .empty {
+    padding: 48px 24px;
+  }
+  
+  .emptyIcon {
+    font-size: 36px;
+  }
+  
+  .emptyTitle {
+    font-size: 12px;
+  }
+}
