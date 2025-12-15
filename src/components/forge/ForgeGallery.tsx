@@ -73,7 +73,7 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
 
   // Polling for in-progress generations (separate effect to avoid dependency issues)
   useEffect(() => {
-    const hasPending = generations.some(g => 
+    const pendingGenerations = generations.filter(g => 
       g.status === 'pending' || g.status === 'processing'
     );
 
@@ -84,7 +84,7 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
     }
 
     // Set up polling if there are pending generations
-    if (hasPending) {
+    if (pendingGenerations.length > 0) {
       pollIntervalRef.current = setInterval(() => {
         fetchGenerations(true); // Silent fetch
       }, 3000); // Poll every 3 seconds for better UX
@@ -95,6 +95,35 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
         clearInterval(pollIntervalRef.current);
       }
     };
+  }, [generations, fetchGenerations]);
+
+  // Auto-sync stuck generations (those processing for > 2 minutes)
+  useEffect(() => {
+    const stuckGenerations = generations.filter(g => {
+      if (g.status !== 'pending' && g.status !== 'processing') return false;
+      const createdAt = new Date(g.created_at).getTime();
+      const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
+      return createdAt < twoMinutesAgo;
+    });
+
+    if (stuckGenerations.length > 0) {
+      // Trigger sync for stuck generations
+      const syncStuck = async () => {
+        try {
+          console.log('[ForgeGallery] Syncing stuck generations:', stuckGenerations.length);
+          await fetch('/api/forge/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+          });
+          // Refresh after sync
+          fetchGenerations(true);
+        } catch (err) {
+          console.error('[ForgeGallery] Sync error:', err);
+        }
+      };
+      syncStuck();
+    }
   }, [generations, fetchGenerations]);
 
   // Handle approval toggle

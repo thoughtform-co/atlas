@@ -57,26 +57,28 @@ export interface ReplicateWebhookPayload {
 // ═══════════════════════════════════════════════════════════════
 
 // Available video generation models on Replicate
-export type VideoModel = 'wan-2.5-i2v' | 'seedream-4.5' | 'kling-1.0';
+export type VideoModel = 'wan-2.5-i2v' | 'minimax-video' | 'luma-ray2';
 
-export const VIDEO_MODELS: Record<VideoModel, { name: string; version: string }> = {
+export const VIDEO_MODELS: Record<VideoModel, { name: string; owner: string; model: string }> = {
   'wan-2.5-i2v': {
     name: 'Wan 2.5',
-    version: 'wan-video/wan-2.5-i2v',
+    owner: 'wavespeed',
+    model: 'wan-2.1-i2v-480p',
   },
-  'seedream-4.5': {
-    name: 'Seedream 4.5',
-    version: 'seedream/seedream-4.5',
+  'minimax-video': {
+    name: 'Minimax',
+    owner: 'minimax',
+    model: 'video-01',
   },
-  'kling-1.0': {
-    name: 'Kling 1.0',
-    version: 'kling/kling-1.0',
+  'luma-ray2': {
+    name: 'Luma Ray2',
+    owner: 'luma',
+    model: 'ray',
   },
 };
 
 // Default model
 const DEFAULT_MODEL: VideoModel = 'wan-2.5-i2v';
-const WAN_MODEL_VERSION = VIDEO_MODELS[DEFAULT_MODEL].version;
 
 // Approximate cost per second of video generation (in cents)
 // Based on Replicate's GPU pricing for video models
@@ -88,6 +90,7 @@ const COST_PER_SECOND_CENTS = 2; // ~$0.02 per second of generation time
 
 /**
  * Start a video generation prediction on Replicate
+ * Uses the models API endpoint for better reliability
  */
 export async function generateVideo(
   params: GenerateVideoParams,
@@ -99,7 +102,7 @@ export async function generateVideo(
     throw new Error('REPLICATE_API_TOKEN is not configured');
   }
 
-  // Get model version
+  // Get model config
   const model = params.model || DEFAULT_MODEL;
   const modelConfig = VIDEO_MODELS[model];
   if (!modelConfig) {
@@ -111,25 +114,39 @@ export async function generateVideo(
     prompt: params.prompt,
   };
 
-  // Add optional parameters
+  // Add optional parameters based on model
   if (params.negative_prompt) {
     input.negative_prompt = params.negative_prompt;
   }
-  if (params.resolution) {
-    input.resolution = params.resolution;
+  
+  // Wan model specific parameters
+  if (model === 'wan-2.5-i2v') {
+    // Wan uses num_frames instead of duration
+    // 24 fps, so 5s = 120 frames, 10s = 240 frames
+    input.num_frames = params.duration === 10 ? 81 : 41;
+    // Resolution mapping for Wan
+    if (params.resolution === '1080p') {
+      input.resolution = '1280x720'; // Wan max is 720p
+    } else if (params.resolution === '720p') {
+      input.resolution = '848x480';
+    } else {
+      input.resolution = '640x352';
+    }
+  } else {
+    // Other models may use duration directly
+    if (params.duration) {
+      input.duration = params.duration;
+    }
+    if (params.resolution) {
+      input.resolution = params.resolution;
+    }
   }
-  if (params.duration) {
-    input.duration = params.duration;
-  }
+  
   if (params.seed !== undefined) {
     input.seed = params.seed;
   }
-  if (params.enable_prompt_expansion !== undefined) {
-    input.enable_prompt_expansion = params.enable_prompt_expansion;
-  }
 
   const body: Record<string, unknown> = {
-    version: modelConfig.version,
     input,
   };
 
@@ -139,21 +156,38 @@ export async function generateVideo(
     body.webhook_events_filter = ['completed'];
   }
 
-  const response = await fetch('https://api.replicate.com/v1/predictions', {
+  // Use the models endpoint for better reliability
+  const apiUrl = `https://api.replicate.com/v1/models/${modelConfig.owner}/${modelConfig.model}/predictions`;
+  
+  console.log('[Replicate] Creating prediction:', {
+    model: `${modelConfig.owner}/${modelConfig.model}`,
+    webhookUrl,
+    inputKeys: Object.keys(input),
+  });
+
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
       'Content-Type': 'application/json',
+      'Prefer': 'wait=5', // Wait up to 5s for quick responses
     },
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('[Replicate] API error:', response.status, errorText);
     throw new Error(`Replicate API error: ${response.status} - ${errorText}`);
   }
 
-  return response.json();
+  const prediction = await response.json();
+  console.log('[Replicate] Prediction created:', {
+    id: prediction.id,
+    status: prediction.status,
+  });
+
+  return prediction;
 }
 
 /**
