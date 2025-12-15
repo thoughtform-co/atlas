@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 
-// Type for forge_costs table (not yet in generated types)
-interface ForgeCost {
-  amount_cents: number;
-  model: string;
-  created_at: string;
-}
-
 /**
  * GET /api/forge/cost
  * Get cumulative cost for the authenticated user
@@ -45,7 +38,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
-    // @ts-ignore - forge_costs table not in generated types yet
     let query = supabase
       .from('forge_costs')
       .select('amount_cents, model, created_at')
@@ -55,8 +47,7 @@ export async function GET(request: NextRequest) {
       query = query.gte('created_at', dateFilter);
     }
 
-    // @ts-ignore - forge_costs table not in generated types yet
-    const { data: costs, error } = await query.order('created_at', { ascending: false }) as { data: ForgeCost[] | null; error: unknown };
+    const { data: costs, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching costs:', error);

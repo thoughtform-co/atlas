@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
     const supabase = getServiceClient();
 
     // Find the generation by replicate_prediction_id
-    // @ts-ignore - forge_generations table not in generated types yet
     const { data: generation, error: findError } = await supabase
       .from('forge_generations')
       .select('id, session_id, duration')
@@ -79,7 +78,6 @@ export async function POST(request: NextRequest) {
       updateData.cost_cents = costCents;
 
       // Get session to find user_id for cost tracking
-      // @ts-ignore - forge_sessions table not in generated types yet
       const { data: session } = await supabase
         .from('forge_sessions')
         .select('user_id')
@@ -88,10 +86,8 @@ export async function POST(request: NextRequest) {
 
       if (session?.user_id) {
         // Record cost
-        // @ts-ignore - forge_costs table not in generated types yet
         await supabase
           .from('forge_costs')
-          // @ts-ignore - forge_costs table not in generated types yet
           .insert({
             user_id: session.user_id,
             generation_id: generation.id,
@@ -121,10 +117,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the generation
-    // @ts-ignore - forge_generations table not in generated types yet
     const { error: updateError } = await supabase
       .from('forge_generations')
-      // @ts-ignore - forge_generations table not in generated types yet
       .update(updateData)
       .eq('id', generation.id);
 
@@ -134,10 +128,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Update session's updated_at
-    // @ts-ignore - forge_sessions table not in generated types yet
     await supabase
       .from('forge_sessions')
-      // @ts-ignore - forge_sessions table not in generated types yet
       .update({ updated_at: new Date().toISOString() })
       .eq('id', generation.session_id);
 

@@ -5,33 +5,6 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// Type for session with generations (not yet in generated types)
-interface SessionWithGenerations {
-  id: string;
-  name: string;
-  created_at: string;
-  updated_at: string;
-  forge_generations?: Array<{
-    id: string;
-    denizen_id: string | null;
-    source_image_url: string;
-    video_url: string | null;
-    thumbnail_url: string | null;
-    prompt: string;
-    negative_prompt: string | null;
-    resolution: string;
-    duration: number;
-    seed: number | null;
-    status: string;
-    replicate_prediction_id: string | null;
-    cost_cents: number | null;
-    approved: boolean;
-    error_message: string | null;
-    created_at: string;
-    completed_at: string | null;
-  }>;
-}
-
 /**
  * GET /api/forge/sessions/[id]
  * Get a single session with all its generations
@@ -48,7 +21,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Fetch session with generations
-    // @ts-ignore - forge_sessions table not in generated types yet
     const { data: session, error } = await supabase
       .from('forge_sessions')
       .select(`
@@ -78,7 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `)
       .eq('id', id)
       .eq('user_id', user.id)
-      .single() as { data: SessionWithGenerations | null; error: unknown };
+      .single();
 
     if (error || !session) {
       if (error && typeof error === 'object' && error !== null && 'code' in error && error.code === 'PGRST116') {
@@ -126,10 +98,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update session
-    // @ts-ignore - forge_sessions table not in generated types yet
     const { data: session, error } = await supabase
       .from('forge_sessions')
-      // @ts-ignore - forge_sessions table not in generated types yet
       .update({ name: name.trim() })
       .eq('id', id)
       .eq('user_id', user.id)
@@ -167,10 +137,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete session (cascade will delete generations)
-    // @ts-ignore - forge_sessions table not in generated types yet
     const { error } = await supabase
       .from('forge_sessions')
-      // @ts-ignore - forge_sessions table not in generated types yet
       .delete()
       .eq('id', id)
       .eq('user_id', user.id);
