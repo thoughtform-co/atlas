@@ -154,10 +154,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Generation ID is required' }, { status: 400 });
     }
 
-    // Fetch generation (RLS will ensure user owns the session)
+    // Fetch generation
     const { data: generation, error } = await supabase
       .from('forge_generations')
-      .select('*, forge_sessions!inner(user_id)')
+      .select('*')
       .eq('id', generationId)
       .single();
 
@@ -166,14 +166,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user owns the session
-    if (generation.forge_sessions.user_id !== user.id) {
+    const { data: session } = await supabase
+      .from('forge_sessions')
+      .select('user_id')
+      .eq('id', generation.session_id)
+      .single();
+
+    if (!session || session.user_id !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Remove the join data from response
-    const { forge_sessions, ...generationData } = generation;
-
-    return NextResponse.json({ generation: generationData });
+    return NextResponse.json({ generation });
 
   } catch (error) {
     console.error('Generate GET error:', error);

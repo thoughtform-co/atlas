@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Verify generation belongs to user's session
     const { data: generation, error: findError } = await supabase
       .from('forge_generations')
-      .select('id, forge_sessions!inner(user_id)')
+      .select('id, session_id')
       .eq('id', generation_id)
       .single();
 
@@ -37,9 +37,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Generation not found' }, { status: 404 });
     }
 
-    // Check ownership via the joined session
-    const sessionData = generation.forge_sessions as { user_id: string };
-    if (sessionData.user_id !== user.id) {
+    // Verify session ownership
+    const { data: session, error: sessionError } = await supabase
+      .from('forge_sessions')
+      .select('user_id')
+      .eq('id', generation.session_id)
+      .single();
+
+    if (sessionError || !session || session.user_id !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
