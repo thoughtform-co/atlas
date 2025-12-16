@@ -57,13 +57,13 @@ export interface ReplicateWebhookPayload {
 // ═══════════════════════════════════════════════════════════════
 
 // Available video generation models on Replicate
-export type VideoModel = 'wan-2.1-i2v' | 'minimax-video' | 'hunyuan-video';
+export type VideoModel = 'wan-2.5-i2v' | 'minimax-video' | 'hunyuan-video';
 
 export const VIDEO_MODELS: Record<VideoModel, { name: string; owner: string; model: string }> = {
-  'wan-2.1-i2v': {
+  'wan-2.5-i2v': {
     name: 'Wan 2.5',
-    owner: 'wavespeedai',
-    model: 'wan-2.1-i2v-480p',
+    owner: 'wan-video',
+    model: 'wan-2.5-i2v',
   },
   'minimax-video': {
     name: 'Minimax',
@@ -78,7 +78,7 @@ export const VIDEO_MODELS: Record<VideoModel, { name: string; owner: string; mod
 };
 
 // Default model
-const DEFAULT_MODEL: VideoModel = 'wan-2.1-i2v';
+const DEFAULT_MODEL: VideoModel = 'wan-2.5-i2v';
 
 // Approximate cost per second of video generation (in cents)
 // Based on Replicate's GPU pricing for video models
@@ -120,7 +120,7 @@ export async function generateVideo(
   }
   
   // Wan model specific parameters
-  if (model === 'wan-2.1-i2v') {
+  if (model === 'wan-2.5-i2v') {
     // Wan uses num_frames instead of duration
     // 24 fps, so 5s = 120 frames, 10s = 240 frames
     input.num_frames = params.duration === 10 ? 81 : 41;
