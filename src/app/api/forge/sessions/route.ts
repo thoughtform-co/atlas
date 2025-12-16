@@ -27,6 +27,7 @@ export async function GET() {
           id,
           thumbnail_url,
           video_url,
+          source_image_url,
           status,
           created_at
         )
@@ -43,10 +44,20 @@ export async function GET() {
     const transformedSessions = sessions?.map(session => {
       const generations = session.forge_generations || [];
       const completedGenerations = generations.filter((g: { status: string }) => g.status === 'completed');
-      const latestGeneration = completedGenerations.sort(
+      // Get latest completed generation for thumbnail
+      const latestCompleted = completedGenerations.sort(
         (a: { created_at: string }, b: { created_at: string }) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )[0];
+      )[0] as { source_image_url?: string; thumbnail_url?: string } | undefined;
+      
+      // Get latest generation (any status) for source image fallback
+      const latestAny = generations.sort(
+        (a: { created_at: string }, b: { created_at: string }) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )[0] as { source_image_url?: string } | undefined;
+
+      // Use source_image_url as thumbnail (video URLs won't display as images)
+      const thumbnailUrl = latestCompleted?.source_image_url || latestAny?.source_image_url || null;
 
       return {
         id: session.id,
@@ -55,7 +66,7 @@ export async function GET() {
         updated_at: session.updated_at,
         generation_count: generations.length,
         completed_count: completedGenerations.length,
-        thumbnail_url: latestGeneration?.thumbnail_url || latestGeneration?.video_url || null,
+        thumbnail_url: thumbnailUrl,
       };
     });
 

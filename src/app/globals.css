@@ -177,6 +177,59 @@ body {
   right: 0;
 }
 
+/* ─── ENERGY BEAM SCROLL INDICATOR ─── */
+/* Subtle photon-like energy flowing through the right rail */
+.hud-rail-right::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--gold) 20%,
+    var(--gold) 80%,
+    transparent 100%
+  );
+  opacity: 0.6;
+  top: var(--scroll-beam-position, 0%);
+  transition: top 0.15s ease-out, opacity 0.3s ease;
+  box-shadow: 
+    0 0 8px var(--gold-dim),
+    0 0 16px rgba(202, 165, 84, 0.2);
+  pointer-events: none;
+}
+
+/* Animated particles flowing through the beam */
+@keyframes energyFlow {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 60px;
+  }
+}
+
+.hud-rail-right.has-scroll::after {
+  background: 
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--gold) 20%,
+      var(--gold) 80%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 4px,
+      rgba(202, 165, 84, 0.3) 4px,
+      rgba(202, 165, 84, 0.3) 6px
+    );
+  animation: energyFlow 2s linear infinite;
+}
+
 /* Scale with ticks */
 .rail-scale {
   flex: 1;

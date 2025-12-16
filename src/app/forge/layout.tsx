@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import styles from './forge.module.css';
 import { ForgeSidebar } from '@/components/forge/ForgeSidebar';
@@ -12,10 +13,60 @@ interface ForgeLayoutProps {
 
 export default function ForgeLayout({ children }: ForgeLayoutProps) {
   const pathname = usePathname();
+  const rightRailRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
   
   // Determine active tab
   const isVideoTab = pathname === '/forge' || pathname.startsWith('/forge/');
   const isEditTab = false; // Placeholder for future Edit tab
+
+  // Update energy beam position based on scroll
+  const updateScrollBeam = useCallback(() => {
+    const mainContent = mainContentRef.current;
+    const rightRail = rightRailRef.current;
+    
+    if (!mainContent || !rightRail) return;
+    
+    const scrollTop = mainContent.scrollTop;
+    const scrollHeight = mainContent.scrollHeight - mainContent.clientHeight;
+    const hasScroll = scrollHeight > 0;
+    
+    if (hasScroll) {
+      // Calculate scroll percentage (0-100)
+      const scrollPercent = (scrollTop / scrollHeight) * 100;
+      // Account for beam height (60px) so it stays within the rail
+      const railHeight = rightRail.offsetHeight;
+      const beamHeight = 60;
+      const maxPosition = ((railHeight - beamHeight) / railHeight) * 100;
+      const beamPosition = (scrollPercent / 100) * maxPosition;
+      
+      rightRail.style.setProperty('--scroll-beam-position', `${beamPosition}%`);
+      rightRail.classList.add('has-scroll');
+    } else {
+      rightRail.classList.remove('has-scroll');
+      rightRail.style.setProperty('--scroll-beam-position', '0%');
+    }
+  }, []);
+
+  useEffect(() => {
+    const mainContent = mainContentRef.current;
+    if (!mainContent) return;
+    
+    // Initial update
+    updateScrollBeam();
+    
+    // Listen for scroll events
+    mainContent.addEventListener('scroll', updateScrollBeam, { passive: true });
+    
+    // Also listen for content changes (e.g., when videos load)
+    const resizeObserver = new ResizeObserver(updateScrollBeam);
+    resizeObserver.observe(mainContent);
+    
+    return () => {
+      mainContent.removeEventListener('scroll', updateScrollBeam);
+      resizeObserver.disconnect();
+    };
+  }, [updateScrollBeam]);
 
   return (
     <div className={styles.forgeContainer}>
@@ -35,7 +86,7 @@ export default function ForgeLayout({ children }: ForgeLayoutProps) {
           </div>
         </div>
       </div>
-      <div className="hud-rail hud-rail-right">
+      <div className="hud-rail hud-rail-right" ref={rightRailRef}>
         <div className="rail-scale">
           <div className="scale-ticks">
             {[...Array(11)].map((_, i) => (
@@ -66,7 +117,7 @@ export default function ForgeLayout({ children }: ForgeLayoutProps) {
       <ForgeSidebar />
 
       {/* Main Content Area */}
-      <main className={styles.mainContent}>
+      <main className={styles.mainContent} ref={mainContentRef}>
         {children}
       </main>
     </div>
