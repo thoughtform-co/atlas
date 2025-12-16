@@ -131,6 +131,8 @@
 /* ─── SESSION ITEM WRAPPER ─── */
 .sessionItemWrapper {
   position: relative;
+  width: 64px;
+  height: 64px;
 }
 
 /* ─── SESSION ITEM ─── */
@@ -151,6 +153,11 @@
   border-color: var(--dawn-30);
 }
 
+.sessionItem:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
 .sessionActive {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px var(--gold);
@@ -166,7 +173,7 @@
   pointer-events: none;
 }
 
-.sessionItem:hover .actionButtons {
+.sessionItemWrapper:hover .actionButtons {
   opacity: 1;
 }
 

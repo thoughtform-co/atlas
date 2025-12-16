@@ -230,12 +230,19 @@ export function ForgeSidebar() {
         ) : (
           sessions.map((session) => (
             <div key={session.id} className={styles.sessionItemWrapper}>
-              <button
+              <div
                 className={`${styles.sessionItem} ${
                   currentSessionId === session.id ? styles.sessionActive : ''
                 }`}
                 onClick={() => router.push(`/forge/${session.id}`)}
                 title={session.name}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    router.push(`/forge/${session.id}`);
+                  }
+                }}
               >
                 {/* Thumbnail */}
                 <div className={styles.thumbnail}>
@@ -257,46 +264,46 @@ export function ForgeSidebar() {
                     </div>
                   )}
                 </div>
+              </div>
 
-                {/* Action buttons overlay */}
-                <div className={styles.actionButtons}>
-                  <button
-                    className={styles.editButton}
-                    onClick={(e) => handleStartEdit(session, e)}
-                    title="Rename session"
-                  >
+              {/* Action buttons - outside the clickable div */}
+              <div className={styles.actionButtons}>
+                <button
+                  className={styles.editButton}
+                  onClick={(e) => handleStartEdit(session, e)}
+                  title="Rename session"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path 
+                      d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" 
+                      stroke="currentColor" 
+                      strokeWidth="1.2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  className={styles.deleteButton}
+                  onClick={(e) => handleDeleteSession(session.id, e)}
+                  title="Delete session"
+                  disabled={deleting === session.id}
+                >
+                  {deleting === session.id ? (
+                    <span className={styles.deletingDot} />
+                  ) : (
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <path 
-                        d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" 
+                        d="M2 3H10M4 3V2H8V3M5 5V9M7 5V9M3 3L3.5 10H8.5L9 3" 
                         stroke="currentColor" 
                         strokeWidth="1.2" 
                         strokeLinecap="round" 
                         strokeLinejoin="round"
                       />
                     </svg>
-                  </button>
-                  <button
-                    className={styles.deleteButton}
-                    onClick={(e) => handleDeleteSession(session.id, e)}
-                    title="Delete session"
-                    disabled={deleting === session.id}
-                  >
-                    {deleting === session.id ? (
-                      <span className={styles.deletingDot} />
-                    ) : (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path 
-                          d="M2 3H10M4 3V2H8V3M5 5V9M7 5V9M3 3L3.5 10H8.5L9 3" 
-                          stroke="currentColor" 
-                          strokeWidth="1.2" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </button>
+                  )}
+                </button>
+              </div>
 
               {/* Session Info (shown on hover) */}
               <div className={styles.sessionInfo}>
