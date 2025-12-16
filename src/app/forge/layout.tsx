@@ -34,9 +34,9 @@ export default function ForgeLayout({ children }: ForgeLayoutProps) {
     if (hasScroll) {
       // Calculate scroll percentage (0-100)
       const scrollPercent = (scrollTop / scrollHeight) * 100;
-      // Account for beam height (60px) so it stays within the rail
+      // Account for beam height (120px) so it stays within the rail
       const railHeight = rightRail.offsetHeight;
-      const beamHeight = 60;
+      const beamHeight = 120;
       const maxPosition = ((railHeight - beamHeight) / railHeight) * 100;
       const beamPosition = (scrollPercent / 100) * maxPosition;
       

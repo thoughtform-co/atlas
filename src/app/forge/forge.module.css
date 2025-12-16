@@ -93,21 +93,14 @@
   padding: var(--space-lg);
 }
 
-/* Custom scrollbar */
+/* Hide default scrollbar - using energy beam instead */
 .mainContent::-webkit-scrollbar {
-  width: 4px;
+  display: none;
 }
 
-.mainContent::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.mainContent::-webkit-scrollbar-thumb {
-  background: var(--dawn-15);
-}
-
-.mainContent::-webkit-scrollbar-thumb:hover {
-  background: var(--dawn-30);
+.mainContent {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 /* ─── RESPONSIVE ─── */

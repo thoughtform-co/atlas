@@ -184,20 +184,20 @@ body {
   position: absolute;
   right: 0;
   width: 1px;
-  height: 60px;
+  height: 120px;
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    var(--gold) 20%,
-    var(--gold) 80%,
+    var(--gold) 15%,
+    var(--gold) 85%,
     transparent 100%
   );
-  opacity: 0.6;
+  opacity: 0.7;
   top: var(--scroll-beam-position, 0%);
   transition: top 0.15s ease-out, opacity 0.3s ease;
   box-shadow: 
     0 0 8px var(--gold-dim),
-    0 0 16px rgba(202, 165, 84, 0.2);
+    0 0 16px rgba(202, 165, 84, 0.25);
   pointer-events: none;
 }
 
@@ -207,7 +207,7 @@ body {
     background-position: 0 0;
   }
   100% {
-    background-position: 0 60px;
+    background-position: 0 120px;
   }
 }
 
@@ -216,8 +216,8 @@ body {
     linear-gradient(
       to bottom,
       transparent 0%,
-      var(--gold) 20%,
-      var(--gold) 80%,
+      var(--gold) 15%,
+      var(--gold) 85%,
       transparent 100%
     ),
     repeating-linear-gradient(
