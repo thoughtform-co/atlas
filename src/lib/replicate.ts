@@ -119,21 +119,21 @@ export async function generateVideo(
     input.negative_prompt = params.negative_prompt;
   }
   
-  // Wan model specific parameters
+  // Wan 2.5 model parameters (per API docs)
   if (model === 'wan-2.5-i2v') {
-    // Wan uses num_frames instead of duration
-    // 24 fps, so 5s = 120 frames, 10s = 240 frames
-    input.num_frames = params.duration === 10 ? 81 : 41;
-    // Resolution mapping for Wan
+    // Duration in seconds (5 or 10)
+    input.duration = params.duration || 5;
+    
+    // Resolution: "480P", "720P", or "1080P" (uppercase)
     if (params.resolution === '1080p') {
-      input.resolution = '1280x720'; // Wan max is 720p
+      input.resolution = '1080P';
     } else if (params.resolution === '720p') {
-      input.resolution = '848x480';
+      input.resolution = '720P';
     } else {
-      input.resolution = '640x352';
+      input.resolution = '480P';
     }
   } else {
-    // Other models may use duration directly
+    // Other models may use different parameter formats
     if (params.duration) {
       input.duration = params.duration;
     }

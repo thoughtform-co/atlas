@@ -199,139 +199,139 @@ export function ForgeSidebar() {
           <span className={styles.newIcon}>+</span>
         </button>
 
-      {/* New Session Input */}
-      {showNewInput && (
-        <div className={styles.newInputContainer}>
-          <input
-            type="text"
-            value={newSessionName}
-            onChange={(e) => setNewSessionName(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Session name..."
-            className={styles.newInput}
-            autoFocus
-            disabled={creating}
-          />
-        </div>
-      )}
+        {/* New Session Input */}
+        {showNewInput && (
+          <div className={styles.newInputContainer}>
+            <input
+              type="text"
+              value={newSessionName}
+              onChange={(e) => setNewSessionName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Session name..."
+              className={styles.newInput}
+              autoFocus
+              disabled={creating}
+            />
+          </div>
+        )}
 
-      {/* Session List */}
-      <div className={styles.sessionList}>
-        {loading ? (
-          <div className={styles.loading}>
-            <div className={styles.loadingDot} />
-            <div className={styles.loadingDot} />
-            <div className={styles.loadingDot} />
-          </div>
-        ) : sessions.length === 0 ? (
-          <div className={styles.empty}>
-            <span className={styles.emptyText}>No sessions</span>
-          </div>
-        ) : (
-          sessions.map((session) => (
-            <div key={session.id} className={styles.sessionItemWrapper}>
-              <div
-                className={`${styles.sessionItem} ${
-                  currentSessionId === session.id ? styles.sessionActive : ''
-                }`}
-                onClick={() => router.push(`/forge/${session.id}`)}
-                title={session.name}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    router.push(`/forge/${session.id}`);
-                  }
-                }}
-              >
-                {/* Thumbnail */}
-                <div className={styles.thumbnail}>
-                  {session.thumbnail_url ? (
-                    <video
-                      src={session.thumbnail_url}
-                      className={styles.thumbnailVideo}
-                      muted
-                      playsInline
-                      onMouseEnter={(e) => e.currentTarget.play()}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.pause();
-                        e.currentTarget.currentTime = 0;
-                      }}
-                    />
-                  ) : (
-                    <div className={styles.thumbnailPlaceholder}>
-                      <span>{session.completed_count}</span>
-                    </div>
-                  )}
+        {/* Session List */}
+        <div className={styles.sessionList}>
+          {loading ? (
+            <div className={styles.loading}>
+              <div className={styles.loadingDot} />
+              <div className={styles.loadingDot} />
+              <div className={styles.loadingDot} />
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className={styles.empty}>
+              <span className={styles.emptyText}>No sessions</span>
+            </div>
+          ) : (
+            sessions.map((session) => (
+              <div key={session.id} className={styles.sessionItemWrapper}>
+                <div
+                  className={`${styles.sessionItem} ${
+                    currentSessionId === session.id ? styles.sessionActive : ''
+                  }`}
+                  onClick={() => router.push(`/forge/${session.id}`)}
+                  title={session.name}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      router.push(`/forge/${session.id}`);
+                    }
+                  }}
+                >
+                  {/* Thumbnail */}
+                  <div className={styles.thumbnail}>
+                    {session.thumbnail_url ? (
+                      <video
+                        src={session.thumbnail_url}
+                        className={styles.thumbnailVideo}
+                        muted
+                        playsInline
+                        onMouseEnter={(e) => e.currentTarget.play()}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.pause();
+                          e.currentTarget.currentTime = 0;
+                        }}
+                      />
+                    ) : (
+                      <div className={styles.thumbnailPlaceholder}>
+                        <span>{session.completed_count}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Action buttons - outside the clickable div */}
-              <div className={styles.actionButtons}>
-                <button
-                  className={styles.editButton}
-                  onClick={(e) => handleStartEdit(session, e)}
-                  title="Rename session"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path 
-                      d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" 
-                      stroke="currentColor" 
-                      strokeWidth="1.2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-                <button
-                  className={styles.deleteButton}
-                  onClick={(e) => handleDeleteSession(session.id, e)}
-                  title="Delete session"
-                  disabled={deleting === session.id}
-                >
-                  {deleting === session.id ? (
-                    <span className={styles.deletingDot} />
-                  ) : (
+                {/* Action buttons - outside the clickable div */}
+                <div className={styles.actionButtons}>
+                  <button
+                    className={styles.editButton}
+                    onClick={(e) => handleStartEdit(session, e)}
+                    title="Rename session"
+                  >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                       <path 
-                        d="M2 3H10M4 3V2H8V3M5 5V9M7 5V9M3 3L3.5 10H8.5L9 3" 
+                        d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" 
                         stroke="currentColor" 
                         strokeWidth="1.2" 
                         strokeLinecap="round" 
                         strokeLinejoin="round"
                       />
                     </svg>
-                  )}
-                </button>
-              </div>
+                  </button>
+                  <button
+                    className={styles.deleteButton}
+                    onClick={(e) => handleDeleteSession(session.id, e)}
+                    title="Delete session"
+                    disabled={deleting === session.id}
+                  >
+                    {deleting === session.id ? (
+                      <span className={styles.deletingDot} />
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path 
+                          d="M2 3H10M4 3V2H8V3M5 5V9M7 5V9M3 3L3.5 10H8.5L9 3" 
+                          stroke="currentColor" 
+                          strokeWidth="1.2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
 
-              {/* Session Info (shown on hover) */}
-              <div className={styles.sessionInfo}>
-                {editingSessionId === session.id ? (
-                  <input
-                    ref={editInputRef}
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    onKeyDown={handleRenameKeyDown}
-                    onBlur={handleSaveRename}
-                    className={styles.renameInput}
-                    disabled={saving}
-                    autoFocus
-                  />
-                ) : (
-                  <>
-                    <span className={styles.sessionName}>{session.name}</span>
-                    <span className={styles.sessionCount}>
-                      {session.completed_count} / {session.generation_count}
-                    </span>
-                  </>
-                )}
+                {/* Session Info (shown on hover) */}
+                <div className={styles.sessionInfo}>
+                  {editingSessionId === session.id ? (
+                    <input
+                      ref={editInputRef}
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={handleRenameKeyDown}
+                      onBlur={handleSaveRename}
+                      className={styles.renameInput}
+                      disabled={saving}
+                      autoFocus
+                    />
+                  ) : (
+                    <>
+                      <span className={styles.sessionName}>{session.name}</span>
+                      <span className={styles.sessionCount}>
+                        {session.completed_count} / {session.generation_count}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
       </aside>
     </div>
   );

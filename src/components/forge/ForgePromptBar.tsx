@@ -190,7 +190,7 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to start generation');
       }
