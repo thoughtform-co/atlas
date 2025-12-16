@@ -154,6 +154,11 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams, o
     onReuseParams?.(generation);
   }, [onReuseParams]);
 
+  // Handle send to library
+  const handleSendToLibrary = useCallback((generation: ForgeGeneration) => {
+    onSendToLibrary?.(generation);
+  }, [onSendToLibrary]);
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -183,11 +188,6 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams, o
       </div>
     );
   }
-
-  // Handle send to library
-  const handleSendToLibrary = useCallback((generation: ForgeGeneration) => {
-    onSendToLibrary?.(generation);
-  }, [onSendToLibrary]);
 
   return (
     <div className={styles.gallery}>
