@@ -168,16 +168,36 @@ export function ForgeSidebar() {
     }
   };
 
+  // Get current session name for the label
+  const currentSession = sessions.find(s => s.id === currentSessionId);
+  const currentSessionName = currentSession?.name || 'Session';
+  const currentSessionDate = currentSession 
+    ? new Date(currentSession.created_at).toLocaleDateString('en-US', { 
+        month: 'numeric', 
+        day: 'numeric', 
+        year: 'numeric' 
+      })
+    : '';
+
   return (
-    <aside className={styles.sidebar}>
-      {/* New Session Button */}
-      <button 
-        className={styles.newButton}
-        onClick={() => setShowNewInput(true)}
-        title="New Session"
-      >
-        <span className={styles.newIcon}>+</span>
-      </button>
+    <div className={styles.sidebarContainer}>
+      {/* Session Label - above the sidebar */}
+      {currentSessionId && (
+        <div className={styles.sessionLabel}>
+          <span className={styles.sessionLabelTitle}>{currentSessionName}</span>
+          <span className={styles.sessionLabelDate}>{currentSessionDate}</span>
+        </div>
+      )}
+
+      <aside className={styles.sidebar}>
+        {/* New Session Button */}
+        <button 
+          className={styles.newButton}
+          onClick={() => setShowNewInput(true)}
+          title="New Session"
+        >
+          <span className={styles.newIcon}>+</span>
+        </button>
 
       {/* New Session Input */}
       {showNewInput && (
@@ -305,6 +325,7 @@ export function ForgeSidebar() {
           ))
         )}
       </div>
-    </aside>
+      </aside>
+    </div>
   );
 }

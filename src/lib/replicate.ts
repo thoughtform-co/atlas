@@ -57,12 +57,12 @@ export interface ReplicateWebhookPayload {
 // ═══════════════════════════════════════════════════════════════
 
 // Available video generation models on Replicate
-export type VideoModel = 'wan-2.5-i2v' | 'minimax-video' | 'luma-ray2';
+export type VideoModel = 'wan-2.1-i2v' | 'minimax-video' | 'hunyuan-video';
 
 export const VIDEO_MODELS: Record<VideoModel, { name: string; owner: string; model: string }> = {
-  'wan-2.5-i2v': {
+  'wan-2.1-i2v': {
     name: 'Wan 2.5',
-    owner: 'wavespeed',
+    owner: 'wavespeedai',
     model: 'wan-2.1-i2v-480p',
   },
   'minimax-video': {
@@ -70,15 +70,15 @@ export const VIDEO_MODELS: Record<VideoModel, { name: string; owner: string; mod
     owner: 'minimax',
     model: 'video-01',
   },
-  'luma-ray2': {
-    name: 'Luma Ray2',
-    owner: 'luma',
-    model: 'ray',
+  'hunyuan-video': {
+    name: 'Hunyuan',
+    owner: 'tencent',
+    model: 'hunyuan-video',
   },
 };
 
 // Default model
-const DEFAULT_MODEL: VideoModel = 'wan-2.5-i2v';
+const DEFAULT_MODEL: VideoModel = 'wan-2.1-i2v';
 
 // Approximate cost per second of video generation (in cents)
 // Based on Replicate's GPU pricing for video models
