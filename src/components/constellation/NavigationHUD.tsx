@@ -251,7 +251,7 @@ export function NavigationHUD({
         {/* User menu is now in Navigation.tsx - this space left intentionally empty */}
       </header>
 
-      {/* Left Rail - VECTOR Labels (Entity Types) */}
+      {/* Left Rail - Scale only */}
       <aside className="hud-rail hud-rail-left pointer-events-none" style={{ zIndex: 70 }}>
         <div className="rail-scale">
           <div className="scale-ticks">
@@ -276,72 +276,160 @@ export function NavigationHUD({
             ))}
           </div>
         </div>
-
-        {/* VECTOR Labels (Entity Types) - Navigate to semantic regions */}
-        <div 
-          className="pointer-events-auto rail-content"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-          }}
-        >
-          {availableEntityTypes.map((type) => {
-            const isActive = filters.entityTypes.has(type);
-            const typeCount = denizens.filter(d => d.type === type).length;
-            return (
-              <button
-                key={type}
-                onClick={() => navigateToVector(type)}
-                className="text-left transition-all"
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '9px',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: isActive ? 'var(--gold)' : 'var(--dawn-30)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
-                  position: 'relative',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.color = 'var(--dawn-50)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.color = 'var(--dawn-30)';
-                  }
-                }}
-              >
-                <span style={{ fontSize: '8px', opacity: 0.5 }}>VECTOR</span>
-                <span>{type}</span>
-                {isActive && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: '-12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '2px',
-                      height: '16px',
-                      background: 'var(--gold)',
-                    }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
       </aside>
 
-      {/* Right Rail - Section Markers (Domains) */}
+      {/* Left Filter Panel - Positioned to the right of the rail */}
+      <div 
+        className="pointer-events-auto"
+        style={{
+          position: 'fixed',
+          top: 'calc(clamp(32px, 5vw, 64px) + 60px)',
+          left: 'calc(clamp(32px, 5vw, 64px) + 48px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          zIndex: 70,
+        }}
+      >
+        {/* TYPE Filter */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'var(--dawn-30)',
+            }}
+          >
+            TYPE
+          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {availableEntityTypes.map((type) => {
+              const isActive = filters.entityTypes.has(type);
+              const typeCount = denizens.filter(d => d.type === type).length;
+              return (
+                <button
+                  key={type}
+                  onClick={() => navigateToVector(type)}
+                  className="text-left transition-all"
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '9px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: isActive ? 'var(--gold)' : 'var(--dawn-30)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-50)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-30)';
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
+                      background: isActive ? 'var(--gold)' : 'transparent',
+                      transform: isActive ? 'rotate(45deg)' : 'none',
+                      transition: 'all 150ms ease',
+                    }}
+                  />
+                  <span>{type}</span>
+                  <span style={{ opacity: 0.4, fontSize: '8px' }}>{typeCount}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ALLEGIANCE Filter */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'var(--dawn-30)',
+            }}
+          >
+            ALLEGIANCE
+          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {(['Liminal Covenant', 'Nomenclate', 'Unaligned'] as Allegiance[]).map((allegiance) => {
+              const isActive = filters.allegiances.has(allegiance);
+              const count = denizens.filter(d => d.allegiance === allegiance).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={allegiance}
+                  onClick={() => {
+                    const newAllegiances = new Set(filters.allegiances);
+                    if (newAllegiances.has(allegiance)) {
+                      newAllegiances.delete(allegiance);
+                    } else {
+                      newAllegiances.add(allegiance);
+                    }
+                    onFiltersChange({ ...filters, allegiances: newAllegiances });
+                  }}
+                  className="text-left transition-all"
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '9px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: isActive 
+                      ? allegiance === 'Nomenclate' ? '#8B5A5A' : 'var(--gold)'
+                      : 'var(--dawn-30)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-50)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-30)';
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      border: `1px solid ${isActive 
+                        ? allegiance === 'Nomenclate' ? '#8B5A5A' : 'var(--gold)'
+                        : 'var(--dawn-30)'}`,
+                      background: isActive 
+                        ? allegiance === 'Nomenclate' ? '#8B5A5A' : 'var(--gold)'
+                        : 'transparent',
+                      transform: isActive ? 'rotate(45deg)' : 'none',
+                      transition: 'all 150ms ease',
+                    }}
+                  />
+                  <span>{allegiance === 'Liminal Covenant' ? 'Covenant' : allegiance}</span>
+                  <span style={{ opacity: 0.4, fontSize: '8px' }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Rail - Scale only */}
       <aside className="hud-rail hud-rail-right pointer-events-none" style={{ zIndex: 70 }}>
         <div className="rail-scale">
           <div className="scale-ticks">
@@ -353,211 +441,174 @@ export function NavigationHUD({
             ))}
           </div>
         </div>
+      </aside>
 
-        {/* Section Markers (Domains) - Navigate to semantic territories */}
-        <div 
-          className="pointer-events-auto rail-content"
+      {/* Right Filter Panel - Domains */}
+      <div 
+        className="pointer-events-auto"
+        style={{
+          position: 'fixed',
+          top: 'calc(clamp(32px, 5vw, 64px) + 60px)',
+          right: 'calc(clamp(32px, 5vw, 64px) + 48px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          zIndex: 70,
+          alignItems: 'flex-end',
+        }}
+      >
+        <span
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '8px',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: 'var(--dawn-30)',
           }}
         >
-          {availableDomains.map((domain, index) => {
+          DOMAIN
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+          {availableDomains.map((domain) => {
             const isActive = filters.domains.has(domain);
             const domainCount = denizens.filter(d => d.domain === domain).length;
             const isEditing = editingDomain === domain;
             
-            return (
-              <div key={domain} style={{ position: 'relative' }}>
-                {isEditing ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '150px' }}>
-                    <input
-                      type="text"
-                      value={editingDomainName}
-                      onChange={(e) => setEditingDomainName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleUpdateDomainName(domain, editingDomainName);
-                        } else if (e.key === 'Escape') {
-                          setEditingDomain(null);
-                        }
-                      }}
-                      autoFocus
+            if (isEditing) {
+              return (
+                <div key={domain} style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '150px' }}>
+                  <input
+                    type="text"
+                    value={editingDomainName}
+                    onChange={(e) => setEditingDomainName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleUpdateDomainName(domain, editingDomainName);
+                      } else if (e.key === 'Escape') {
+                        setEditingDomain(null);
+                      }
+                    }}
+                    autoFocus
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '9px',
+                      letterSpacing: '0.08em',
+                      color: 'var(--dawn-50)',
+                      background: 'rgba(5, 4, 3, 0.9)',
+                      border: '1px solid var(--gold)',
+                      padding: '4px 8px',
+                      width: '100%',
+                      outline: 'none',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => handleUpdateDomainName(domain, editingDomainName)}
+                      disabled={isUpdating}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: '9px',
+                        fontSize: '8px',
                         letterSpacing: '0.08em',
-                        color: 'var(--dawn-50)',
-                        background: 'rgba(5, 4, 3, 0.9)',
-                        border: '1px solid var(--gold)',
-                        padding: '4px 8px',
-                        width: '100%',
-                        outline: 'none',
-                      }}
-                    />
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button
-                        onClick={() => handleUpdateDomainName(domain, editingDomainName)}
-                        disabled={isUpdating}
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '8px',
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          color: 'var(--gold)',
-                          background: 'none',
-                          border: '1px solid var(--gold)',
-                          padding: '2px 6px',
-                          cursor: isUpdating ? 'wait' : 'pointer',
-                        }}
-                      >
-                        {isUpdating ? '...' : 'SAVE'}
-                      </button>
-                      <button
-                        onClick={() => setEditingDomain(null)}
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '8px',
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          color: 'var(--dawn-30)',
-                          background: 'none',
-                          border: '1px solid var(--dawn-30)',
-                          padding: '2px 6px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        CANCEL
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className="group"
-                    style={{
-                      position: 'relative',
-                      opacity: isActive ? 1 : 0.4,
-                      transition: 'opacity 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.opacity = '0.7';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.opacity = '0.4';
-                      }
-                    }}
-                  >
-                    <button
-                      onClick={() => navigateToDomain(domain)}
-                      className="transition-all"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        gap: '4px',
+                        textTransform: 'uppercase',
+                        color: 'var(--gold)',
                         background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0,
-                        width: '100%',
+                        border: '1px solid var(--gold)',
+                        padding: '2px 6px',
+                        cursor: isUpdating ? 'wait' : 'pointer',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div
-                          style={{
-                            width: '6px',
-                            height: '6px',
-                            border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
-                            background: isActive ? 'var(--gold)' : 'transparent',
-                            transform: isActive ? 'rotate(45deg)' : 'none',
-                            transition: 'transform 0.2s ease',
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '10px',
-                            letterSpacing: '0.08em',
-                            color: isActive ? 'var(--dawn-70)' : 'var(--dawn-30)',
-                          }}
-                        >
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                      </div>
-                      {isAdmin && (
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '8px',
-                            letterSpacing: '0.05em',
-                            color: isActive ? 'var(--dawn-50)' : 'var(--dawn-20)',
-                            opacity: 0.6,
-                            maxWidth: '100px',
-                            textAlign: 'right',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {domain}
-                        </span>
-                      )}
+                      {isUpdating ? '...' : 'SAVE'}
                     </button>
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDomainDoubleClick(domain, e);
-                        }}
-                        className="group-hover:opacity-100 opacity-0 transition-opacity"
-                        title="Edit domain name"
-                        style={{
-                          position: 'absolute',
-                          right: '-20px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'rgba(5, 4, 3, 0.8)',
-                          border: '1px solid var(--dawn-30)',
-                          width: '16px',
-                          height: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          padding: 0,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--gold)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--dawn-30)';
-                        }}
-                      >
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          style={{ color: 'var(--dawn-50)' }}
-                        >
-                          <path d="M8 2L10 4L3 11H1V9L8 2Z" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M6 4L10 8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setEditingDomain(null)}
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '8px',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'var(--dawn-30)',
+                        background: 'none',
+                        border: '1px solid var(--dawn-30)',
+                        padding: '2px 6px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      CANCEL
+                    </button>
                   </div>
+                </div>
+              );
+            }
+            
+            return (
+              <div key={domain} className="group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {isAdmin && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDomainDoubleClick(domain, e);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Edit domain name"
+                    style={{
+                      background: 'rgba(5, 4, 3, 0.8)',
+                      border: '1px solid var(--dawn-30)',
+                      width: '14px',
+                      height: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="var(--dawn-50)" strokeWidth="1.5">
+                      <path d="M8 2L10 4L3 11H1V9L8 2Z" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
                 )}
+                <button
+                  onClick={() => navigateToDomain(domain)}
+                  className="text-right transition-all"
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '9px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: isActive ? 'var(--gold)' : 'var(--dawn-30)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-50)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-30)';
+                  }}
+                >
+                  <span style={{ opacity: 0.4, fontSize: '8px' }}>{domainCount}</span>
+                  <span>{domain}</span>
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
+                      background: isActive ? 'var(--gold)' : 'transparent',
+                      transform: isActive ? 'rotate(45deg)' : 'none',
+                      transition: 'all 150ms ease',
+                    }}
+                  />
+                </button>
               </div>
             );
           })}
         </div>
-      </aside>
+      </div>
 
       {/* Bottom Bar */}
       <footer 
