@@ -16,6 +16,7 @@ export default function SessionPage({ params }: SessionPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [reuseData, setReuseData] = useState<{ prompt: string; image: string } | null>(null);
 
   // Fetch session data
   const fetchSession = useCallback(async () => {
@@ -47,9 +48,23 @@ export default function SessionPage({ params }: SessionPageProps) {
     setRefreshKey(prev => prev + 1);
   }, []);
 
-  // Handle reuse params (could populate prompt bar)
+  // Handle reuse params - populate prompt bar with prompt and image
   const handleReuseParams = useCallback((generation: ForgeGeneration) => {
-    console.log('Reuse params:', generation);
+    setReuseData({
+      prompt: generation.prompt,
+      image: generation.source_image_url,
+    });
+  }, []);
+
+  // Handle send to library (placeholder for now)
+  const handleSendToLibrary = useCallback((generation: ForgeGeneration) => {
+    console.log('Send to library:', generation);
+    // TODO: Implement send to entities library
+  }, []);
+
+  // Clear reuse data after it's been consumed
+  const handleReuseConsumed = useCallback(() => {
+    setReuseData(null);
   }, []);
 
   if (loading) {
@@ -81,12 +96,15 @@ export default function SessionPage({ params }: SessionPageProps) {
         key={refreshKey}
         sessionId={sessionId} 
         onReuseParams={handleReuseParams}
+        onSendToLibrary={handleSendToLibrary}
       />
 
       {/* Prompt Bar */}
       <ForgePromptBar 
         sessionId={sessionId}
         onGenerate={handleGenerate}
+        reuseData={reuseData}
+        onReuseConsumed={handleReuseConsumed}
       />
     </div>
   );

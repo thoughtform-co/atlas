@@ -299,11 +299,16 @@
 
 .actionIcon {
   color: var(--dawn-70);
-  font-size: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .actionActive .actionIcon {
   color: var(--void);
+}
+
+.actionActive .actionIcon path {
+  stroke: var(--void);
 }
 
 /* ─── RESPONSIVE ─── */

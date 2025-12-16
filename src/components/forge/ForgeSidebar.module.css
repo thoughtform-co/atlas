@@ -233,12 +233,26 @@
   width: 100%;
   height: 100%;
   position: relative;
+  overflow: hidden;
 }
 
-.thumbnailVideo {
+.thumbnailVideo,
+.thumbnailImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Gradient overlay for dimmed thumbnail */
+.thumbnailOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(5, 4, 3, 0.3) 0%,
+    rgba(5, 4, 3, 0.5) 100%
+  );
+  pointer-events: none;
 }
 
 .thumbnailPlaceholder {
@@ -252,8 +266,8 @@
 
 .thumbnailPlaceholder span {
   font-family: var(--font-mono);
-  font-size: 14px;
-  color: var(--dawn-30);
+  font-size: 18px;
+  color: var(--dawn-15);
 }
 
 /* ─── SESSION INFO (hover tooltip) ─── */

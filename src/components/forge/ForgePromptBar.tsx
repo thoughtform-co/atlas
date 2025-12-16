@@ -41,9 +41,11 @@ interface ForgePromptBarProps {
   sessionId: string;
   onGenerate?: () => void;
   disabled?: boolean;
+  reuseData?: { prompt: string; image: string } | null;
+  onReuseConsumed?: () => void;
 }
 
-export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptBarProps) {
+export function ForgePromptBar({ sessionId, onGenerate, disabled, reuseData, onReuseConsumed }: ForgePromptBarProps) {
   const [image, setImage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -165,6 +167,16 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showModelPicker]);
+
+  // Handle reuse data - populate prompt and image when provided
+  useEffect(() => {
+    if (reuseData) {
+      setPrompt(reuseData.prompt);
+      setImage(reuseData.image);
+      setImagePreview(reuseData.image);
+      onReuseConsumed?.();
+    }
+  }, [reuseData, onReuseConsumed]);
 
   // Submit generation
   const handleGenerate = async () => {

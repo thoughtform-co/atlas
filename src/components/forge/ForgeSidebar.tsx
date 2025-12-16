@@ -247,20 +247,17 @@ export function ForgeSidebar() {
                   {/* Thumbnail */}
                   <div className={styles.thumbnail}>
                     {session.thumbnail_url ? (
-                      <video
-                        src={session.thumbnail_url}
-                        className={styles.thumbnailVideo}
-                        muted
-                        playsInline
-                        onMouseEnter={(e) => e.currentTarget.play()}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.pause();
-                          e.currentTarget.currentTime = 0;
-                        }}
-                      />
+                      <>
+                        <img
+                          src={session.thumbnail_url}
+                          alt={session.name}
+                          className={styles.thumbnailImage}
+                        />
+                        <div className={styles.thumbnailOverlay} />
+                      </>
                     ) : (
                       <div className={styles.thumbnailPlaceholder}>
-                        <span>{session.completed_count}</span>
+                        <span>◇</span>
                       </div>
                     )}
                   </div>

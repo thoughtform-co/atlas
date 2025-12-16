@@ -8,9 +8,10 @@ interface ForgeGalleryProps {
   sessionId?: string;
   approvedOnly?: boolean;
   onReuseParams?: (generation: ForgeGeneration) => void;
+  onSendToLibrary?: (generation: ForgeGeneration) => void;
 }
 
-export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }: ForgeGalleryProps) {
+export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams, onSendToLibrary }: ForgeGalleryProps) {
   const [generations, setGenerations] = useState<ForgeGeneration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +184,11 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
     );
   }
 
+  // Handle send to library
+  const handleSendToLibrary = useCallback((generation: ForgeGeneration) => {
+    onSendToLibrary?.(generation);
+  }, [onSendToLibrary]);
+
   return (
     <div className={styles.gallery}>
       {generations.map(generation => (
@@ -191,6 +197,7 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
           generation={generation}
           onApprove={handleApprove}
           onReuse={handleReuse}
+          onSendToLibrary={handleSendToLibrary}
         />
       ))}
     </div>

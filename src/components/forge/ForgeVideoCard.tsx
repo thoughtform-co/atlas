@@ -27,6 +27,7 @@ interface ForgeVideoCardProps {
   generation: ForgeGeneration;
   onApprove?: (id: string, approved: boolean) => void;
   onReuse?: (generation: ForgeGeneration) => void;
+  onSendToLibrary?: (generation: ForgeGeneration) => void;
 }
 
 // Estimated generation times by video duration (in seconds)
@@ -65,7 +66,7 @@ const ERROR_TITLES = [
   'Signal scattered to void',
 ];
 
-export function ForgeVideoCard({ generation, onApprove, onReuse }: ForgeVideoCardProps) {
+export function ForgeVideoCard({ generation, onApprove, onReuse, onSendToLibrary }: ForgeVideoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [copied, setCopied] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -291,6 +292,20 @@ export function ForgeVideoCard({ generation, onApprove, onReuse }: ForgeVideoCar
         {/* Hover Actions */}
         {isHovered && isCompleted && (
           <div className={styles.hoverActions}>
+            {/* Favourite */}
+            <button 
+              className={`${styles.actionButton} ${generation.approved ? styles.actionActive : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onApprove?.(generation.id, !generation.approved);
+              }}
+              title={generation.approved ? 'Remove from favourites' : 'Add to favourites'}
+            >
+              <svg className={styles.actionIcon} viewBox="0 0 24 24" width="16" height="16" fill={generation.approved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </button>
+
             {/* Download */}
             <button 
               className={styles.actionButton}
@@ -298,12 +313,28 @@ export function ForgeVideoCard({ generation, onApprove, onReuse }: ForgeVideoCar
                 e.stopPropagation();
                 downloadVideo();
               }}
-              title="Download"
+              title="Download video"
             >
-              <span className={styles.actionIcon}>↓</span>
+              <svg className={styles.actionIcon} viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
             </button>
 
-            {/* Reuse */}
+            {/* Send to Library */}
+            <button 
+              className={styles.actionButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSendToLibrary?.(generation);
+              }}
+              title="Send to entities library"
+            >
+              <svg className={styles.actionIcon} viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 014 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H6.5A2.5 2.5 0 014 19.5z"/>
+              </svg>
+            </button>
+
+            {/* Reuse Parameters */}
             <button 
               className={styles.actionButton}
               onClick={(e) => {
@@ -312,19 +343,9 @@ export function ForgeVideoCard({ generation, onApprove, onReuse }: ForgeVideoCar
               }}
               title="Reuse parameters"
             >
-              <span className={styles.actionIcon}>↻</span>
-            </button>
-
-            {/* Approve */}
-            <button 
-              className={`${styles.actionButton} ${generation.approved ? styles.actionActive : ''}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onApprove?.(generation.id, !generation.approved);
-              }}
-              title={generation.approved ? 'Remove approval' : 'Approve'}
-            >
-              <span className={styles.actionIcon}>✓</span>
+              <svg className={styles.actionIcon} viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/>
+              </svg>
             </button>
           </div>
         )}
