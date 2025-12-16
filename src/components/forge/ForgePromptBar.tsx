@@ -54,7 +54,7 @@ export function ForgePromptBar({ sessionId, onGenerate, disabled }: ForgePromptB
   const [denizenId, setDenizenId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [model, setModel] = useState<VideoModel>('wan-2.5-i2v');
+  const [model, setModel] = useState<VideoModel>('wan-2.1-i2v');
   const [showModelPicker, setShowModelPicker] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
