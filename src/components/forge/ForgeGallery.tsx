@@ -42,9 +42,9 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams }:
         if (approvedOnly) {
           gens = gens.filter((g: ForgeGeneration) => g.approved);
         }
-        // Sort by created_at descending (newest first)
+        // Sort by created_at ascending (oldest first, newest at bottom)
         gens.sort((a: ForgeGeneration, b: ForgeGeneration) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
         setGenerations(gens);
       } else {

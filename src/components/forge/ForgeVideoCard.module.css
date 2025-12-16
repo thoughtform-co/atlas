@@ -1,15 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════
    FORGE VIDEO CARD
-   Contained card layout similar to Krea's feed items
+   Krea-style: prompt above, 16:9 video frame below
    ═══════════════════════════════════════════════════════════════ */
 
 .card {
   display: flex;
+  flex-direction: column;
   gap: 0;
   background: var(--surface-0);
   border: 1px solid var(--dawn-08);
   transition: border-color 150ms ease;
   max-width: 720px;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -17,20 +19,16 @@
   border-color: var(--dawn-15);
 }
 
-/* ─── PROMPT BOX (LEFT SIDE) ─── */
-.promptBox {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* ─── PROMPT LINE (ABOVE VIDEO) ─── */
+.promptLine {
+  padding: 10px 12px;
   cursor: pointer;
   transition: background 150ms ease;
   position: relative;
+  border-bottom: 1px solid var(--dawn-08);
 }
 
-.promptBox:hover {
+.promptLine:hover {
   background: var(--dawn-04);
 }
 
@@ -39,47 +37,25 @@
 }
 
 .promptText {
-  flex: 1;
   font-family: var(--font-sans);
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.4;
   color: var(--dawn-70);
-  overflow-y: auto;
-  max-height: 80px;
-  word-wrap: break-word;
-}
-
-/* Custom scrollbar for prompt */
-.promptText::-webkit-scrollbar {
-  width: 3px;
-}
-
-.promptText::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.promptText::-webkit-scrollbar-thumb {
-  background: var(--dawn-15);
-}
-
-.promptMeta {
-  display: flex;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.05em;
-  color: var(--dawn-30);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .copiedBadge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 4px 8px;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  padding: 3px 6px;
   background: var(--gold);
   color: var(--void);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 7px;
   letter-spacing: 0.1em;
   animation: fadeInOut 2s ease;
 }
@@ -89,21 +65,20 @@
   10%, 90% { opacity: 1; }
 }
 
-/* ─── VIDEO CONTAINER (RIGHT SIDE) ─── */
+/* ─── VIDEO CONTAINER (16:9 FRAME) ─── */
 .videoContainer {
-  width: 280px;
-  flex-shrink: 0;
+  width: 100%;
   aspect-ratio: 16 / 9;
   position: relative;
   overflow: hidden;
-  background: var(--surface-1);
+  background: #000;
 }
 
 .video,
 .sourceImage {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* ─── CARD STATES ─── */
@@ -121,8 +96,8 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  filter: brightness(0.6) saturate(0.8);
+  object-fit: contain;
+  filter: brightness(0.5) saturate(0.7);
 }
 
 .processingOverlay {
@@ -134,7 +109,7 @@
   justify-content: center;
   gap: 8px;
   padding: 12px;
-  background: rgba(5, 4, 3, 0.5);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .progressIcon {
@@ -191,7 +166,7 @@
   font-size: 8px;
   letter-spacing: 0.06em;
   color: var(--dawn-50);
-  max-width: 140px;
+  max-width: 180px;
   animation: messageGlow 4s ease-in-out infinite;
 }
 
@@ -202,7 +177,7 @@
 
 .progressBarContainer {
   width: 80%;
-  max-width: 120px;
+  max-width: 200px;
   height: 1px;
   background: var(--dawn-15);
   overflow: hidden;
@@ -223,7 +198,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: rgba(5, 4, 3, 0.7);
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .failedIcon {
@@ -334,21 +309,11 @@
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   .card {
-    flex-direction: column;
     max-width: 100%;
   }
   
-  .promptBox {
-    border-bottom: 1px solid var(--dawn-08);
-  }
-  
   .promptText {
-    max-height: 60px;
-  }
-  
-  .videoContainer {
-    width: 100%;
-    max-height: 200px;
+    font-size: 10px;
   }
   
   .progressIcon {
@@ -366,6 +331,6 @@
   
   .phaseMessage {
     font-size: 7px;
-    max-width: 120px;
+    max-width: 140px;
   }
 }

@@ -76,11 +76,6 @@ export default function SessionPage({ params }: SessionPageProps) {
 
   return (
     <div className={styles.sessionPage}>
-      {/* Session Header */}
-      <div className={styles.sessionHeader}>
-        <h1 className={styles.sessionTitle}>{session.name}</h1>
-      </div>
-
       {/* Gallery Feed - shows all generations with inline progress */}
       <ForgeGallery 
         key={refreshKey}

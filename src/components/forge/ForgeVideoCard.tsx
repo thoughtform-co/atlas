@@ -192,30 +192,19 @@ export function ForgeVideoCard({ generation, onApprove, onReuse }: ForgeVideoCar
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Prompt Box (Left Side) */}
+      {/* Prompt Line (Above Video) */}
       <div 
-        className={`${styles.promptBox} ${copied ? styles.promptCopied : ''}`}
+        className={`${styles.promptLine} ${copied ? styles.promptCopied : ''}`}
         onClick={copyPrompt}
         title="Click to copy prompt"
       >
         <div className={styles.promptText}>
           {generation.prompt}
         </div>
-        <div className={styles.promptMeta}>
-          <span>{generation.resolution}</span>
-          <span>•</span>
-          <span>{generation.duration}s</span>
-          {generation.cost_cents && (
-            <>
-              <span>•</span>
-              <span>${(generation.cost_cents / 100).toFixed(2)}</span>
-            </>
-          )}
-        </div>
         {copied && <div className={styles.copiedBadge}>COPIED</div>}
       </div>
 
-      {/* Video Preview (Right Side) */}
+      {/* Video Frame (16:9) */}
       <div className={styles.videoContainer}>
         {/* Loading State - Show source image with overlay */}
         {isLoading && (

@@ -119,18 +119,18 @@ export async function generateVideo(
     input.negative_prompt = params.negative_prompt;
   }
   
-  // Wan 2.5 model parameters (per API docs)
+  // Wan 2.5 model parameters (Replicate wrapper uses lowercase)
   if (model === 'wan-2.5-i2v') {
     // Duration in seconds (5 or 10)
     input.duration = params.duration || 5;
     
-    // Resolution: "480P", "720P", or "1080P" (uppercase)
+    // Resolution: "480p", "720p", or "1080p" (lowercase for Replicate)
     if (params.resolution === '1080p') {
-      input.resolution = '1080P';
+      input.resolution = '1080p';
     } else if (params.resolution === '720p') {
-      input.resolution = '720P';
+      input.resolution = '720p';
     } else {
-      input.resolution = '480P';
+      input.resolution = '480p';
     }
   } else {
     // Other models may use different parameter formats
@@ -158,7 +158,7 @@ export async function generateVideo(
 
   // Use the models endpoint for better reliability
   const apiUrl = `https://api.replicate.com/v1/models/${modelConfig.owner}/${modelConfig.model}/predictions`;
-  
+
   console.log('[Replicate] Creating prediction:', {
     model: `${modelConfig.owner}/${modelConfig.model}`,
     webhookUrl,
