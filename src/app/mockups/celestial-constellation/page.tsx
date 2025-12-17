@@ -380,7 +380,7 @@ function CelestialEntityCard({
         '--glow-color': glowColor,
         '--glow-opacity': String(glowIntensity * 0.5),
         '--glow-spread': `${30 + glowIntensity * 40}px`,
-      }}
+      } as React.CSSProperties}
     >
       {/* 3D card container - simple Y rotation only */}
       <div
