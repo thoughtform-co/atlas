@@ -79,7 +79,7 @@ body {
   transform-origin: center center;
   transform-style: preserve-3d;
   /* Actual 3D depth of the terminal slab */
-  --card-depth: 20px;
+  --card-depth: 8px;
   /* Default glow color - overridden per-card via JS */
   --glow-color: rgba(202, 165, 84, 0.8);
   --glow-color-dim: rgba(202, 165, 84, 0.3);
@@ -108,7 +108,7 @@ body {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   /* Push front face forward by half depth */
-  transform: translateZ(10px);
+  transform: translateZ(4px);
   
   /* Thin glowing border */
   border: 1px solid var(--glow-color);
@@ -165,9 +165,9 @@ body {
   border: 1px solid var(--glow-color-dim);
 }
 
-/* Right edge - 20px deep perpendicular face */
+/* Right edge - 8px deep perpendicular face */
 .entity-card .card-edge-right {
-  width: 20px;
+  width: 8px;
   height: 100%;
   top: 0;
   left: 100%;
@@ -177,7 +177,7 @@ body {
 
 /* Left edge */
 .entity-card .card-edge-left {
-  width: 20px;
+  width: 8px;
   height: 100%;
   top: 0;
   right: 100%;
@@ -188,7 +188,7 @@ body {
 /* Top edge */
 .entity-card .card-edge-top {
   width: 100%;
-  height: 20px;
+  height: 8px;
   left: 0;
   bottom: 100%;
   transform-origin: 50% 100%;
@@ -206,7 +206,7 @@ body {
 /* Bottom edge */
 .entity-card .card-edge-bottom {
   width: 100%;
-  height: 20px;
+  height: 8px;
   left: 0;
   top: 100%;
   transform-origin: 50% 0%;
@@ -238,7 +238,7 @@ body {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   /* Push back face backward by depth, then flip */
-  transform: translateZ(-10px) rotateY(180deg);
+  transform: translateZ(-4px) rotateY(180deg);
   display: flex;
   align-items: center;
   justify-content: center;
