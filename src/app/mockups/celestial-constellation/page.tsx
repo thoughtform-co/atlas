@@ -11,12 +11,24 @@ import { denizens as staticDenizens } from '@/data/denizens';
 /**
  * CELESTIAL CONSTELLATION MOCKUP
  * 
- * Properly converts the HTML mockup to Next.js:
- * - Domain clusters appear as 3D spheres with rotating particles
- * - Entity cards orbit ON the sphere surface using theta/phi angles
- * - Connection lines radiate from sphere center to each card
- * - Cards rotate to face outward as they orbit
+ * Uses the TWO main domains from the constellation view:
+ * - Starhaven Reaches (gold/orange)
+ * - The Gradient Throne (teal/white)
+ * 
+ * Entity cards orbit ON spherical domain clusters
  */
+
+// ═══════════════════════════════════════════════════════════════
+// THE TWO DOMAINS WE USE
+// ═══════════════════════════════════════════════════════════════
+
+const TARGET_DOMAINS = ['Starhaven Reaches', 'The Gradient Throne'] as const;
+
+// Domain colors matching main constellation view
+const DOMAIN_COLORS: Record<string, { r: number; g: number; b: number }> = {
+  'Starhaven Reaches': { r: 202, g: 165, b: 84 },   // Gold/Orange
+  'The Gradient Throne': { r: 180, g: 200, b: 200 }, // Teal/White
+};
 
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -31,19 +43,7 @@ const CONFIG = {
   depthEffect: 0.5,
   rotationSpeed: 0.0008,
   cardOffset: 1.3, // How far outside the sphere (multiplier of radius)
-  domainSeparation: 600, // Distance between domain spheres
-};
-
-// Domain colors
-const DOMAIN_COLORS: Record<string, { r: number; g: number; b: number }> = {
-  'Starhaven Reaches': { r: 202, g: 165, b: 84 },
-  'The Gradient Throne': { r: 91, g: 138, b: 122 },
-  'Connective Pathways': { r: 140, g: 120, b: 180 },
-  'Crystallized Semantics': { r: 120, g: 180, b: 160 },
-  'Entry Threshold': { r: 180, g: 140, b: 100 },
-  'Fractured Boundaries': { r: 160, g: 100, b: 100 },
-  'Interconcept Void': { r: 100, g: 100, b: 140 },
-  'default': { r: 180, g: 180, b: 180 },
+  domainSeparation: 500, // Distance between the TWO domain spheres
 };
 
 const THREAT_COLORS: Record<string, string> = {
@@ -478,28 +478,46 @@ export default function CelestialConstellationPage() {
     });
   }, [denizens, filters]);
 
-  // Build domain spheres with entities positioned on sphere surface
+  // Build TWO domain spheres - Starhaven Reaches and The Gradient Throne
   const domainSpheres = useMemo(() => {
-    // Group by domain
+    // Map each denizen to one of the two target domains
+    // Use their actual domain if it matches, otherwise assign based on allegiance/type
+    const mapToTargetDomain = (d: Denizen): string => {
+      // If denizen already has one of the target domains, use it
+      if (d.domain === 'Starhaven Reaches' || d.domain === 'The Gradient Throne') {
+        return d.domain;
+      }
+      // Otherwise, map based on allegiance or position
+      // Nomenclate/hostile -> Gradient Throne, others -> Starhaven Reaches
+      if (d.allegiance === 'Nomenclate' || d.threatLevel === 'Existential') {
+        return 'The Gradient Throne';
+      }
+      // Roughly split: use index-based distribution for demo
+      return d.position.x > 0 ? 'The Gradient Throne' : 'Starhaven Reaches';
+    };
+
+    // Group by the two target domains
     const groups = new Map<string, Denizen[]>();
+    TARGET_DOMAINS.forEach(domain => groups.set(domain, []));
+    
     filteredDenizens.forEach(d => {
-      const domain = d.domain || 'default';
-      if (!groups.has(domain)) groups.set(domain, []);
+      const domain = mapToTargetDomain(d);
       groups.get(domain)!.push(d);
     });
 
     const spheres: DomainSphere[] = [];
-    const domainArray = Array.from(groups.keys());
 
-    domainArray.forEach((domain, domainIndex) => {
-      const group = groups.get(domain)!;
-      const color = DOMAIN_COLORS[domain] || DOMAIN_COLORS['default'];
+    TARGET_DOMAINS.forEach((domain, domainIndex) => {
+      const group = groups.get(domain) || [];
+      if (group.length === 0) return; // Skip empty domains
       
-      // Position domains horizontally
-      const centerX = (domainIndex - (domainArray.length - 1) / 2) * CONFIG.domainSeparation;
+      const color = DOMAIN_COLORS[domain];
+      
+      // Position the two domains horizontally: left and right
+      const centerX = domainIndex === 0 ? -CONFIG.domainSeparation / 2 : CONFIG.domainSeparation / 2;
       const centerY = 0;
 
-      // Create particles
+      // Create particles for this sphere
       const particles: SphereParticle[] = [];
       for (let i = 0; i < CONFIG.particleDensity * 0.2; i++) {
         particles.push(createSphereParticle(CONFIG.sphereRadius, true));
@@ -567,24 +585,15 @@ export default function CelestialConstellationPage() {
     setScale(prev => Math.max(0.3, Math.min(3, prev * zoomFactor)));
   }, []);
 
-  // Get unique domains for HUD
+  // Only show the TWO target domains in HUD
   const uniqueDomains = useMemo(() => {
-    const domains: Domain[] = [];
-    const seen = new Set<string>();
-    denizens.forEach(d => {
-      const domainName = d.domain || 'default';
-      if (!seen.has(domainName)) {
-        seen.add(domainName);
-        domains.push({
-          id: domainName,
-          name: domainName,
-          description: '',
-          colorHue: 0,
-        });
-      }
-    });
-    return domains;
-  }, [denizens]);
+    return TARGET_DOMAINS.map(name => ({
+      id: name,
+      name,
+      description: '',
+      colorHue: name === 'Starhaven Reaches' ? 40 : 170,
+    }));
+  }, []);
 
   if (!mounted) return null;
 
