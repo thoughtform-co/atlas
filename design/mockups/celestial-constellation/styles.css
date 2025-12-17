@@ -58,18 +58,28 @@ body {
   inset: 0;
   z-index: 10;
   pointer-events: none;
+  /* Perspective for entire scene */
+  perspective: 1000px;
+  perspective-origin: center center;
 }
 
-.entity-card {
+/* Wrapper for each card - handles positioning and rotation */
+.entity-card-wrapper {
   position: absolute;
+  pointer-events: auto;
+  /* This preserves 3D for children */
+  transform-style: preserve-3d;
+}
+
+/* The actual 3D card object */
+.entity-card {
   width: 100px;
   height: 140px;
-  pointer-events: auto;
   cursor: pointer;
   transform-origin: center center;
   transform-style: preserve-3d;
   /* Actual 3D depth of the terminal slab */
-  --card-depth: 16px;
+  --card-depth: 20px;
   /* Default glow color - overridden per-card via JS */
   --glow-color: rgba(202, 165, 84, 0.8);
   --glow-color-dim: rgba(202, 165, 84, 0.3);
@@ -89,24 +99,22 @@ body {
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(30, 27, 24, 0.12) 0%,
-    rgba(15, 13, 11, 0.06) 50%,
-    rgba(30, 27, 24, 0.12) 100%
+    rgba(40, 36, 32, 0.25) 0%,
+    rgba(20, 18, 16, 0.15) 50%,
+    rgba(40, 36, 32, 0.25) 100%
   );
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  transition: box-shadow 300ms ease;
-  transform-style: preserve-3d;
   /* Push front face forward by half depth */
-  transform: translateZ(calc(var(--card-depth) / 2));
+  transform: translateZ(10px);
   
   /* Thin glowing border */
   border: 1px solid var(--glow-color);
   box-shadow: 
-    inset 0 0 20px var(--glow-color-subtle, rgba(202, 165, 84, 0.05)),
-    0 0 15px var(--glow-color-dim);
+    inset 0 0 15px var(--glow-color-subtle, rgba(202, 165, 84, 0.08)),
+    0 0 12px var(--glow-color-dim);
 }
 
 /* Screen content container */
@@ -145,76 +153,72 @@ body {
 /* ─── 3D EDGE FACES - Actual perpendicular depth ─── */
 .entity-card .card-edge {
   position: absolute;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  /* Transparent glass material for edges */
+  /* Semi-transparent glass material with edge glow */
   background: linear-gradient(
-    to right,
-    rgba(20, 18, 15, 0.5) 0%,
-    rgba(30, 27, 24, 0.3) 50%,
-    rgba(20, 18, 15, 0.5) 100%
+    180deg,
+    var(--glow-color) 0%,
+    rgba(30, 27, 24, 0.4) 15%,
+    rgba(20, 18, 16, 0.3) 50%,
+    rgba(30, 27, 24, 0.4) 85%,
+    var(--glow-color) 100%
   );
+  border: 1px solid var(--glow-color-dim);
 }
 
-/* Right edge - perpendicular face */
+/* Right edge - 20px deep perpendicular face */
 .entity-card .card-edge-right {
+  width: 20px;
+  height: 100%;
   top: 0;
   left: 100%;
-  width: var(--card-depth);
-  height: 100%;
-  transform-origin: left center;
+  transform-origin: 0% 50%;
   transform: rotateY(90deg);
-  border-top: 1px solid var(--glow-color-dim);
-  border-bottom: 1px solid var(--glow-color-dim);
-  /* Edge glow along the rim */
-  box-shadow: 
-    inset 0 1px 0 var(--glow-color),
-    inset 0 -1px 0 var(--glow-color);
 }
 
 /* Left edge */
 .entity-card .card-edge-left {
+  width: 20px;
+  height: 100%;
   top: 0;
   right: 100%;
-  width: var(--card-depth);
-  height: 100%;
-  transform-origin: right center;
+  transform-origin: 100% 50%;
   transform: rotateY(-90deg);
-  border-top: 1px solid var(--glow-color-dim);
-  border-bottom: 1px solid var(--glow-color-dim);
-  box-shadow: 
-    inset 0 1px 0 var(--glow-color),
-    inset 0 -1px 0 var(--glow-color);
 }
 
 /* Top edge */
 .entity-card .card-edge-top {
-  bottom: 100%;
-  left: 0;
   width: 100%;
-  height: var(--card-depth);
-  transform-origin: bottom center;
+  height: 20px;
+  left: 0;
+  bottom: 100%;
+  transform-origin: 50% 100%;
   transform: rotateX(90deg);
-  border-left: 1px solid var(--glow-color-dim);
-  border-right: 1px solid var(--glow-color-dim);
-  box-shadow: 
-    inset 1px 0 0 var(--glow-color),
-    inset -1px 0 0 var(--glow-color);
+  background: linear-gradient(
+    90deg,
+    var(--glow-color) 0%,
+    rgba(30, 27, 24, 0.4) 15%,
+    rgba(20, 18, 16, 0.3) 50%,
+    rgba(30, 27, 24, 0.4) 85%,
+    var(--glow-color) 100%
+  );
 }
 
 /* Bottom edge */
 .entity-card .card-edge-bottom {
-  top: 100%;
-  left: 0;
   width: 100%;
-  height: var(--card-depth);
-  transform-origin: top center;
+  height: 20px;
+  left: 0;
+  top: 100%;
+  transform-origin: 50% 0%;
   transform: rotateX(-90deg);
-  border-left: 1px solid var(--glow-color-dim);
-  border-right: 1px solid var(--glow-color-dim);
-  box-shadow: 
-    inset 1px 0 0 var(--glow-color),
-    inset -1px 0 0 var(--glow-color);
+  background: linear-gradient(
+    90deg,
+    var(--glow-color) 0%,
+    rgba(30, 27, 24, 0.4) 15%,
+    rgba(20, 18, 16, 0.3) 50%,
+    rgba(30, 27, 24, 0.4) 85%,
+    var(--glow-color) 100%
+  );
 }
 
 /* ─── BACK FACE ─── */
@@ -224,23 +228,23 @@ body {
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(20, 18, 15, 0.15) 0%,
-    rgba(10, 9, 8, 0.08) 50%,
-    rgba(20, 18, 15, 0.15) 100%
+    rgba(25, 22, 18, 0.2) 0%,
+    rgba(15, 13, 11, 0.1) 50%,
+    rgba(25, 22, 18, 0.2) 100%
   );
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border: 1px solid var(--glow-color-dim);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  /* Push back face backward by half depth, then flip */
-  transform: translateZ(calc(var(--card-depth) / -2)) rotateY(180deg);
+  /* Push back face backward by depth, then flip */
+  transform: translateZ(-10px) rotateY(180deg);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 
-    inset 0 0 20px var(--glow-color-subtle, rgba(202, 165, 84, 0.03)),
-    0 0 10px var(--glow-color-dim);
+    inset 0 0 15px var(--glow-color-subtle, rgba(202, 165, 84, 0.05)),
+    0 0 8px var(--glow-color-dim);
 }
 
 /* Subtle pattern on back */

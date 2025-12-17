@@ -146,7 +146,7 @@ function project3D(x, y, z, centerX, centerY, scale, depthEffect) {
 function initializeSpheres() {
   state.spheres = [];
   
-  // Clear existing card elements
+  // Clear existing card elements (wrappers)
   if (state.cardsContainer) {
     state.cardsContainer.innerHTML = '';
   }
@@ -229,9 +229,14 @@ function initializeSpheres() {
 function createCardElement(entity, color) {
   if (!state.cardsContainer) return;
   
+  // Create wrapper for positioning (doesn't flatten 3D)
+  const wrapper = document.createElement('div');
+  wrapper.className = 'entity-card-wrapper';
+  wrapper.id = `wrapper-${entity.id}`;
+  
+  // Create the actual 3D card
   const card = document.createElement('div');
   card.className = 'entity-card';
-  card.id = `card-${entity.id}`;
   
   // Set domain color as CSS variables for dynamic theming
   card.style.setProperty('--glow-color', `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`);
@@ -253,8 +258,9 @@ function createCardElement(entity, color) {
     <div class="card-back"></div>
   `;
   
-  state.cardsContainer.appendChild(card);
-  state.cardElements.set(entity.id, card);
+  wrapper.appendChild(card);
+  state.cardsContainer.appendChild(wrapper);
+  state.cardElements.set(entity.id, { wrapper, card });
 }
 
 /**
@@ -280,23 +286,23 @@ function updateCards() {
     const screenCenter = worldToScreen(sphere.centerX, sphere.centerY);
     
     sphere.entities.forEach(entity => {
-      const card = state.cardElements.get(entity.id);
-      if (!card) return;
+      const elements = state.cardElements.get(entity.id);
+      if (!elements) return;
+      
+      const { wrapper, card } = elements;
       
       // Get rotated position
       const pos = getEntityPosition(entity, state.rotationAngle);
       
       // Calculate the angle the card is facing (in radians)
-      // This is the angle from sphere center to card position, projected onto XZ plane
       const facingAngle = Math.atan2(pos.z, pos.x);
       
-      // Convert to degrees for CSS transform
-      // Cards face outward from sphere center
+      // Convert to degrees - cards face outward from sphere center
       const rotationY = -facingAngle * (180 / Math.PI) + 90;
       
-      // Add slight X rotation based on vertical position
+      // Add X rotation based on vertical position
       const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
-      const rotationX = verticalRatio * 25;
+      const rotationX = verticalRatio * 30;
       
       // Project to screen
       const projected = project3D(
@@ -306,30 +312,27 @@ function updateCards() {
         CONFIG.depthEffect
       );
       
-      // Position card centered on the projected point
+      // Position wrapper (2D positioning)
       const cardX = projected.screenX - CONFIG.cardWidth / 2;
-      const cardY = projected.screenY - 70; // Half of card height (140px)
+      const cardY = projected.screenY - 70;
       
-      card.style.left = `${cardX}px`;
-      card.style.top = `${cardY}px`;
+      wrapper.style.left = `${cardX}px`;
+      wrapper.style.top = `${cardY}px`;
+      wrapper.style.zIndex = Math.floor(50 + pos.z / 5);
       
-      // Z-index based on depth (front cards on top)
-      card.style.zIndex = Math.floor(50 + pos.z / 5);
-      
-      // Scale based on depth for perspective effect
+      // Scale based on depth
       const depthScale = 0.5 + projected.depthAlpha * 0.7;
       
-      // Apply 3D transform - the card itself is a 3D object with preserve-3d
-      // The perspective is applied here, rotation makes the 3D depth visible
+      // Apply 3D rotation to the card (NOT the wrapper)
+      // No perspective here - it's on the container
       card.style.transform = `
-        perspective(500px)
         rotateY(${rotationY}deg)
         rotateX(${rotationX}deg)
         scale(${depthScale})
       `;
       
-      // Adjust opacity - cards at back are dimmer
-      card.style.opacity = 0.4 + projected.depthAlpha * 0.6;
+      // Adjust opacity
+      wrapper.style.opacity = 0.4 + projected.depthAlpha * 0.6;
     });
   });
 }
