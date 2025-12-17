@@ -63,20 +63,58 @@ body {
 .entity-card {
   position: absolute;
   width: 100px;
-  background: rgba(10, 9, 8, 0.9);
-  border: 1px solid var(--dawn-15);
-  padding: 6px;
   pointer-events: auto;
   cursor: pointer;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
   transform-origin: center center;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
-.entity-card:hover {
+.entity-card:hover .card-front {
   border-color: var(--dawn-50);
   box-shadow: 0 0 20px rgba(236, 227, 214, 0.1);
+}
+
+/* Front face of card */
+.entity-card .card-front {
+  background: rgba(10, 9, 8, 0.95);
+  border: 1px solid var(--dawn-15);
+  padding: 6px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* Back face of card */
+.entity-card .card-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(8, 7, 6, 0.95) 0%, rgba(3, 3, 2, 0.98) 100%);
+  border: 1px solid var(--dawn-05);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Subtle pattern on back */
+.entity-card .card-back::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid var(--dawn-05);
+  opacity: 0.5;
+}
+
+.entity-card .card-back::after {
+  content: '◇';
+  color: var(--dawn-08);
+  font-size: 16px;
 }
 
 .entity-card .image {

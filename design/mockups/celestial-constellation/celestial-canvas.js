@@ -224,7 +224,7 @@ function initializeSpheres() {
 }
 
 /**
- * Create a card DOM element for an entity
+ * Create a card DOM element for an entity with front and back faces
  */
 function createCardElement(entity, color) {
   if (!state.cardsContainer) return;
@@ -233,12 +233,12 @@ function createCardElement(entity, color) {
   card.className = 'entity-card';
   card.id = `card-${entity.id}`;
   card.innerHTML = `
-    <div class="image" style="border-color: rgba(${color.r}, ${color.g}, ${color.b}, 0.3);">◇</div>
-    <div class="name">${entity.name}</div>
+    <div class="card-front" style="border-color: rgba(${color.r}, ${color.g}, ${color.b}, 0.3);">
+      <div class="image" style="border-color: rgba(${color.r}, ${color.g}, ${color.b}, 0.2);">◇</div>
+      <div class="name">${entity.name}</div>
+    </div>
+    <div class="card-back"></div>
   `;
-  
-  // Style the card border with domain color
-  card.style.borderColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`;
   
   state.cardsContainer.appendChild(card);
   state.cardElements.set(entity.id, card);
@@ -260,7 +260,7 @@ function getEntityPosition(entity, rotationAngle) {
 }
 
 /**
- * Update card positions based on sphere rotation
+ * Update card positions and 3D rotation based on sphere rotation
  */
 function updateCards() {
   state.spheres.forEach(sphere => {
@@ -272,6 +272,20 @@ function updateCards() {
       
       // Get rotated position
       const pos = getEntityPosition(entity, state.rotationAngle);
+      
+      // Calculate the angle the card is facing (in radians)
+      // This is the angle from sphere center to card position, projected onto XZ plane
+      const facingAngle = Math.atan2(pos.z, pos.x);
+      
+      // Convert to degrees for CSS transform
+      // Cards face outward from sphere, so rotate by the facing angle
+      // When z > 0 (behind), card back should show
+      // When z < 0 (in front), card front should show
+      const rotationY = -facingAngle * (180 / Math.PI) + 90;
+      
+      // Add slight X rotation based on vertical position (theta)
+      const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
+      const rotationX = verticalRatio * 15; // Subtle tilt
       
       // Project to screen
       const projected = project3D(
@@ -289,16 +303,22 @@ function updateCards() {
       card.style.top = `${cardY}px`;
       card.style.width = `${CONFIG.cardWidth}px`;
       
-      // Adjust opacity based on depth (cards behind sphere are dimmer)
-      const depthOpacity = Math.max(0.2, projected.depthAlpha);
-      card.style.opacity = depthOpacity;
-      
       // Z-index based on depth (front cards on top)
       card.style.zIndex = Math.floor(50 + pos.z / 10);
       
-      // Scale slightly based on depth for parallax effect
-      const depthScale = 0.8 + projected.depthAlpha * 0.4;
-      card.style.transform = `scale(${depthScale})`;
+      // Scale based on depth for perspective effect
+      const depthScale = 0.7 + projected.depthAlpha * 0.5;
+      
+      // Apply 3D transform: position, rotation, and scale
+      card.style.transform = `
+        perspective(800px)
+        rotateY(${rotationY}deg)
+        rotateX(${rotationX}deg)
+        scale(${depthScale})
+      `;
+      
+      // Adjust overall opacity slightly (cards at back are a bit dimmer)
+      card.style.opacity = 0.6 + projected.depthAlpha * 0.4;
     });
   });
 }
