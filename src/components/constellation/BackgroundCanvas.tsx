@@ -36,6 +36,15 @@ interface NebulaParticle {
   phase: number;
 }
 
+interface TextParticle {
+  x: number;
+  y: number;
+  baseX: number;
+  baseY: number;
+  alpha: number;
+  phase: number;
+}
+
 interface DomainCluster {
   domain: string;
   color: { r: number; g: number; b: number };
@@ -44,12 +53,58 @@ interface DomainCluster {
   center: Position;
   radius: number;
   particles: NebulaParticle[];
+  textParticles: TextParticle[];
 }
 
 interface BackgroundCanvasProps {
   denizens?: Denizen[];
   offset?: Position;
   scale?: number;
+}
+
+// Generate particle positions from text using offscreen canvas
+function getTextParticles(text: string, fontSize: number, spacing: number = 3): { x: number; y: number }[] {
+  const offscreen = document.createElement('canvas');
+  const ctx = offscreen.getContext('2d');
+  if (!ctx) return [];
+  
+  // Configure canvas size based on text
+  ctx.font = `300 ${fontSize}px "PT Mono", monospace`;
+  const metrics = ctx.measureText(text);
+  const textWidth = metrics.width;
+  const textHeight = fontSize;
+  
+  offscreen.width = Math.ceil(textWidth) + 20;
+  offscreen.height = Math.ceil(textHeight) + 20;
+  
+  // Clear and draw text
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+  ctx.font = `300 ${fontSize}px "PT Mono", monospace`;
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(text, 10, 10);
+  
+  // Sample pixels to get particle positions
+  const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+  const particles: { x: number; y: number }[] = [];
+  
+  for (let y = 0; y < offscreen.height; y += spacing) {
+    for (let x = 0; x < offscreen.width; x += spacing) {
+      const i = (y * offscreen.width + x) * 4;
+      // Check if pixel is white (text)
+      if (imageData.data[i] > 128) {
+        // Center the coordinates
+        particles.push({
+          x: x - offscreen.width / 2,
+          y: y - offscreen.height / 2,
+        });
+      }
+    }
+  }
+  
+  return particles;
 }
 
 export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale = 1 }: BackgroundCanvasProps) {
@@ -106,7 +161,7 @@ export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale
     return clusters;
   }, [denizens]);
 
-  // Initialize nebula particles when clusters change
+  // Initialize nebula particles and text particles when clusters change
   useEffect(() => {
     clustersRef.current = domainClusters.map(cluster => {
       // Calculate particle count based on area and density
@@ -138,7 +193,24 @@ export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale
         });
       }
       
-      return { ...cluster, particles };
+      // Generate text particles for domain label
+      // Small font size, positioned below cluster center
+      const fontSize = 14; // Small, subtle
+      const textPositions = getTextParticles(cluster.domain.toUpperCase(), fontSize, 2);
+      
+      // Convert text particle positions to world coordinates
+      // Position below and slightly offset from cluster center
+      const textOffsetY = cluster.radius * 0.6; // Below center
+      const textParticles: TextParticle[] = textPositions.map(pos => ({
+        x: cluster.center.x + pos.x,
+        y: cluster.center.y + textOffsetY + pos.y,
+        baseX: cluster.center.x + pos.x,
+        baseY: cluster.center.y + textOffsetY + pos.y,
+        alpha: 0.15 + Math.random() * 0.1, // Very subtle
+        phase: Math.random() * Math.PI * 2,
+      }));
+      
+      return { ...cluster, particles, textParticles };
     });
   }, [domainClusters]);
 
@@ -338,60 +410,32 @@ export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale
         ctx.arc(screenCenter.x, screenCenter.y, screenRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw domain label - subtle text integrated into the nebula
-        // WHY: Helps users identify domain clusters without relying on side panel
-        const labelText = cluster.domain.toUpperCase();
+        // Draw domain label as particles
+        // WHY: Integrates with the nebula aesthetic, more subtle than regular text
+        const textParticles = cluster.textParticles || [];
         
-        // Scale font size based on cluster radius and zoom level
-        const baseFontSize = Math.min(screenRadius * 0.25, 72);
-        const fontSize = Math.max(baseFontSize, 18); // Minimum readable size
-        
-        // Only show if the cluster is visible enough
-        if (fontSize >= 14 && screenCenter.x > -screenRadius && screenCenter.x < width + screenRadius) {
-          ctx.save();
+        textParticles.forEach(tp => {
+          // Convert to screen position
+          const screenPos = worldToScreen(tp.x, tp.y);
           
-          // Configure font
-          ctx.font = `300 ${fontSize}px "PT Mono", monospace`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.letterSpacing = `${fontSize * 0.15}px`;
+          // Skip if off screen
+          if (screenPos.x < -50 || screenPos.x > width + 50 ||
+              screenPos.y < -50 || screenPos.y > height + 50) {
+            return;
+          }
           
-          // Calculate text metrics for positioning
-          const textMetrics = ctx.measureText(labelText);
-          const textWidth = textMetrics.width;
+          // Breathing effect synced with nebula
+          const breathe = Math.sin(time * 0.02 + tp.phase) * 0.3 + 0.7;
+          const alpha = tp.alpha * breathe;
           
-          // Position label slightly above center of cluster
-          const labelY = screenCenter.y - screenRadius * 0.1;
+          // Pixel-snapped rendering
+          const px = Math.floor(screenPos.x / GRID) * GRID;
+          const py = Math.floor(screenPos.y / GRID) * GRID;
           
-          // Breathing effect synced with particles
-          const breathe = Math.sin(time * 0.015) * 0.15 + 0.85;
-          
-          // Very subtle text - blends with the nebula
-          // Base alpha varies by domain style
-          const baseAlpha = style.maxAlpha * 0.4;
-          const alpha = baseAlpha * breathe;
-          
-          // Draw text with soft glow
-          // Multiple layers for a diffused effect
-          
-          // Outer glow (most diffused)
-          ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`;
-          ctx.shadowBlur = fontSize * 0.5;
-          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.3})`;
-          ctx.fillText(labelText, screenCenter.x, labelY);
-          
-          // Inner glow
-          ctx.shadowBlur = fontSize * 0.2;
-          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`;
-          ctx.fillText(labelText, screenCenter.x, labelY);
-          
-          // Core text (slightly brighter)
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.7})`;
-          ctx.fillText(labelText, screenCenter.x, labelY);
-          
-          ctx.restore();
-        }
+          // Draw particle (same style as nebula particles)
+          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+          ctx.fillRect(px, py, GRID - 1, GRID - 1);
+        });
       });
     };
 
