@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Denizen, Position, Domain } from '@/lib/types';
 import { NavigationHUD, FilterState } from '@/components/constellation/NavigationHUD';
+import { EntityCard } from '@/components/constellation/EntityCard';
+import { EntityPopup } from '@/components/constellation/EntityPopup';
 import styles from './celestial.module.css';
 
 // Use static data for mockup
@@ -16,6 +18,7 @@ import { denizens as staticDenizens } from '@/data/denizens';
  * - The Gradient Throne (teal/white)
  * 
  * Entity cards orbit ON spherical domain clusters
+ * Uses the REAL EntityCard component for full functionality
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -44,13 +47,6 @@ const CONFIG = {
   rotationSpeed: 0.0008,
   cardOffset: 1.3, // How far outside the sphere (multiplier of radius)
   domainSeparation: 500, // Distance between the TWO domain spheres
-};
-
-const THREAT_COLORS: Record<string, string> = {
-  'Benign': '#5B8A7A',
-  'Cautious': '#CAA554',
-  'Volatile': '#D4A574',
-  'Existential': '#8B5A5A',
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -121,7 +117,7 @@ function getEntityPosition(entity: EntitySphereData, rotationAngle: number) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CELESTIAL ENTITY CARD
+// 3D ENTITY CARD WRAPPER
 // ═══════════════════════════════════════════════════════════════
 
 interface CelestialCardProps {
@@ -132,6 +128,8 @@ interface CelestialCardProps {
   viewOffset: Position;
   viewScale: number;
   domainColor: { r: number; g: number; b: number };
+  isSelected: boolean;
+  onClick: (denizen: Denizen) => void;
 }
 
 function CelestialEntityCard({
@@ -142,8 +140,20 @@ function CelestialEntityCard({
   viewOffset,
   viewScale,
   domainColor,
+  isSelected,
+  onClick,
 }: CelestialCardProps) {
   const { denizen } = entity;
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  if (windowSize.width === 0) return null;
   
   // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
@@ -157,8 +167,8 @@ function CelestialEntityCard({
   const rotationX = verticalRatio * 30;
   
   // Project to screen
-  const screenCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 + viewOffset.x + sphereCenterX * viewScale : 0;
-  const screenCenterY = typeof window !== 'undefined' ? window.innerHeight / 2 + viewOffset.y + sphereCenterY * viewScale : 0;
+  const screenCenterX = windowSize.width / 2 + viewOffset.x + sphereCenterX * viewScale;
+  const screenCenterY = windowSize.height / 2 + viewOffset.y + sphereCenterY * viewScale;
   
   const projected = project3D(
     pos.x, pos.y, pos.z,
@@ -169,75 +179,49 @@ function CelestialEntityCard({
   
   // Depth-based scale and opacity
   const depthScale = 0.5 + projected.depthAlpha * 0.7;
-  const cardOpacity = 0.4 + projected.depthAlpha * 0.6;
-  const zIndex = Math.floor(50 + pos.z / 5);
-  
-  // Get image URL
-  const imageUrl = denizen.imageUrl || denizen.mediaUrl || '';
-  const threatColor = THREAT_COLORS[denizen.threatLevel] || THREAT_COLORS['Benign'];
+  const cardOpacity = isSelected ? 1 : 0.4 + projected.depthAlpha * 0.6;
+  const zIndex = isSelected ? 1000 : Math.floor(50 + pos.z / 5);
   
   // Glow colors from domain
   const glowColor = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.8)`;
   const glowColorDim = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.3)`;
 
+  // When selected, card comes to center and faces forward
+  const selectedStyle = isSelected ? {
+    left: windowSize.width / 2 - 100,
+    top: windowSize.height / 2 - 133,
+    transform: 'none',
+    opacity: 1,
+  } : {};
+
   return (
     <div
-      className={styles.cardWrapper}
+      className={`${styles.cardWrapper} ${isSelected ? styles.cardSelected : ''}`}
       style={{
-        left: projected.screenX - 50,
-        top: projected.screenY - 70,
+        left: projected.screenX - 100,
+        top: projected.screenY - 133,
         zIndex,
         opacity: cardOpacity,
         // @ts-expect-error CSS custom properties
         '--glow-color': glowColor,
         '--glow-color-dim': glowColorDim,
+        ...selectedStyle,
       }}
     >
       <div
-        className={styles.card}
+        className={styles.card3dContainer}
         style={{
-          transform: `
-            rotateY(${rotationY}deg)
-            rotateX(${rotationX}deg)
-            scale(${depthScale})
-          `,
+          transform: isSelected 
+            ? 'perspective(800px) rotateY(0deg) rotateX(0deg) scale(1.2)'
+            : `perspective(800px) rotateY(${rotationY}deg) rotateX(${rotationX}deg) scale(${depthScale})`,
         }}
       >
-        {/* Front face */}
-        <div className={styles.cardFront}>
-          <div className={styles.cardMedia}>
-            {imageUrl ? (
-              <img src={imageUrl} alt={denizen.name} className={styles.cardImage} />
-            ) : (
-              <div className={styles.cardPlaceholder}>{denizen.type[0]}</div>
-            )}
-            <div className={styles.cardGradient} />
-            <div className={styles.cardScanlines} />
-            <div className={styles.cardGlyphs}>{denizen.glyphs}</div>
-            <div className={styles.cardThreat} style={{ background: threatColor }} title={denizen.threatLevel} />
-          </div>
-          <div className={styles.cardInfo}>
-            <div className={styles.cardName}>{denizen.entityClass || denizen.name}</div>
-            {denizen.subtitle && <div className={styles.cardSubtitle}>{denizen.subtitle}</div>}
-            <div className={styles.cardMeta}>
-              <span className={styles.cardType}>TYPE <em>{denizen.type}</em></span>
-            </div>
-          </div>
-          <div className={styles.cornerTL} />
-          <div className={styles.cornerBR} />
-        </div>
-        
-        {/* 3D edges */}
-        <div className={`${styles.cardEdge} ${styles.cardEdgeRight}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeLeft}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeTop}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeBottom}`} />
-        
-        {/* Back face */}
-        <div className={styles.cardBack}>
-          <div className={styles.backPattern} />
-          <div className={styles.backGlyph}>◇</div>
-        </div>
+        {/* Use the REAL EntityCard component */}
+        <EntityCard
+          denizen={denizen}
+          onClick={() => onClick(denizen)}
+          isSelected={isSelected}
+        />
       </div>
     </div>
   );
@@ -445,7 +429,9 @@ export default function CelestialConstellationPage() {
   const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
+  const [isRotating, setIsRotating] = useState(true); // Rotation state
   const [mounted, setMounted] = useState(false);
+  const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     domains: new Set(),
     entityTypes: new Set(),
@@ -549,8 +535,10 @@ export default function CelestialConstellationPage() {
     return spheres;
   }, [filteredDenizens]);
 
-  // Animation loop for rotation
+  // Animation loop for rotation - STOPS when a card is selected
   useEffect(() => {
+    if (!isRotating) return;
+    
     let animationId: number;
     const animate = () => {
       setRotationAngle(prev => prev + CONFIG.rotationSpeed);
@@ -558,11 +546,23 @@ export default function CelestialConstellationPage() {
     };
     animationId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationId);
+  }, [isRotating]);
+
+  // Handle card click - stop rotation and show popup
+  const handleCardClick = useCallback((denizen: Denizen) => {
+    setSelectedDenizen(denizen);
+    setIsRotating(false); // Stop rotation when card is selected
+  }, []);
+
+  // Handle popup close - resume rotation
+  const handleClosePopup = useCallback(() => {
+    setSelectedDenizen(null);
+    setIsRotating(true); // Resume rotation when popup closes
   }, []);
 
   // Mouse handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest(`.${styles.cardWrapper}`)) return;
+    if ((e.target as HTMLElement).closest('.entity-card')) return;
     setIsDragging(true);
     lastMouseRef.current = { x: e.clientX, y: e.clientY };
   }, []);
@@ -614,7 +614,7 @@ export default function CelestialConstellationPage() {
         rotationAngle={rotationAngle}
       />
 
-      {/* Entity Cards - positioned on sphere surface */}
+      {/* Entity Cards - using REAL EntityCard with 3D wrapper */}
       {domainSpheres.map(sphere => 
         sphere.entities.map(entity => (
           <CelestialEntityCard
@@ -626,8 +626,18 @@ export default function CelestialConstellationPage() {
             viewOffset={offset}
             viewScale={scale}
             domainColor={sphere.color}
+            isSelected={selectedDenizen?.id === entity.denizen.id}
+            onClick={handleCardClick}
           />
         ))
+      )}
+
+      {/* Entity Popup - same as main constellation view */}
+      {selectedDenizen && (
+        <EntityPopup
+          denizen={selectedDenizen}
+          onClose={handleClosePopup}
+        />
       )}
 
       {/* Navigation HUD */}
@@ -642,7 +652,7 @@ export default function CelestialConstellationPage() {
 
       {/* Mockup label */}
       <div className={styles.mockupLabel}>
-        CELESTIAL MOCKUP — SPHERICAL ORBIT TEST
+        CELESTIAL MOCKUP — {isRotating ? 'ROTATING' : 'PAUSED'}
       </div>
     </div>
   );
