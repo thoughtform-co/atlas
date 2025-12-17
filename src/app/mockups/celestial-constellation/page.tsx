@@ -149,16 +149,14 @@ function CelestialEntityCard({
   // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
   
-  // Calculate rotation based on orbit position (phi angle)
-  // This gives continuous rotation without sudden flips
-  const currentPhi = entity.basePhi + rotationAngle;
-  // Card faces outward: when phi=0 (right side), card faces right (rotY=90)
-  // When phi=π (left side), card faces left (rotY=-90)
-  // When phi=π/2 (front), card faces viewer (rotY=0)
-  // When phi=3π/2 (back), card faces away (rotY=180)
-  const rotationY = -currentPhi * (180 / Math.PI);
+  // TIDALLY LOCKED: Card always faces outward from sphere center
+  // atan2(x, z) gives angle from +Z axis to the position vector in XZ plane
+  // This makes the card front face away from center at all times
+  const rotationY = Math.atan2(pos.x, pos.z) * (180 / Math.PI);
+  
+  // Subtle vertical tilt based on Y position
   const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
-  const rotationX = verticalRatio * 20;
+  const rotationX = -verticalRatio * 15;
   
   // Project to screen
   const screenCenterX = windowSize.width / 2 + viewOffset.x + sphereCenterX * viewScale;
