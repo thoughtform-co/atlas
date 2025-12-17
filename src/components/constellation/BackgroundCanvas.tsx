@@ -337,6 +337,61 @@ export function BackgroundCanvas({ denizens = [], offset = { x: 0, y: 0 }, scale
         ctx.beginPath();
         ctx.arc(screenCenter.x, screenCenter.y, screenRadius, 0, Math.PI * 2);
         ctx.fill();
+
+        // Draw domain label - subtle text integrated into the nebula
+        // WHY: Helps users identify domain clusters without relying on side panel
+        const labelText = cluster.domain.toUpperCase();
+        
+        // Scale font size based on cluster radius and zoom level
+        const baseFontSize = Math.min(screenRadius * 0.25, 72);
+        const fontSize = Math.max(baseFontSize, 18); // Minimum readable size
+        
+        // Only show if the cluster is visible enough
+        if (fontSize >= 14 && screenCenter.x > -screenRadius && screenCenter.x < width + screenRadius) {
+          ctx.save();
+          
+          // Configure font
+          ctx.font = `300 ${fontSize}px "PT Mono", monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.letterSpacing = `${fontSize * 0.15}px`;
+          
+          // Calculate text metrics for positioning
+          const textMetrics = ctx.measureText(labelText);
+          const textWidth = textMetrics.width;
+          
+          // Position label slightly above center of cluster
+          const labelY = screenCenter.y - screenRadius * 0.1;
+          
+          // Breathing effect synced with particles
+          const breathe = Math.sin(time * 0.015) * 0.15 + 0.85;
+          
+          // Very subtle text - blends with the nebula
+          // Base alpha varies by domain style
+          const baseAlpha = style.maxAlpha * 0.4;
+          const alpha = baseAlpha * breathe;
+          
+          // Draw text with soft glow
+          // Multiple layers for a diffused effect
+          
+          // Outer glow (most diffused)
+          ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`;
+          ctx.shadowBlur = fontSize * 0.5;
+          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.3})`;
+          ctx.fillText(labelText, screenCenter.x, labelY);
+          
+          // Inner glow
+          ctx.shadowBlur = fontSize * 0.2;
+          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`;
+          ctx.fillText(labelText, screenCenter.x, labelY);
+          
+          // Core text (slightly brighter)
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.7})`;
+          ctx.fillText(labelText, screenCenter.x, labelY);
+          
+          ctx.restore();
+        }
       });
     };
 
