@@ -1,0 +1,156 @@
+/* ═══════════════════════════════════════════════════════════════
+   CELESTIAL CONSTELLATION MOCKUP - CSS MODULE
+   
+   3D card wrapper with actual depth (edge faces) around EntityCard
+   Semi-transparent futuristic tablet effect
+   ═══════════════════════════════════════════════════════════════ */
+
+.container {
+  position: fixed;
+  inset: 0;
+  background: var(--void, #050403);
+  overflow: hidden;
+  cursor: grab;
+}
+
+.container:active {
+  cursor: grabbing;
+}
+
+/* ─── CANVAS ─── */
+.canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1; /* Cards are z-index 5-50, popup is 100+ */
+}
+
+/* ─── 3D CARD WRAPPER ─── */
+.cardWrapper {
+  position: absolute;
+  pointer-events: auto;
+  /* z-index is set dynamically based on depth, kept low (< 50) */
+  transform: translate(-50%, -50%);
+  /* Perspective for 3D effect */
+  perspective: 1200px;
+  perspective-origin: center center;
+  transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  --glow-color: rgba(202, 165, 84, 0.6);
+  --card-depth: 6px;
+}
+
+/* Glow effect */
+.cardWrapper::before {
+  content: '';
+  position: absolute;
+  inset: -30px;
+  background: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    var(--glow-color) 0%,
+    transparent 70%
+  );
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ─── 3D CARD STRUCTURE ─── */
+.card3d {
+  position: relative;
+  width: 160px;  /* Slightly smaller */
+  height: 213px;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* ─── FRONT FACE ─── */
+.cardFront {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  /* VISIBLE from both sides - transparent tablet effect */
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  transform: translateZ(calc(var(--card-depth) / 2));
+  /* Semi-transparent glass effect */
+  opacity: 0.92;
+  /* Glowing border */
+  box-shadow: 
+    0 0 12px var(--glow-color),
+    0 0 25px rgba(202, 165, 84, 0.08);
+  overflow: hidden;
+}
+
+/* Scale down the EntityCard to fit smaller container */
+.cardFront :global(.entity-card) {
+  position: relative !important;
+  transform: scale(0.8) !important;
+  transform-origin: top left !important;
+}
+
+/* Wrapper to contain scaled card */
+.cardFront :global(.entity-card > div) {
+  width: 200px;
+  height: 266px;
+}
+
+/* ─── EDGE FACES (actual 3D depth) ─── */
+.cardEdge {
+  position: absolute;
+  /* Semi-transparent glass edge */
+  background: linear-gradient(
+    180deg,
+    var(--glow-color) 0%,
+    rgba(40, 38, 35, 0.5) 10%,
+    rgba(30, 28, 25, 0.3) 50%,
+    rgba(40, 38, 35, 0.5) 90%,
+    var(--glow-color) 100%
+  );
+  border: 1px solid rgba(202, 165, 84, 0.25);
+}
+
+/* Right edge */
+.cardEdgeRight {
+  width: var(--card-depth);
+  height: 100%;
+  top: 0;
+  left: 100%;
+  transform-origin: 0% 50%;
+  transform: rotateY(90deg);
+}
+
+/* Left edge */
+.cardEdgeLeft {
+  width: var(--card-depth);
+  height: 100%;
+  top: 0;
+  right: 100%;
+  transform-origin: 100% 50%;
+  transform: rotateY(-90deg);
+}
+
+/* ─── LOADING STATE ─── */
+.loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dawn-50, rgba(236, 227, 214, 0.5));
+  z-index: 100;
+}
+
+/* ─── MOCKUP LABEL ─── */
+.mockupLabel {
+  position: fixed;
+  top: 20px;
+  left: 64px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold, #CAA554);
+  z-index: 100;
+}
