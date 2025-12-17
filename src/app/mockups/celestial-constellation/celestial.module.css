@@ -67,9 +67,9 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  /* IMPORTANT: Allow backface to show through */
-  backface-visibility: visible;
-  -webkit-backface-visibility: visible;
+  /* Hide when facing away - back face will show instead */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   transform: translateZ(calc(var(--card-depth) / 2));
   /* Semi-transparent glass effect */
   opacity: 0.92;
@@ -96,8 +96,8 @@
 /* ─── EDGE FACES (actual 3D depth) ─── */
 .cardEdge {
   position: absolute;
-  backface-visibility: visible;
-  -webkit-backface-visibility: visible;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   /* Semi-transparent glass edge */
   background: linear-gradient(
     180deg,
@@ -173,10 +173,10 @@
   height: 100%;
   background: rgba(10, 9, 8, 0.85);
   border: 1px solid rgba(202, 165, 84, 0.25);
-  /* Back face IS visible when rotated */
-  backface-visibility: visible;
-  -webkit-backface-visibility: visible;
-  /* Positioned behind front, rotated to face backward */
+  /* Hidden when facing away (when front is visible) */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  /* Rotated 180° so it shows when card is flipped */
   transform: translateZ(calc(var(--card-depth) / -2)) rotateY(180deg);
   overflow: hidden;
   box-shadow: 0 0 10px rgba(202, 165, 84, 0.1);
