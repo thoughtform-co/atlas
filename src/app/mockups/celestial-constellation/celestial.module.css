@@ -56,6 +56,7 @@
 /* ─── CARD CONTAINER ─── */
 .card3d {
   position: relative;
+  transform-style: preserve-3d;
   transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
   /* Glowing border effect */
   filter: drop-shadow(0 0 8px var(--glow-color));
@@ -66,6 +67,8 @@
   position: relative !important;
   transform: scale(0.85) !important;
   transform-origin: center center !important;
+  /* Show card content from both sides (mirrored when behind) */
+  backface-visibility: visible !important;
 }
 
 /* ─── LOADING STATE ─── */

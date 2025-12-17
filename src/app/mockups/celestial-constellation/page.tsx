@@ -149,9 +149,11 @@ function CelestialEntityCard({
   // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
   
-  // NO 3D ROTATION - cards always face the viewer (like billboards)
-  // Depth is conveyed through scale and opacity only
-  const rotationY = 0;
+  // TIDALLY LOCKED: Card faces outward from sphere center
+  // Use the current phi angle directly (continuous, no discontinuity)
+  const currentPhi = entity.basePhi + rotationAngle;
+  // Convert to degrees - card rotates WITH the orbit
+  const rotationY = currentPhi * (180 / Math.PI);
   const rotationX = 0;
   
   // Project to screen
@@ -189,11 +191,13 @@ function CelestialEntityCard({
         '--glow-color': glowColor,
       }}
     >
-      {/* Card container - NO rotation, depth via scale/opacity only */}
+      {/* Card container with tidal lock rotation */}
       <div
         className={styles.card3d}
         style={{
-          transform: isSelected ? `scale(1.1)` : `scale(${depthScale})`,
+          transform: isSelected 
+            ? `rotateY(0deg) scale(1.1)` 
+            : `rotateY(${rotationY}deg) scale(${depthScale})`,
         }}
       >
         <EntityCard
