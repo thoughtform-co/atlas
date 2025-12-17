@@ -364,13 +364,10 @@ function CelestialEntityCard({
         top: projected.screenY,
         zIndex,
         opacity: cardOpacity,
-        // @ts-expect-error CSS custom property
         '--glow-color': glowColor,
-        // @ts-expect-error CSS custom property
         '--glow-opacity': String(glowIntensity * 0.5),
-        // @ts-expect-error CSS custom property
         '--glow-spread': `${30 + glowIntensity * 40}px`,
-      }}
+      } as React.CSSProperties}
     >
       <div
         className={styles.card3d}
