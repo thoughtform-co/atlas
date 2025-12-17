@@ -291,12 +291,12 @@ function updateCards() {
       const facingAngle = Math.atan2(pos.z, pos.x);
       
       // Convert to degrees for CSS transform
-      // Cards face outward from sphere, so rotate by the facing angle
+      // Cards face outward from sphere center
       const rotationY = -facingAngle * (180 / Math.PI) + 90;
       
       // Add slight X rotation based on vertical position
       const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
-      const rotationX = verticalRatio * 20;
+      const rotationX = verticalRatio * 25;
       
       // Project to screen
       const projected = project3D(
@@ -312,24 +312,24 @@ function updateCards() {
       
       card.style.left = `${cardX}px`;
       card.style.top = `${cardY}px`;
-      card.style.width = `${CONFIG.cardWidth}px`;
       
       // Z-index based on depth (front cards on top)
       card.style.zIndex = Math.floor(50 + pos.z / 5);
       
       // Scale based on depth for perspective effect
-      const depthScale = 0.6 + projected.depthAlpha * 0.6;
+      const depthScale = 0.5 + projected.depthAlpha * 0.7;
       
-      // Apply 3D transform with proper perspective for terminal depth
+      // Apply 3D transform - the card itself is a 3D object with preserve-3d
+      // The perspective is applied here, rotation makes the 3D depth visible
       card.style.transform = `
-        perspective(600px)
+        perspective(500px)
         rotateY(${rotationY}deg)
         rotateX(${rotationX}deg)
         scale(${depthScale})
       `;
       
-      // Adjust opacity - cards at back are dimmer but still visible
-      card.style.opacity = 0.5 + projected.depthAlpha * 0.5;
+      // Adjust opacity - cards at back are dimmer
+      card.style.opacity = 0.4 + projected.depthAlpha * 0.6;
     });
   });
 }
