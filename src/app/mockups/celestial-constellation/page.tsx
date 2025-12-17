@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Denizen, Position, Domain } from '@/lib/types';
 import { NavigationHUD, FilterState } from '@/components/constellation/NavigationHUD';
 import { EntityCard } from '@/components/constellation/EntityCard';
-import { EntityPopup } from '@/components/constellation/EntityPopup';
+import { DenizenModalV3 } from '@/components/constellation/DenizenModalV3';
 import styles from './celestial.module.css';
 
 // Use static data for mockup
@@ -632,9 +632,9 @@ export default function CelestialConstellationPage() {
         ))
       )}
 
-      {/* Entity Popup - same as main constellation view */}
+      {/* Entity Modal - same as main constellation view */}
       {selectedDenizen && (
-        <EntityPopup
+        <DenizenModalV3
           denizen={selectedDenizen}
           onClose={handleClosePopup}
         />
