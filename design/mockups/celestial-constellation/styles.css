@@ -1,0 +1,316 @@
+/* ═══════════════════════════════════════════════════════════════
+   CELESTIAL CONSTELLATION MOCKUP
+   Testing spherical galaxy visualization for Atlas
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Void backgrounds */
+  --void: #050403;
+  --surface-0: #0A0908;
+  --surface-1: #0F0E0C;
+
+  /* Semantic Dawn */
+  --dawn: #ECE3D6;
+  --dawn-70: rgba(236, 227, 214, 0.7);
+  --dawn-50: rgba(236, 227, 214, 0.5);
+  --dawn-30: rgba(236, 227, 214, 0.3);
+  --dawn-15: rgba(236, 227, 214, 0.15);
+  --dawn-08: rgba(236, 227, 214, 0.08);
+
+  /* Tensor Gold */
+  --gold: #CAA554;
+  --gold-dim: rgba(202, 165, 84, 0.4);
+
+  /* Domain Colors */
+  --domain-starhaven: rgb(202, 165, 84);
+  --domain-gradient: rgb(91, 138, 122);
+
+  /* Fonts */
+  --font-mono: 'PT Mono', monospace;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-radius: 0 !important;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--void);
+  color: var(--dawn);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── CANVAS ─── */
+#celestial-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+/* ─── CARDS CONTAINER ─── */
+#cards-container {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.entity-card {
+  position: absolute;
+  width: 120px;
+  background: var(--surface-0);
+  border: 1px solid var(--dawn-15);
+  padding: 8px;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.entity-card:hover {
+  border-color: var(--dawn-30);
+  transform: translateY(-2px);
+}
+
+.entity-card .image {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: var(--surface-1);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dawn-15);
+  font-size: 24px;
+}
+
+.entity-card .name {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dawn-70);
+}
+
+/* ─── HUD ELEMENTS ─── */
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Corner Brackets */
+.hud-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+}
+
+.hud-corner::before,
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  background: var(--gold);
+}
+
+.hud-corner-tl { top: 64px; left: 64px; }
+.hud-corner-tl::before { top: 0; left: 0; width: 20px; height: 1px; }
+.hud-corner-tl::after { top: 0; left: 0; width: 1px; height: 20px; }
+
+.hud-corner-tr { top: 64px; right: 64px; }
+.hud-corner-tr::before { top: 0; right: 0; width: 20px; height: 1px; }
+.hud-corner-tr::after { top: 0; right: 0; width: 1px; height: 20px; }
+
+.hud-corner-bl { bottom: 64px; left: 64px; }
+.hud-corner-bl::before { bottom: 0; left: 0; width: 20px; height: 1px; }
+.hud-corner-bl::after { bottom: 0; left: 0; width: 1px; height: 20px; }
+
+.hud-corner-br { bottom: 64px; right: 64px; }
+.hud-corner-br::before { bottom: 0; right: 0; width: 20px; height: 1px; }
+.hud-corner-br::after { bottom: 0; right: 0; width: 1px; height: 20px; }
+
+/* Rails */
+.hud-rail {
+  position: absolute;
+  top: 104px;
+  bottom: 104px;
+  width: 80px;
+}
+
+.hud-rail-left {
+  left: 64px;
+  border-left: 1px solid var(--dawn-30);
+}
+
+.hud-rail-right {
+  right: 64px;
+  border-right: 1px solid var(--dawn-30);
+}
+
+/* Header */
+.hud-header {
+  position: absolute;
+  top: 20px;
+  left: 64px;
+  right: 64px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.hud-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dawn-50);
+}
+
+.hud-title .separator {
+  color: var(--dawn-30);
+  margin: 0 8px;
+}
+
+.hud-title .mode {
+  color: var(--gold);
+}
+
+/* Footer */
+.hud-footer {
+  position: absolute;
+  bottom: 20px;
+  left: 64px;
+  right: 64px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+}
+
+.coordinates {
+  display: flex;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--dawn-30);
+}
+
+.coordinates span span {
+  color: var(--dawn-50);
+}
+
+.instructions {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--dawn-30);
+  text-align: right;
+}
+
+.instructions div {
+  margin-bottom: 4px;
+}
+
+/* ─── CONTROL PANEL ─── */
+.control-panel {
+  position: fixed;
+  top: 100px;
+  right: 80px;
+  width: 200px;
+  background: rgba(10, 9, 8, 0.95);
+  border: 1px solid var(--dawn-15);
+  padding: 16px;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.control-panel h3 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--dawn-08);
+}
+
+.control-group {
+  margin-bottom: 12px;
+}
+
+.control-group label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+  margin-bottom: 6px;
+}
+
+.control-group input[type="range"] {
+  width: 140px;
+  height: 2px;
+  background: var(--dawn-15);
+  border: none;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: var(--gold);
+  cursor: pointer;
+}
+
+.control-group span {
+  display: inline-block;
+  width: 40px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--dawn-50);
+  margin-left: 8px;
+}
+
+.control-panel button {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--dawn-15);
+  color: var(--dawn-50);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.control-panel button:hover {
+  background: var(--dawn-08);
+  border-color: var(--dawn-30);
+  color: var(--dawn);
+}

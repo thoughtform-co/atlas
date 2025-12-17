@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas - Celestial Constellation Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=PT+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Background Canvas -->
+  <canvas id="celestial-canvas"></canvas>
+
+  <!-- Entity Cards Container -->
+  <div id="cards-container"></div>
+
+  <!-- HUD Elements -->
+  <div class="hud">
+    <!-- Corner Brackets -->
+    <div class="hud-corner hud-corner-tl"></div>
+    <div class="hud-corner hud-corner-tr"></div>
+    <div class="hud-corner hud-corner-bl"></div>
+    <div class="hud-corner hud-corner-br"></div>
+
+    <!-- Left Rail -->
+    <div class="hud-rail hud-rail-left">
+      <div class="scale-ticks"></div>
+    </div>
+
+    <!-- Right Rail -->
+    <div class="hud-rail hud-rail-right">
+      <div class="scale-ticks"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="hud-header">
+      <div class="hud-title">
+        <span>ATLAS</span>
+        <span class="separator">/</span>
+        <span class="mode">CELESTIAL MOCKUP</span>
+      </div>
+    </header>
+
+    <!-- Footer -->
+    <footer class="hud-footer">
+      <div class="controls">
+        <div class="control-label">POSITION</div>
+        <div class="coordinates">
+          <span>δ: <span id="coord-x">0.00</span></span>
+          <span>θ: <span id="coord-y">0.00</span></span>
+          <span>ζ: <span id="coord-z">0.00</span></span>
+        </div>
+      </div>
+      <div class="instructions">
+        <div>Drag — Pan</div>
+        <div>Scroll — Zoom</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Controls Panel -->
+  <div class="control-panel">
+    <h3>Celestial Controls</h3>
+    <div class="control-group">
+      <label>Sphere Radius</label>
+      <input type="range" id="sphere-radius" min="100" max="400" value="200">
+      <span id="sphere-radius-value">200</span>
+    </div>
+    <div class="control-group">
+      <label>Core Intensity</label>
+      <input type="range" id="core-intensity" min="0" max="100" value="60">
+      <span id="core-intensity-value">60</span>
+    </div>
+    <div class="control-group">
+      <label>Particle Density</label>
+      <input type="range" id="particle-density" min="50" max="500" value="200">
+      <span id="particle-density-value">200</span>
+    </div>
+    <div class="control-group">
+      <label>Connection Opacity</label>
+      <input type="range" id="connection-opacity" min="0" max="100" value="40">
+      <span id="connection-opacity-value">40</span>
+    </div>
+    <div class="control-group">
+      <label>3D Depth Effect</label>
+      <input type="range" id="depth-effect" min="0" max="100" value="50">
+      <span id="depth-effect-value">50</span>
+    </div>
+    <button id="reset-view">Reset View</button>
+  </div>
+
+  <script src="celestial-canvas.js"></script>
+</body>
+</html>
