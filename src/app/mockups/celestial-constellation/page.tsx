@@ -149,12 +149,9 @@ function CelestialEntityCard({
   // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
   
-  // TIDALLY LOCKED: Card always faces outward from sphere center
-  // atan2(x, z) gives angle from +Z axis to the position vector in XZ plane
-  // This makes the card front face away from center at all times
-  const rotationY = Math.atan2(pos.x, pos.z) * (180 / Math.PI);
-  
-  // No X rotation - keeps cards upright and prevents flip artifacts
+  // NO 3D ROTATION - cards always face the viewer (like billboards)
+  // Depth is conveyed through scale and opacity only
+  const rotationY = 0;
   const rotationX = 0;
   
   // Project to screen
@@ -192,28 +189,19 @@ function CelestialEntityCard({
         '--glow-color': glowColor,
       }}
     >
-      {/* 3D card container - simple Y rotation only */}
+      {/* Card container - NO rotation, depth via scale/opacity only */}
       <div
         className={styles.card3d}
         style={{
-          transform: isSelected
-            ? `rotateY(0deg) scale(1.1)`
-            : `rotateY(${rotationY}deg) scale(${depthScale})`,
+          transform: isSelected ? `scale(1.1)` : `scale(${depthScale})`,
         }}
       >
-        {/* Card content - visible from both sides (transparent tablet) */}
-        <div className={styles.cardFront}>
-          <EntityCard
-            denizen={denizen}
-            onClick={() => onClick(denizen, entity)}
-            isSelected={isSelected}
-            style={{ position: 'relative', transform: 'none' }}
-          />
-        </div>
-        
-        {/* 3D Edge faces for depth effect */}
-        <div className={`${styles.cardEdge} ${styles.cardEdgeRight}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeLeft}`} />
+        <EntityCard
+          denizen={denizen}
+          onClick={() => onClick(denizen, entity)}
+          isSelected={isSelected}
+          style={{ position: 'relative', transform: 'none' }}
+        />
       </div>
     </div>
   );
