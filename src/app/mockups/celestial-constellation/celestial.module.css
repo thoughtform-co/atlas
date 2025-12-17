@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
    CELESTIAL CONSTELLATION MOCKUP - CSS MODULE
+   
+   This mockup uses the REAL EntityCard component from the main app.
+   The 3D wrapper adds rotation effects without modifying the card itself.
    ═══════════════════════════════════════════════════════════════ */
 
 .container {
@@ -8,10 +11,26 @@
   background: var(--void, #050403);
   overflow: hidden;
   cursor: grab;
+  /* Global perspective for all 3D elements */
+  perspective: 2000px;
+  perspective-origin: center center;
 }
 
 .container:active {
   cursor: grabbing;
+}
+
+/* ─── 3D CARD WRAPPER ─── */
+/* Wraps the real EntityCard to add 3D rotation */
+.card3dWrapper {
+  pointer-events: auto;
+  transform-style: preserve-3d;
+  transition: opacity 0.3s ease;
+}
+
+.card3dInner {
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease-out;
 }
 
 /* ─── CONNECTION LINES SVG ─── */
@@ -20,324 +39,6 @@
   inset: 0;
   z-index: 5;
   pointer-events: none;
-}
-
-/* ─── 3D CARD WRAPPER ─── */
-.cardWrapper {
-  position: absolute;
-  pointer-events: auto;
-  transform-style: preserve-3d;
-  perspective: 1000px;
-}
-
-/* ─── 3D CARD ─── */
-.card {
-  width: 100px;
-  height: 140px;
-  cursor: pointer;
-  transform-origin: center center;
-  transform-style: preserve-3d;
-  --card-depth: 6px;
-  --glow-color: rgba(202, 165, 84, 0.8);
-  --glow-color-dim: rgba(202, 165, 84, 0.3);
-}
-
-/* ─── FRONT FACE ─── */
-.cardFront {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: var(--surface-0, #0A0908);
-  backface-visibility: hidden;
-  transform: translateZ(3px);
-  overflow: hidden;
-  border: 1px solid var(--glow-color-dim);
-  box-shadow: 0 0 12px var(--glow-color-dim);
-}
-
-.card:hover .cardFront {
-  border-color: var(--glow-color);
-  box-shadow: 
-    0 0 20px var(--glow-color-dim),
-    0 0 40px rgba(202, 165, 84, 0.08);
-}
-
-/* Media container */
-.cardMedia {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.cardImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: sepia(0.08) saturate(1.1);
-  transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-}
-
-.card:hover .cardImage {
-  transform: scale(1.03);
-}
-
-.cardPlaceholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 2rem;
-  color: var(--dawn-08, rgba(236, 227, 214, 0.08));
-  background: linear-gradient(180deg, var(--surface-1, #0F0E0C) 0%, var(--surface-0, #0A0908) 100%);
-}
-
-.cardGradient {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(5, 4, 3, 0.1) 0%,
-    transparent 30%,
-    transparent 50%,
-    rgba(5, 4, 3, 0.4) 80%,
-    rgba(5, 4, 3, 0.85) 100%
-  );
-  pointer-events: none;
-}
-
-.cardScanlines {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent 0px,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.card:hover .cardScanlines {
-  opacity: 1;
-}
-
-.cardGlyphs {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  font-family: var(--font-mono);
-  font-size: 6px;
-  line-height: 1.5;
-  color: var(--dawn-30, rgba(236, 227, 214, 0.3));
-  letter-spacing: 0.1em;
-  writing-mode: vertical-rl;
-  opacity: 0.4;
-  transition: opacity 0.3s ease;
-}
-
-.card:hover .cardGlyphs {
-  opacity: 0.75;
-}
-
-.cardThreat {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  opacity: 0.8;
-  transition: transform 0.3s ease;
-}
-
-.card:hover .cardThreat {
-  transform: scale(1.2);
-}
-
-/* Info overlay */
-.cardInfo {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 8px;
-  background: rgba(10, 9, 8, 0.4);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(236, 227, 214, 0.1);
-}
-
-.cardName {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--dawn, #ECE3D6);
-  line-height: 1.3;
-}
-
-.cardSubtitle {
-  font-family: var(--font-mono);
-  font-size: 6px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dawn-50, rgba(236, 227, 214, 0.5));
-  margin-top: 3px;
-  opacity: 0.8;
-}
-
-.cardMeta {
-  margin-top: 5px;
-  padding-top: 5px;
-  border-top: 1px solid var(--dawn-08, rgba(236, 227, 214, 0.08));
-}
-
-.cardType {
-  font-family: var(--font-mono);
-  font-size: 5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--dawn-30, rgba(236, 227, 214, 0.3));
-}
-
-.cardType em {
-  font-style: normal;
-  color: var(--dawn-50, rgba(236, 227, 214, 0.5));
-}
-
-/* Corner accents */
-.cornerTL,
-.cornerBR {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.card:hover .cornerTL,
-.card:hover .cornerBR {
-  opacity: 1;
-}
-
-.cornerTL {
-  top: -1px;
-  left: -1px;
-  border-top: 1px solid var(--glow-color);
-  border-left: 1px solid var(--glow-color);
-}
-
-.cornerBR {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 1px solid var(--glow-color);
-  border-right: 1px solid var(--glow-color);
-}
-
-/* ─── 3D EDGE FACES ─── */
-.cardEdge {
-  position: absolute;
-  backface-visibility: hidden;
-  background: linear-gradient(
-    180deg,
-    var(--glow-color) 0%,
-    rgba(30, 27, 24, 0.4) 15%,
-    rgba(20, 18, 16, 0.3) 50%,
-    rgba(30, 27, 24, 0.4) 85%,
-    var(--glow-color) 100%
-  );
-  border: 1px solid var(--glow-color-dim);
-}
-
-.cardEdgeRight {
-  width: 6px;
-  height: 100%;
-  top: 0;
-  left: 100%;
-  transform-origin: 0% 50%;
-  transform: rotateY(90deg);
-}
-
-.cardEdgeLeft {
-  width: 6px;
-  height: 100%;
-  top: 0;
-  right: 100%;
-  transform-origin: 100% 50%;
-  transform: rotateY(-90deg);
-}
-
-.cardEdgeTop {
-  width: 100%;
-  height: 6px;
-  left: 0;
-  bottom: 100%;
-  transform-origin: 50% 100%;
-  transform: rotateX(90deg);
-  background: linear-gradient(
-    90deg,
-    var(--glow-color) 0%,
-    rgba(30, 27, 24, 0.4) 15%,
-    rgba(20, 18, 16, 0.3) 50%,
-    rgba(30, 27, 24, 0.4) 85%,
-    var(--glow-color) 100%
-  );
-}
-
-.cardEdgeBottom {
-  width: 100%;
-  height: 6px;
-  left: 0;
-  top: 100%;
-  transform-origin: 50% 0%;
-  transform: rotateX(-90deg);
-  background: linear-gradient(
-    90deg,
-    var(--glow-color) 0%,
-    rgba(30, 27, 24, 0.4) 15%,
-    rgba(20, 18, 16, 0.3) 50%,
-    rgba(30, 27, 24, 0.4) 85%,
-    var(--glow-color) 100%
-  );
-}
-
-/* ─── BACK FACE ─── */
-.cardBack {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: var(--surface-0, #0A0908);
-  border: 1px solid var(--glow-color-dim);
-  backface-visibility: hidden;
-  transform: translateZ(-3px) rotateY(180deg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 8px var(--glow-color-dim);
-  overflow: hidden;
-}
-
-.backPattern {
-  position: absolute;
-  inset: 10px;
-  border: 1px solid var(--glow-color-dim);
-  opacity: 0.3;
-  background: 
-    linear-gradient(90deg, transparent 49%, var(--dawn-08, rgba(236, 227, 214, 0.08)) 49%, var(--dawn-08, rgba(236, 227, 214, 0.08)) 51%, transparent 51%),
-    linear-gradient(0deg, transparent 49%, var(--dawn-08, rgba(236, 227, 214, 0.08)) 49%, var(--dawn-08, rgba(236, 227, 214, 0.08)) 51%, transparent 51%);
-  background-size: 16px 16px;
-}
-
-.backGlyph {
-  color: var(--glow-color-dim);
-  font-size: 18px;
-  z-index: 1;
 }
 
 /* ─── MOCKUP LABEL ─── */

@@ -3,225 +3,67 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Denizen, Position, Domain } from '@/lib/types';
 import { BackgroundCanvas } from '@/components/constellation/BackgroundCanvas';
+import { EntityCard } from '@/components/constellation/EntityCard';
 import { NavigationHUD, FilterState } from '@/components/constellation/NavigationHUD';
 import { clamp } from '@/lib/utils';
+import { CONSTELLATION } from '@/lib/constants';
 import styles from './celestial.module.css';
 
-// Temporarily use static data for mockup
+// Use static data for mockup
 import { denizens as staticDenizens } from '@/data/denizens';
-
-interface DomainSphere {
-  domain: string;
-  center: Position;
-  denizens: Array<{ denizen: Denizen; orbitAngle: number; phiOffset: number }>;
-  color: { r: number; g: number; b: number };
-}
-
-/**
- * Connection lines from cards to sphere centers
- */
-function ConnectionLines({
-  domainSpheres,
-  rotationAngle,
-  orbitRadius,
-  scale,
-  offset,
-}: {
-  domainSpheres: DomainSphere[];
-  rotationAngle: number;
-  orbitRadius: number;
-  scale: number;
-  offset: Position;
-}) {
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  
-  useEffect(() => {
-    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  if (windowSize.width === 0) return null;
-
-  return (
-    <svg className={styles.connections}>
-      {domainSpheres.map(sphere => {
-        const centerX = sphere.center.x * scale + offset.x + windowSize.width / 2;
-        const centerY = sphere.center.y * scale + offset.y + windowSize.height / 2;
-        
-        return sphere.denizens.map(({ denizen, orbitAngle, phiOffset }) => {
-          const phi = rotationAngle + phiOffset;
-          
-          const x3d = orbitRadius * Math.sin(orbitAngle) * Math.cos(phi);
-          const y3d = orbitRadius * Math.cos(orbitAngle);
-          const z3d = orbitRadius * Math.sin(orbitAngle) * Math.sin(phi);
-          
-          const entityX = (sphere.center.x + x3d) * scale + offset.x + windowSize.width / 2;
-          const entityY = (sphere.center.y + y3d) * scale + offset.y + windowSize.height / 2;
-          
-          const depthAlpha = (z3d + orbitRadius) / (2 * orbitRadius);
-          const lineOpacity = 0.08 + depthAlpha * 0.15;
-          
-          return (
-            <line
-              key={denizen.id}
-              x1={centerX}
-              y1={centerY}
-              x2={entityX}
-              y2={entityY}
-              stroke={`rgba(${sphere.color.r}, ${sphere.color.g}, ${sphere.color.b}, ${lineOpacity})`}
-              strokeWidth={1}
-            />
-          );
-        });
-      })}
-    </svg>
-  );
-}
 
 /**
  * CELESTIAL CONSTELLATION MOCKUP
  * 
- * This is the new constellation view with:
- * - 3D rotating entity cards (transparent terminals)
- * - Spherical domain clusters
- * - Cards orbit around domain centers
+ * Uses the EXACT same EntityCard component and clustering logic as the main view,
+ * but adds 3D rotation to cards orbiting around their domain center.
  */
 
-interface CelestialEntityCardProps {
-  denizen: Denizen;
-  sphereCenter: Position;
-  orbitAngle: number;
-  orbitRadius: number;
+interface Card3DWrapperProps {
+  children: React.ReactNode;
   rotationAngle: number;
-  scale: number;
-  offset: Position;
-  domainColor: { r: number; g: number; b: number };
+  phiOffset: number;
+  style?: React.CSSProperties;
 }
 
-function CelestialEntityCard({
-  denizen,
-  sphereCenter,
-  orbitAngle,
-  orbitRadius,
-  rotationAngle,
-  scale,
-  offset,
-  domainColor,
-}: CelestialEntityCardProps) {
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+/**
+ * 3D wrapper that adds rotation to the standard EntityCard
+ */
+function Card3DWrapper({ children, rotationAngle, phiOffset, style }: Card3DWrapperProps) {
+  // Calculate 3D rotation based on orbit position
+  const phi = rotationAngle + phiOffset;
   
-  useEffect(() => {
-    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-  }, []);
+  // Card faces outward, rotates around Y axis
+  const rotationY = Math.sin(phi) * 45; // Rotate between -45 and +45 degrees
+  const rotationX = Math.cos(phi) * 10; // Slight tilt
   
-  // Calculate 3D position on sphere
-  // theta = vertical angle (how high/low on sphere)
-  // phi = horizontal angle (rotation around Y axis) - this one animates
-  const theta = orbitAngle;
-  const phi = rotationAngle;
-  
-  // 3D sphere coordinates (Y is up)
-  const x3d = orbitRadius * Math.sin(theta) * Math.cos(phi);
-  const y3d = orbitRadius * Math.cos(theta);
-  const z3d = orbitRadius * Math.sin(theta) * Math.sin(phi);
-  
-  // Project to 2D screen position
-  const screenX = sphereCenter.x + x3d;
-  const screenY = sphereCenter.y + y3d;
-  
-  // Apply view transform
-  const viewX = screenX * scale + offset.x + windowSize.width / 2;
-  const viewY = screenY * scale + offset.y + windowSize.height / 2;
-  
-  // Card rotation - face outward from sphere center
-  const facingAngle = Math.atan2(z3d, x3d);
-  const rotationY = -facingAngle * (180 / Math.PI) + 90;
-  const rotationX = (y3d / orbitRadius) * 25;
-  
-  // Depth-based opacity and scale
-  const depthAlpha = (z3d + orbitRadius) / (2 * orbitRadius);
-  const cardScale = (0.5 + depthAlpha * 0.7) * scale;
-  const cardOpacity = 0.4 + depthAlpha * 0.6;
-  
-  // Z-index for proper layering
-  const zIndex = Math.floor(50 + z3d / 5);
-  
-  // Threat level colors
-  const threatColors: Record<string, string> = {
-    'Benign': '#5B8A7A',
-    'Cautious': '#CAA554',
-    'Volatile': '#D4A574',
-    'Existential': '#8B5A5A',
-  };
-  
-  const threatColor = threatColors[denizen.threatLevel] || threatColors['Benign'];
-  const glowColor = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.8)`;
-  const glowColorDim = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.3)`;
-
-  // Get image URL
-  const imageUrl = denizen.image || denizen.thumbnail;
+  // Depth effect - cards "behind" are slightly smaller/dimmer
+  const depthFactor = (Math.cos(phi) + 1) / 2; // 0 to 1
+  const cardScale = 0.85 + depthFactor * 0.15;
+  const cardOpacity = 0.7 + depthFactor * 0.3;
+  const zIndex = Math.floor(10 + depthFactor * 20);
 
   return (
     <div
-      className={styles.cardWrapper}
+      className={styles.card3dWrapper}
       style={{
-        left: viewX - 50, // Half card width
-        top: viewY - 70, // Half card height
+        ...style,
         zIndex,
         opacity: cardOpacity,
-        // @ts-expect-error CSS custom properties
-        '--glow-color': glowColor,
-        '--glow-color-dim': glowColorDim,
       }}
     >
       <div
-        className={styles.card}
+        className={styles.card3dInner}
         style={{
           transform: `
-            perspective(600px)
+            perspective(800px)
             rotateY(${rotationY}deg)
             rotateX(${rotationX}deg)
             scale(${cardScale})
           `,
         }}
       >
-        {/* Front face */}
-        <div className={styles.cardFront}>
-          <div className={styles.cardMedia}>
-            {imageUrl ? (
-              <img src={imageUrl} alt={denizen.name} className={styles.cardImage} />
-            ) : (
-              <div className={styles.cardPlaceholder}>{denizen.type[0]}</div>
-            )}
-            <div className={styles.cardGradient} />
-            <div className={styles.cardScanlines} />
-            <div className={styles.cardGlyphs}>{denizen.glyphs}</div>
-            <div className={styles.cardThreat} style={{ background: threatColor }} title={denizen.threatLevel} />
-          </div>
-          <div className={styles.cardInfo}>
-            <div className={styles.cardName}>{denizen.entityClass || denizen.name}</div>
-            {denizen.subtitle && <div className={styles.cardSubtitle}>{denizen.subtitle}</div>}
-            <div className={styles.cardMeta}>
-              <span className={styles.cardType}>TYPE <em>{denizen.type}</em></span>
-            </div>
-          </div>
-          <div className={styles.cornerTL} />
-          <div className={styles.cornerBR} />
-        </div>
-        
-        {/* 3D edges */}
-        <div className={`${styles.cardEdge} ${styles.cardEdgeRight}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeLeft}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeTop}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeBottom}`} />
-        
-        {/* Back face */}
-        <div className={styles.cardBack}>
-          <div className={styles.backPattern} />
-          <div className={styles.backGlyph}>◇</div>
-        </div>
+        {children}
       </div>
     </div>
   );
@@ -229,9 +71,10 @@ function CelestialEntityCard({
 
 export default function CelestialConstellationPage() {
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
-  const [scale, setScale] = useState(0.8);
+  const [scale, setScale] = useState(0.6);
   const [isDragging, setIsDragging] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     domains: new Set(),
     entityTypes: new Set(),
@@ -244,14 +87,11 @@ export default function CelestialConstellationPage() {
   // Use static data
   const denizens = staticDenizens;
 
-  // Domain colors
-  const domainColors: Record<string, { r: number; g: number; b: number }> = {
-    'Starhaven Reaches': { r: 202, g: 165, b: 84 },
-    'The Gradient Throne': { r: 91, g: 138, b: 122 },
-    'default': { r: 180, g: 180, b: 180 },
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Filter denizens
+  // Filter denizens (same as main constellation)
   const filteredDenizens = useMemo(() => {
     const hasDomainFilter = filters.domains.size > 0;
     const hasTypeFilter = filters.entityTypes.size > 0;
@@ -269,57 +109,92 @@ export default function CelestialConstellationPage() {
     });
   }, [denizens, filters]);
 
-  // Group denizens by domain and calculate sphere centers
-  const domainSpheres = useMemo(() => {
-    const groups = new Map<string, Denizen[]>();
+  /**
+   * Calculate clustered positions - SAME LOGIC as main ConstellationView
+   */
+  const clusteredDenizens = useMemo(() => {
+    // Group denizens by domain
+    const domainGroups = new Map<string, Denizen[]>();
     filteredDenizens.forEach(d => {
       const domain = d.domain || 'default';
-      if (!groups.has(domain)) groups.set(domain, []);
-      groups.get(domain)!.push(d);
+      if (!domainGroups.has(domain)) {
+        domainGroups.set(domain, []);
+      }
+      domainGroups.get(domain)!.push(d);
     });
 
-    const spheres: DomainSphere[] = [];
-
-    const domainArray = Array.from(groups.keys());
-    domainArray.forEach((domain, domainIndex) => {
-      const group = groups.get(domain)!;
-      
-      // Position domains horizontally with good separation
-      const centerX = (domainIndex - (domainArray.length - 1) / 2) * 700;
-      const centerY = 0;
-      
-      const color = domainColors[domain] || domainColors['default'];
-      
-      // Distribute entities around sphere
-      // Each entity gets a unique theta (vertical) and phi offset (horizontal starting position)
-      const denizensWithAngles = group.map((denizen, idx) => {
-        // Spread vertically between 0.3π and 0.7π (visible band)
-        const theta = Math.PI * (0.35 + (idx / Math.max(group.length - 1, 1)) * 0.3);
-        // Spread horizontally around the sphere
-        const phiOffset = (idx / group.length) * Math.PI * 2;
-        
-        return {
-          denizen,
-          orbitAngle: theta,
-          phiOffset,
-        };
-      });
-
-      spheres.push({
-        domain,
-        center: { x: centerX, y: centerY },
-        denizens: denizensWithAngles,
-        color,
-      });
+    // Calculate initial cluster center for each domain
+    const domainCenters = new Map<string, Position>();
+    domainGroups.forEach((group, domain) => {
+      const avgX = group.reduce((sum, d) => sum + d.position.x, 0) / group.length;
+      const avgY = group.reduce((sum, d) => sum + d.position.y, 0) / group.length;
+      domainCenters.set(domain, { x: avgX, y: avgY });
     });
 
-    return spheres;
+    // Apply repulsion between domain centers
+    const domains = Array.from(domainCenters.keys());
+    if (domains.length > 1) {
+      const minSeparation = CONSTELLATION.DOMAIN_MIN_SEPARATION;
+      
+      for (let iter = 0; iter < CONSTELLATION.DOMAIN_REPULSION_ITERATIONS; iter++) {
+        for (let i = 0; i < domains.length; i++) {
+          for (let j = i + 1; j < domains.length; j++) {
+            const centerA = domainCenters.get(domains[i])!;
+            const centerB = domainCenters.get(domains[j])!;
+            
+            const dx = centerB.x - centerA.x;
+            const dy = centerB.y - centerA.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < minSeparation && distance > 0) {
+              const overlap = minSeparation - distance;
+              const pushX = (dx / distance) * overlap * 0.5;
+              const pushY = (dy / distance) * overlap * 0.5;
+              
+              domainCenters.set(domains[i], { x: centerA.x - pushX, y: centerA.y - pushY });
+              domainCenters.set(domains[j], { x: centerB.x + pushX, y: centerB.y + pushY });
+            }
+          }
+        }
+      }
+    }
+
+    // Reposition entities within each domain cluster using golden angle spiral
+    return filteredDenizens.map((d, globalIdx) => {
+      const domain = d.domain || 'default';
+      const group = domainGroups.get(domain) || [];
+      const center = domainCenters.get(domain)!;
+      
+      if (group.length <= 1) {
+        return { ...d, position: { x: center.x, y: center.y }, phiOffset: 0 };
+      }
+
+      const indexInGroup = group.findIndex(g => g.id === d.id);
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      const angle = indexInGroup * goldenAngle;
+      
+      const baseRadius = CONSTELLATION.CLUSTER_MIN_SPACING * CONSTELLATION.SPIRAL.BASE_RADIUS_FACTOR;
+      const spiralRadius = baseRadius + (indexInGroup * CONSTELLATION.CLUSTER_MIN_SPACING * CONSTELLATION.SPIRAL.GROWTH_FACTOR);
+      const radius = Math.min(spiralRadius, CONSTELLATION.CLUSTER_MAX_DISTANCE * CONSTELLATION.SPIRAL.MAX_RADIUS_FACTOR);
+
+      // phiOffset for 3D rotation - each card gets a unique starting angle
+      const phiOffset = (indexInGroup / group.length) * Math.PI * 2;
+
+      return {
+        ...d,
+        position: {
+          x: center.x + Math.cos(angle) * radius,
+          y: center.y + Math.sin(angle) * radius,
+        },
+        phiOffset,
+      };
+    });
   }, [filteredDenizens]);
 
-  // Animation loop
+  // Animation loop for rotation
   useEffect(() => {
     const animate = () => {
-      setRotationAngle(prev => prev + 0.0008);
+      setRotationAngle(prev => prev + 0.003); // Slow rotation
       animationRef.current = requestAnimationFrame(animate);
     };
     animationRef.current = requestAnimationFrame(animate);
@@ -328,8 +203,32 @@ export default function CelestialConstellationPage() {
     };
   }, []);
 
+  // Auto-center view on mount
+  useEffect(() => {
+    if (!mounted || clusteredDenizens.length === 0) return;
+    
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    clusteredDenizens.forEach(d => {
+      minX = Math.min(minX, d.position.x);
+      maxX = Math.max(maxX, d.position.x);
+      minY = Math.min(minY, d.position.y);
+      maxY = Math.max(maxY, d.position.y);
+    });
+    
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    if (typeof window !== 'undefined') {
+      setOffset({
+        x: window.innerWidth / 2 - centerX * scale,
+        y: window.innerHeight / 2 - centerY * scale,
+      });
+    }
+  }, [mounted, clusteredDenizens.length > 0]);
+
   // Mouse handlers for panning
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.entity-card')) return;
     setIsDragging(true);
     lastMouseRef.current = { x: e.clientX, y: e.clientY };
   }, []);
@@ -346,11 +245,10 @@ export default function CelestialConstellationPage() {
     setIsDragging(false);
   }, []);
 
-  // Zoom handler
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    setScale(prev => clamp(prev * zoomFactor, 0.2, 3));
+    setScale(prev => clamp(prev * zoomFactor, 0.2, 2));
   }, []);
 
   // Get unique domains for HUD
@@ -365,15 +263,12 @@ export default function CelestialConstellationPage() {
           id: domainName,
           name: domainName,
           description: '',
-          colorHue: domainColors[domainName] ? 
-            Math.round(Math.atan2(domainColors[domainName].g - 128, domainColors[domainName].r - 128) * 180 / Math.PI) : 0,
+          colorHue: 0,
         });
       }
     });
     return domains;
   }, [denizens]);
-
-  const orbitRadius = 250;
 
   return (
     <div
@@ -387,36 +282,35 @@ export default function CelestialConstellationPage() {
     >
       {/* Background with particle nebulae */}
       <BackgroundCanvas
-        denizens={filteredDenizens}
+        denizens={clusteredDenizens}
         offset={offset}
         scale={scale}
       />
 
-      {/* Connection lines to sphere centers */}
-      <ConnectionLines
-        domainSpheres={domainSpheres}
-        rotationAngle={rotationAngle}
-        orbitRadius={orbitRadius}
-        scale={scale}
-        offset={offset}
-      />
-
-      {/* 3D Entity Cards */}
-      {domainSpheres.map(sphere => 
-        sphere.denizens.map(({ denizen, orbitAngle, phiOffset }) => (
-          <CelestialEntityCard
+      {/* Entity Cards - using REAL EntityCard component with 3D wrapper */}
+      {clusteredDenizens.map((denizen) => {
+        const screenX = denizen.position.x * scale + offset.x;
+        const screenY = denizen.position.y * scale + offset.y;
+        
+        return (
+          <Card3DWrapper
             key={denizen.id}
-            denizen={denizen}
-            sphereCenter={sphere.center}
-            orbitAngle={orbitAngle}
-            orbitRadius={orbitRadius}
-            rotationAngle={rotationAngle + phiOffset}
-            scale={scale}
-            offset={offset}
-            domainColor={sphere.color}
-          />
-        ))
-      )}
+            rotationAngle={rotationAngle}
+            phiOffset={(denizen as any).phiOffset || 0}
+            style={{
+              position: 'absolute',
+              left: screenX,
+              top: screenY,
+              transform: `translate(-100px, -133px)`, // Center the 200x266 card
+            }}
+          >
+            <EntityCard
+              denizen={denizen}
+              onClick={() => console.log('Clicked:', denizen.name)}
+            />
+          </Card3DWrapper>
+        );
+      })}
 
       {/* Navigation HUD */}
       <NavigationHUD
@@ -430,7 +324,7 @@ export default function CelestialConstellationPage() {
 
       {/* Mockup label */}
       <div className={styles.mockupLabel}>
-        CELESTIAL MOCKUP
+        CELESTIAL MOCKUP — 3D ROTATION TEST
       </div>
     </div>
   );
