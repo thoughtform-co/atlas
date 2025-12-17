@@ -6,6 +6,7 @@
  * - Entity cards are positioned on the surface of spheres
  * - Connection lines radiate inward toward the sphere center
  * - Particles distributed spherically with depth-based opacity
+ * - Spheres rotate gently so all cards pass by the viewer
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -23,23 +24,31 @@ const CONFIG = {
   connectionOpacity: 0.4,
   depthEffect: 0.5,
   
-  // Domain colors
+  // Rotation speed (radians per frame)
+  rotationSpeed: 0.002,
+  
+  // Card settings
+  cardWidth: 100,
+  cardHeight: 140,
+  cardOffset: 1.3, // How far outside the sphere (multiplier of radius)
+  
+  // Domain colors (gold for Starhaven Reaches)
   domains: {
-    'Starhaven Reaches': { r: 202, g: 165, b: 84 },
+    'Starhaven Reaches': { r: 202, g: 165, b: 84 }, // Gold
     'The Gradient Throne': { r: 91, g: 138, b: 122 },
   },
   
-  // Mock entity positions (will be positioned on sphere surface)
+  // Mock entity positions (theta and phi are initial angles on sphere)
   entities: [
-    // Starhaven Reaches entities
-    { id: 1, name: 'Eigensage', domain: 'Starhaven Reaches', theta: 0.2, phi: 0.3 },
-    { id: 2, name: 'Voidweaver', domain: 'Starhaven Reaches', theta: 0.8, phi: 0.5 },
-    { id: 3, name: 'Starkeeper', domain: 'Starhaven Reaches', theta: 0.5, phi: 0.8 },
-    { id: 4, name: 'Nullseer', domain: 'Starhaven Reaches', theta: 1.2, phi: 0.4 },
+    // Starhaven Reaches entities - distributed around the sphere
+    { id: 1, name: 'Eigensage', domain: 'Starhaven Reaches', theta: 0.3, phi: 0.0 },
+    { id: 2, name: 'Voidweaver', domain: 'Starhaven Reaches', theta: 0.5, phi: 0.5 },
+    { id: 3, name: 'Starkeeper', domain: 'Starhaven Reaches', theta: 0.7, phi: 1.0 },
+    { id: 4, name: 'Nullseer', domain: 'Starhaven Reaches', theta: 0.4, phi: 1.5 },
     // The Gradient Throne entities
-    { id: 5, name: 'Architect', domain: 'The Gradient Throne', theta: 0.3, phi: 0.6 },
-    { id: 6, name: 'Wanderer', domain: 'The Gradient Throne', theta: 0.9, phi: 0.2 },
-    { id: 7, name: 'Guardian', domain: 'The Gradient Throne', theta: 0.6, phi: 0.9 },
+    { id: 5, name: 'Architect', domain: 'The Gradient Throne', theta: 0.4, phi: 0.2 },
+    { id: 6, name: 'Wanderer', domain: 'The Gradient Throne', theta: 0.6, phi: 0.8 },
+    { id: 7, name: 'Guardian', domain: 'The Gradient Throne', theta: 0.5, phi: 1.4 },
   ],
 };
 
@@ -50,6 +59,7 @@ const CONFIG = {
 const state = {
   canvas: null,
   ctx: null,
+  cardsContainer: null,
   width: 0,
   height: 0,
   
@@ -67,11 +77,17 @@ const state = {
   time: 0,
   animationId: null,
   
+  // Rotation angle (accumulated)
+  rotationAngle: 0,
+  
   // Domain spheres
   spheres: [],
   
   // Stars
   stars: [],
+  
+  // Card elements
+  cardElements: new Map(),
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -130,6 +146,12 @@ function project3D(x, y, z, centerX, centerY, scale, depthEffect) {
 function initializeSpheres() {
   state.spheres = [];
   
+  // Clear existing card elements
+  if (state.cardsContainer) {
+    state.cardsContainer.innerHTML = '';
+  }
+  state.cardElements.clear();
+  
   // Group entities by domain
   const domainGroups = new Map();
   CONFIG.entities.forEach(entity => {
@@ -144,7 +166,7 @@ function initializeSpheres() {
   let domainIndex = 0;
   domainGroups.forEach((entities, domain) => {
     // Position domains horizontally
-    const centerX = (domainIndex - (domainGroups.size - 1) / 2) * 500;
+    const centerX = (domainIndex - (domainGroups.size - 1) / 2) * 600;
     const centerY = 0;
     
     // Get domain color
@@ -176,19 +198,12 @@ function initializeSpheres() {
       });
     }
     
-    // Position entities on sphere surface
-    const entityPositions = entities.map(entity => {
-      const theta = entity.theta * Math.PI;
-      const phi = entity.phi * Math.PI * 2;
-      const r = CONFIG.sphereRadius * 1.1; // Slightly outside sphere
-      
-      return {
-        ...entity,
-        x: r * Math.sin(theta) * Math.cos(phi),
-        y: r * Math.sin(theta) * Math.sin(phi),
-        z: r * Math.cos(theta),
-      };
-    });
+    // Store initial angles for entities (will be rotated over time)
+    const entityData = entities.map(entity => ({
+      ...entity,
+      baseTheta: entity.theta * Math.PI, // Store base angle
+      basePhi: entity.phi * Math.PI * 2,
+    }));
     
     state.spheres.push({
       domain,
@@ -196,10 +211,95 @@ function initializeSpheres() {
       centerY,
       color,
       particles,
-      entities: entityPositions,
+      entities: entityData,
+    });
+    
+    // Create card elements for each entity
+    entityData.forEach(entity => {
+      createCardElement(entity, color);
     });
     
     domainIndex++;
+  });
+}
+
+/**
+ * Create a card DOM element for an entity
+ */
+function createCardElement(entity, color) {
+  if (!state.cardsContainer) return;
+  
+  const card = document.createElement('div');
+  card.className = 'entity-card';
+  card.id = `card-${entity.id}`;
+  card.innerHTML = `
+    <div class="image" style="border-color: rgba(${color.r}, ${color.g}, ${color.b}, 0.3);">◇</div>
+    <div class="name">${entity.name}</div>
+  `;
+  
+  // Style the card border with domain color
+  card.style.borderColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`;
+  
+  state.cardsContainer.appendChild(card);
+  state.cardElements.set(entity.id, card);
+}
+
+/**
+ * Calculate entity's 3D position on sphere with rotation
+ */
+function getEntityPosition(entity, rotationAngle) {
+  const theta = entity.baseTheta;
+  const phi = entity.basePhi + rotationAngle; // Rotate around Y axis
+  const r = CONFIG.sphereRadius * CONFIG.cardOffset;
+  
+  return {
+    x: r * Math.sin(theta) * Math.cos(phi),
+    y: r * Math.cos(theta), // Y is vertical
+    z: r * Math.sin(theta) * Math.sin(phi),
+  };
+}
+
+/**
+ * Update card positions based on sphere rotation
+ */
+function updateCards() {
+  state.spheres.forEach(sphere => {
+    const screenCenter = worldToScreen(sphere.centerX, sphere.centerY);
+    
+    sphere.entities.forEach(entity => {
+      const card = state.cardElements.get(entity.id);
+      if (!card) return;
+      
+      // Get rotated position
+      const pos = getEntityPosition(entity, state.rotationAngle);
+      
+      // Project to screen
+      const projected = project3D(
+        pos.x, pos.y, pos.z,
+        screenCenter.x, screenCenter.y,
+        state.scale,
+        CONFIG.depthEffect
+      );
+      
+      // Position card centered on the projected point
+      const cardX = projected.screenX - CONFIG.cardWidth / 2;
+      const cardY = projected.screenY - CONFIG.cardHeight / 2;
+      
+      card.style.left = `${cardX}px`;
+      card.style.top = `${cardY}px`;
+      card.style.width = `${CONFIG.cardWidth}px`;
+      
+      // Adjust opacity based on depth (cards behind sphere are dimmer)
+      const depthOpacity = Math.max(0.2, projected.depthAlpha);
+      card.style.opacity = depthOpacity;
+      
+      // Z-index based on depth (front cards on top)
+      card.style.zIndex = Math.floor(50 + pos.z / 10);
+      
+      // Scale slightly based on depth for parallax effect
+      const depthScale = 0.8 + projected.depthAlpha * 0.4;
+      card.style.transform = `scale(${depthScale})`;
+    });
   });
 }
 
@@ -260,15 +360,27 @@ function worldToScreen(worldX, worldY) {
 }
 
 function drawSpheres() {
-  const { ctx, time } = state;
+  const { ctx, time, rotationAngle } = state;
   
   state.spheres.forEach(sphere => {
     const { color, particles, centerX, centerY, entities, domain } = sphere;
     const screenCenter = worldToScreen(centerX, centerY);
     const screenRadius = CONFIG.sphereRadius * state.scale;
     
+    // Rotate particles with the sphere
+    const rotatedParticles = particles.map(p => {
+      // Rotate around Y axis
+      const cosR = Math.cos(rotationAngle);
+      const sinR = Math.sin(rotationAngle);
+      return {
+        ...p,
+        x: p.x * cosR - p.z * sinR,
+        z: p.x * sinR + p.z * cosR,
+      };
+    });
+    
     // Sort particles by Z for proper depth ordering
-    const sortedParticles = [...particles].sort((a, b) => a.z - b.z);
+    const sortedParticles = [...rotatedParticles].sort((a, b) => a.z - b.z);
     
     // Draw particles
     sortedParticles.forEach(p => {
@@ -331,24 +443,27 @@ function drawSpheres() {
     ctx.arc(screenCenter.x, screenCenter.y, screenRadius * 1.3, 0, Math.PI * 2);
     ctx.fill();
     
-    // Draw connection lines from entities to center
+    // Draw connection lines from entities to center (with rotation)
     entities.forEach(entity => {
+      // Get rotated entity position
+      const pos = getEntityPosition(entity, rotationAngle);
+      
       const projected = project3D(
-        entity.x, entity.y, entity.z,
+        pos.x, pos.y, pos.z,
         screenCenter.x, screenCenter.y,
         state.scale,
         CONFIG.depthEffect
       );
       
-      // Line from entity to center with gradient
+      // Line from center to entity with gradient
       const lineGradient = ctx.createLinearGradient(
         screenCenter.x, screenCenter.y,
         projected.screenX, projected.screenY
       );
       
       const lineAlpha = CONFIG.connectionOpacity * projected.depthAlpha;
-      lineGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha})`);
-      lineGradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 0.5})`);
+      lineGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 0.8})`);
+      lineGradient.addColorStop(0.4, `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 0.4})`);
       lineGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 0.1})`);
       
       ctx.strokeStyle = lineGradient;
@@ -358,10 +473,23 @@ function drawSpheres() {
       ctx.lineTo(projected.screenX, projected.screenY);
       ctx.stroke();
       
-      // Draw small node at entity position
-      ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 2})`;
+      // Draw connection point where line meets card
+      const nodeAlpha = lineAlpha * 1.5;
+      ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${nodeAlpha})`;
       ctx.beginPath();
-      ctx.arc(projected.screenX, projected.screenY, 3, 0, Math.PI * 2);
+      ctx.arc(projected.screenX, projected.screenY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw small glow at connection point
+      const nodeGlow = ctx.createRadialGradient(
+        projected.screenX, projected.screenY, 0,
+        projected.screenX, projected.screenY, 12
+      );
+      nodeGlow.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${nodeAlpha * 0.5})`);
+      nodeGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = nodeGlow;
+      ctx.beginPath();
+      ctx.arc(projected.screenX, projected.screenY, 12, 0, Math.PI * 2);
       ctx.fill();
     });
   });
@@ -381,8 +509,12 @@ function draw() {
   // Draw spheres
   drawSpheres();
   
-  // Increment time
+  // Update card positions
+  updateCards();
+  
+  // Increment time and rotation
   state.time++;
+  state.rotationAngle += CONFIG.rotationSpeed;
   
   // Continue animation
   state.animationId = requestAnimationFrame(draw);
@@ -497,11 +629,20 @@ function setupControls() {
     depthValue.textContent = e.target.value;
   });
   
+  // Rotation speed
+  const rotationSlider = document.getElementById('rotation-speed');
+  const rotationValue = document.getElementById('rotation-speed-value');
+  rotationSlider.addEventListener('input', (e) => {
+    CONFIG.rotationSpeed = parseInt(e.target.value) / 10000; // Very slow rotation
+    rotationValue.textContent = e.target.value;
+  });
+  
   // Reset view
   document.getElementById('reset-view').addEventListener('click', () => {
     state.offsetX = 0;
     state.offsetY = 0;
     state.scale = 1;
+    state.rotationAngle = 0;
     updateCoordinates();
   });
 }
@@ -518,9 +659,10 @@ function resize() {
 }
 
 function init() {
-  // Get canvas
+  // Get canvas and cards container
   state.canvas = document.getElementById('celestial-canvas');
   state.ctx = state.canvas.getContext('2d');
+  state.cardsContainer = document.getElementById('cards-container');
   
   // Set up sizing
   resize();
@@ -544,6 +686,7 @@ function init() {
   console.log('Celestial Constellation Mockup initialized');
   console.log('Domains:', Object.keys(CONFIG.domains));
   console.log('Total entities:', CONFIG.entities.length);
+  console.log('Rotation speed:', CONFIG.rotationSpeed, 'rad/frame');
 }
 
 // Start when DOM is ready

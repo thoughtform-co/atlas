@@ -62,38 +62,46 @@ body {
 
 .entity-card {
   position: absolute;
-  width: 120px;
-  background: var(--surface-0);
+  width: 100px;
+  background: rgba(10, 9, 8, 0.9);
   border: 1px solid var(--dawn-15);
-  padding: 8px;
+  padding: 6px;
   pointer-events: auto;
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transform-origin: center center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .entity-card:hover {
-  border-color: var(--dawn-30);
-  transform: translateY(-2px);
+  border-color: var(--dawn-50);
+  box-shadow: 0 0 20px rgba(236, 227, 214, 0.1);
 }
 
 .entity-card .image {
   width: 100%;
   aspect-ratio: 3/4;
-  background: var(--surface-1);
-  margin-bottom: 8px;
+  background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-0) 100%);
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--dawn-15);
-  font-size: 24px;
+  font-size: 20px;
+  border: 1px solid var(--dawn-08);
 }
 
 .entity-card .name {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 8px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--dawn-70);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ─── HUD ELEMENTS ─── */
