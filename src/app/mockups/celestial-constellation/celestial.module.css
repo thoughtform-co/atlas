@@ -67,9 +67,9 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  /* Hide when facing away - back face will show instead */
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  /* VISIBLE from both sides - transparent tablet effect */
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
   transform: translateZ(calc(var(--card-depth) / 2));
   /* Semi-transparent glass effect */
   opacity: 0.92;
@@ -96,8 +96,6 @@
 /* ─── EDGE FACES (actual 3D depth) ─── */
 .cardEdge {
   position: absolute;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   /* Semi-transparent glass edge */
   background: linear-gradient(
     180deg,
@@ -117,7 +115,7 @@
   top: 0;
   left: 100%;
   transform-origin: 0% 50%;
-  transform: rotateY(90deg) translateX(calc(var(--card-depth) / -2));
+  transform: rotateY(90deg);
 }
 
 /* Left edge */
@@ -127,82 +125,7 @@
   top: 0;
   right: 100%;
   transform-origin: 100% 50%;
-  transform: rotateY(-90deg) translateX(calc(var(--card-depth) / 2));
-}
-
-/* Top edge */
-.cardEdgeTop {
-  width: 100%;
-  height: var(--card-depth);
-  left: 0;
-  bottom: 100%;
-  transform-origin: 50% 100%;
-  transform: rotateX(90deg) translateY(calc(var(--card-depth) / 2));
-  background: linear-gradient(
-    90deg,
-    var(--glow-color) 0%,
-    rgba(40, 38, 35, 0.5) 10%,
-    rgba(30, 28, 25, 0.3) 50%,
-    rgba(40, 38, 35, 0.5) 90%,
-    var(--glow-color) 100%
-  );
-}
-
-/* Bottom edge */
-.cardEdgeBottom {
-  width: 100%;
-  height: var(--card-depth);
-  left: 0;
-  top: 100%;
-  transform-origin: 50% 0%;
-  transform: rotateX(-90deg) translateY(calc(var(--card-depth) / -2));
-  background: linear-gradient(
-    90deg,
-    var(--glow-color) 0%,
-    rgba(40, 38, 35, 0.5) 10%,
-    rgba(30, 28, 25, 0.3) 50%,
-    rgba(40, 38, 35, 0.5) 90%,
-    var(--glow-color) 100%
-  );
-}
-
-/* ─── BACK FACE ─── */
-.cardBack {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: rgba(10, 9, 8, 0.85);
-  border: 1px solid rgba(202, 165, 84, 0.25);
-  /* Hidden when facing away (when front is visible) */
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  /* Rotated 180° so it shows when card is flipped */
-  transform: translateZ(calc(var(--card-depth) / -2)) rotateY(180deg);
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(202, 165, 84, 0.1);
-}
-
-.backPattern {
-  position: absolute;
-  inset: 12px;
-  border: 1px solid rgba(202, 165, 84, 0.2);
-  opacity: 0.6;
-  /* Grid pattern */
-  background: 
-    linear-gradient(90deg, transparent 49%, rgba(236, 227, 214, 0.06) 49%, rgba(236, 227, 214, 0.06) 51%, transparent 51%),
-    linear-gradient(0deg, transparent 49%, rgba(236, 227, 214, 0.06) 49%, rgba(236, 227, 214, 0.06) 51%, transparent 51%);
-  background-size: 20px 20px;
-}
-
-/* Center glyph on back */
-.backPattern::after {
-  content: '◇';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
-  color: rgba(202, 165, 84, 0.3);
+  transform: rotateY(-90deg);
 }
 
 /* ─── LOADING STATE ─── */

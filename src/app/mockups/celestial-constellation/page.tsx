@@ -192,16 +192,16 @@ function CelestialEntityCard({
         '--glow-color': glowColor,
       }}
     >
-      {/* 3D card container with depth */}
+      {/* 3D card container - simple Y rotation only */}
       <div
         className={styles.card3d}
         style={{
           transform: isSelected
-            ? `rotateY(0deg) rotateX(0deg) scale(1.1)`
-            : `rotateY(${rotationY}deg) rotateX(${rotationX}deg) scale(${depthScale})`,
+            ? `rotateY(0deg) scale(1.1)`
+            : `rotateY(${rotationY}deg) scale(${depthScale})`,
         }}
       >
-        {/* Front face - contains the real EntityCard */}
+        {/* Card content - visible from both sides (transparent tablet) */}
         <div className={styles.cardFront}>
           <EntityCard
             denizen={denizen}
@@ -214,13 +214,6 @@ function CelestialEntityCard({
         {/* 3D Edge faces for depth effect */}
         <div className={`${styles.cardEdge} ${styles.cardEdgeRight}`} />
         <div className={`${styles.cardEdge} ${styles.cardEdgeLeft}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeTop}`} />
-        <div className={`${styles.cardEdge} ${styles.cardEdgeBottom}`} />
-        
-        {/* Back face */}
-        <div className={styles.cardBack}>
-          <div className={styles.backPattern} />
-        </div>
       </div>
     </div>
   );
