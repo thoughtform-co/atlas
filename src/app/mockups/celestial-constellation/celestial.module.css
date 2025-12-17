@@ -159,7 +159,7 @@
 .settingsButton {
   position: fixed;
   bottom: 80px;
-  right: 64px;
+  right: calc(48px + clamp(32px, 5vw, 64px));
   width: 36px;
   height: 36px;
   background: rgba(20, 18, 15, 0.8);
@@ -189,7 +189,7 @@
 .settingsPanel {
   position: fixed;
   bottom: 130px;
-  right: 64px;
+  right: calc(48px + clamp(32px, 5vw, 64px));
   width: 280px;
   background: rgba(12, 11, 10, 0.95);
   border: 1px solid rgba(202, 165, 84, 0.25);
