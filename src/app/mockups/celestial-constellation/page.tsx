@@ -402,8 +402,14 @@ export default function CelestialConstellationPage() {
       try {
         const res = await fetch('/api/admin/denizens');
         if (res.ok) {
-          const data = await res.json();
-          setDenizens(data);
+          const json = await res.json();
+          // API returns { success, data: { denizens: [...] } }
+          if (json.success && json.data?.denizens) {
+            setDenizens(json.data.denizens);
+          } else if (Array.isArray(json)) {
+            // Fallback if direct array
+            setDenizens(json);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch denizens:', err);
