@@ -1,34 +1,39 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Denizen, Position } from '@/lib/types';
-import { NavigationHUD, FilterState } from '@/components/constellation/NavigationHUD';
-import { EntityCard } from '@/components/constellation/EntityCard';
-import { DenizenModalV3 } from '@/components/constellation/DenizenModalV3';
-import styles from './celestial.module.css';
+import { Denizen, Connection, Position } from '@/lib/types';
+import { NavigationHUD, FilterState } from './NavigationHUD';
+import { EntityCard } from './EntityCard';
+import { DenizenModalV3 } from './DenizenModalV3';
+import styles from './CelestialConstellationView.module.css';
 
 /**
- * CELESTIAL CONSTELLATION MOCKUP
+ * CELESTIAL CONSTELLATION VIEW
  * 
- * Uses the TWO main domains from the constellation view:
- * - Starhaven Reaches (gold/orange)
- * - The Gradient Throne (teal/white)
+ * A 3D rotating constellation with strange attractor particle systems.
+ * Entities orbit around domain clusters formed by mathematical attractors.
  * 
- * Fetches REAL denizens from Supabase (with images!)
- * Entity cards orbit ON spherical domain clusters
+ * Features:
+ * - Strange attractor particle systems (Lorenz, Halvorsen, Aizawa, etc.)
+ * - 3D rotating entity cards with tidal locking
+ * - Dynamic domain clustering based on actual domain data
+ * - Configurable settings panel with localStorage persistence
+ * - Background effects (stars, nebulae, scan lines)
  */
 
 // ═══════════════════════════════════════════════════════════════
-// THE TWO DOMAINS WE USE
+// DOMAIN COLORS (from main constellation view)
 // ═══════════════════════════════════════════════════════════════
 
-const TARGET_DOMAINS = ['Starhaven Reaches', 'The Gradient Throne'] as const;
-
-// Domain colors matching main constellation view
 const DOMAIN_COLORS: Record<string, { r: number; g: number; b: number }> = {
-  'Starhaven Reaches': { r: 202, g: 165, b: 84 },   // Gold/Orange
-  'The Gradient Throne': { r: 180, g: 200, b: 200 }, // Teal/White
+  'Starhaven Reaches': { r: 202, g: 165, b: 84 },
+  'The Gradient Throne': { r: 180, g: 200, b: 200 },
+  'default': { r: 150, g: 150, b: 150 },
 };
+
+function getDomainColor(domain: string): { r: number; g: number; b: number } {
+  return DOMAIN_COLORS[domain] || DOMAIN_COLORS['default'];
+}
 
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -46,11 +51,10 @@ interface Config {
   rotationSpeed: number;
   cardOffset: number;
   domainSeparation: number;
-  cardGlow: number; // 0-1, glow intensity
-  coreParticleRatio: number; // 0-1, percentage of particles in core vs shell
-  nebulaScale: number; // size multiplier for the nebula cloud
-  attractorType: AttractorType; // shape generator
-  // Background effects (all off by default for safety)
+  cardGlow: number;
+  coreParticleRatio: number;
+  nebulaScale: number;
+  attractorType: AttractorType;
   showBackgroundStars: boolean;
   showNebulae: boolean;
   showScanLines: boolean;
@@ -58,31 +62,30 @@ interface Config {
 }
 
 const DEFAULT_CONFIG: Config = {
-  GRID: 2, // Finer grid for higher resolution
+  GRID: 2,
   sphereRadius: 180,
   coreIntensity: 0.6,
-  particleDensity: 800, // Higher density for attractor effect
+  particleDensity: 800,
   connectionOpacity: 0.4,
   depthEffect: 0.5,
   rotationSpeed: 0.0003,
   cardOffset: 1.4,
   domainSeparation: 700,
-  cardGlow: 0.6, // glow intensity (0-1)
-  coreParticleRatio: 0.2, // 20% in core, 80% in shell
-  nebulaScale: 1.0, // nebula cloud size multiplier
-  attractorType: 'lorenz', // default to lorenz attractor
-  // Background effects - ALL OFF by default for safety
+  cardGlow: 0.6,
+  coreParticleRatio: 0.2,
+  nebulaScale: 1.0,
+  attractorType: 'lorenz',
   showBackgroundStars: false,
   showNebulae: false,
   showScanLines: false,
-  showVignette: true, // vignette is safe, just darkens edges
+  showVignette: true,
 };
 
 // Mutable config for non-React code (canvas)
 let CONFIG = { ...DEFAULT_CONFIG };
 
 // ═══════════════════════════════════════════════════════════════
-// SPHERE PARTICLE SYSTEM
+// PARTICLE SYSTEM
 // ═══════════════════════════════════════════════════════════════
 
 interface SphereParticle {
@@ -99,25 +102,21 @@ interface SphereParticle {
 // STRANGE ATTRACTOR GENERATORS
 // ═══════════════════════════════════════════════════════════════
 
-// Pre-compute attractor points for performance
 function generateAttractorPoints(type: AttractorType, count: number): Array<{x: number, y: number, z: number}> {
   const points: Array<{x: number, y: number, z: number}> = [];
   
-  // Initial conditions with slight randomization per domain
   let x = 0.1 + Math.random() * 0.1;
   let y = 0.1 + Math.random() * 0.1;
   let z = 0.1 + Math.random() * 0.1;
   
-  const dt = 0.005; // Time step
-  const warmup = 500; // Skip initial transients
+  const dt = 0.005;
+  const warmup = 500;
   
-  // Different attractor equations
   for (let i = 0; i < count + warmup; i++) {
     let dx = 0, dy = 0, dz = 0;
     
     switch (type) {
       case 'lorenz':
-        // Lorenz attractor - classic butterfly
         const sigma = 10, rho = 28, beta = 8/3;
         dx = sigma * (y - x);
         dy = x * (rho - z) - y;
@@ -125,7 +124,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         break;
         
       case 'halvorsen':
-        // Halvorsen attractor - twisted loops
         const a = 1.89;
         dx = -a * x - 4 * y - 4 * z - y * y;
         dy = -a * y - 4 * z - 4 * x - z * z;
@@ -133,7 +131,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         break;
         
       case 'aizawa':
-        // Aizawa attractor - disc with axis
         const aA = 0.95, bA = 0.7, cA = 0.6, dA = 3.5, eA = 0.25, fA = 0.1;
         dx = (z - bA) * x - dA * y;
         dy = dA * x + (z - bA) * y;
@@ -141,7 +138,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         break;
         
       case 'thomas':
-        // Thomas attractor - smooth, symmetric
         const bT = 0.208186;
         dx = Math.sin(y) - bT * x;
         dy = Math.sin(z) - bT * y;
@@ -149,7 +145,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         break;
         
       case 'sprott':
-        // Sprott B attractor - elegant spiral
         const aS = 0.4, bS = 1.2;
         dx = aS * y * z;
         dy = x - y;
@@ -157,7 +152,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         break;
         
       case 'rossler':
-        // Rössler attractor - spiral with fold
         const aR = 0.2, bR = 0.2, cR = 5.7;
         dx = -(y + z);
         dy = x + aR * y;
@@ -165,7 +159,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         break;
         
       case 'dadras':
-        // Dadras attractor - complex flow
         const p = 3, q = 2.7, r = 1.7, s = 2, e = 9;
         dx = y - p * x + q * y * z;
         dy = r * y - x * z + z;
@@ -174,7 +167,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         
       case 'galaxy':
       default:
-        // Galaxy spiral - use parametric equations
         const t = i * 0.01;
         const armCount = 2;
         const arm = i % armCount;
@@ -190,12 +182,10 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
         continue;
     }
     
-    // Euler integration
     x += dx * dt;
     y += dy * dt;
     z += dz * dt;
     
-    // Skip warmup period
     if (i >= warmup) {
       points.push({ x, y, z });
     }
@@ -204,7 +194,6 @@ function generateAttractorPoints(type: AttractorType, count: number): Array<{x: 
   return points;
 }
 
-// Normalize and scale attractor points to fit radius
 function normalizeAttractorPoints(
   points: Array<{x: number, y: number, z: number}>,
   radius: number,
@@ -212,7 +201,6 @@ function normalizeAttractorPoints(
 ): Array<{x: number, y: number, z: number}> {
   if (points.length === 0) return points;
   
-  // Find bounds
   let minX = Infinity, maxX = -Infinity;
   let minY = Infinity, maxY = -Infinity;
   let minZ = Infinity, maxZ = -Infinity;
@@ -223,7 +211,6 @@ function normalizeAttractorPoints(
     minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z);
   }
   
-  // Center and scale
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
   const centerZ = (minZ + maxZ) / 2;
@@ -241,11 +228,9 @@ function createAttractorParticle(
   attractorPoints: Array<{x: number, y: number, z: number}>,
   isCore: boolean
 ): SphereParticle {
-  // Pick a random point from the attractor
   const idx = Math.floor(Math.random() * attractorPoints.length);
   const basePoint = attractorPoints[idx] || { x: 0, y: 0, z: 0 };
   
-  // Add some noise for volume
   const noiseScale = isCore ? 2 : 8;
   const x = basePoint.x + (Math.random() - 0.5) * noiseScale;
   const y = basePoint.y + (Math.random() - 0.5) * noiseScale;
@@ -330,19 +315,12 @@ function CelestialEntityCard({
 
   if (windowSize.width === 0) return null;
   
-  // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
   
-  // TIDALLY LOCKED: Card always faces outward from sphere center
-  // Use the continuous phi angle directly instead of atan2 to avoid
-  // the ±180° branch cut discontinuity that causes flip artifacts
+  // TIDALLY LOCKED: Use continuous phi angle to avoid atan2 discontinuity
   const continuousPhi = entity.basePhi + rotationAngle;
   const rotationY = 90 - (continuousPhi * (180 / Math.PI));
   
-  // No X rotation - keeps cards upright
-  const rotationX = 0;
-  
-  // Project to screen
   const screenCenterX = windowSize.width / 2 + viewOffset.x + sphereCenterX * viewScale;
   const screenCenterY = windowSize.height / 2 + viewOffset.y + sphereCenterY * viewScale;
   
@@ -353,19 +331,12 @@ function CelestialEntityCard({
     CONFIG.depthEffect
   );
   
-  // Depth-based scale AND zoom scale combined
-  // depthScale: cards further away (lower z) are smaller
-  // viewScale: zooming out makes everything smaller proportionally
   const depthScale = 0.6 + projected.depthAlpha * 0.5;
   const combinedScale = depthScale * viewScale;
-  // Cards at back are dimmer but still visible
   const cardOpacity = isSelected ? 1 : 0.4 + projected.depthAlpha * 0.6;
-  // Z-index: always positive (5-50 range), cards behind popup (popup is 100+)
-  // pos.z ranges from -sphereRadius to +sphereRadius
   const normalizedZ = (pos.z + CONFIG.sphereRadius * CONFIG.cardOffset) / (CONFIG.sphereRadius * CONFIG.cardOffset * 2);
   const zIndex = Math.floor(5 + normalizedZ * 45);
   
-  // Glow colors - intensity controlled by slider
   const glowIntensity = cardGlow;
   const glowColor = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, ${glowIntensity})`;
 
@@ -379,14 +350,12 @@ function CelestialEntityCard({
         opacity: cardOpacity,
         // @ts-expect-error CSS custom property
         '--glow-color': glowColor,
-        // Glow intensity for the pseudo-element
         // @ts-expect-error CSS custom property
         '--glow-opacity': String(glowIntensity * 0.5),
         // @ts-expect-error CSS custom property
         '--glow-spread': `${30 + glowIntensity * 40}px`,
       }}
     >
-      {/* 3D card container - simple Y rotation only */}
       <div
         className={styles.card3d}
         style={{
@@ -395,7 +364,6 @@ function CelestialEntityCard({
             : `rotateY(${rotationY}deg) scale(${combinedScale})`,
         }}
       >
-        {/* Card content - visible from both sides (transparent tablet) */}
         <div className={styles.cardFront}>
           <EntityCard
             denizen={denizen}
@@ -405,7 +373,6 @@ function CelestialEntityCard({
           />
         </div>
         
-        {/* 3D Edge faces for depth effect */}
         <div className={`${styles.cardEdge} ${styles.cardEdgeRight}`} />
         <div className={`${styles.cardEdge} ${styles.cardEdgeLeft}`} />
       </div>
@@ -414,7 +381,7 @@ function CelestialEntityCard({
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CANVAS COMPONENT (Spheres, Particles, Connection Lines)
+// CANVAS COMPONENT
 // ═══════════════════════════════════════════════════════════════
 
 interface DomainSphere {
@@ -433,7 +400,6 @@ interface CelestialCanvasProps {
   rotationAngle: number;
 }
 
-// Static background star field
 interface BackgroundStar {
   x: number;
   y: number;
@@ -443,7 +409,6 @@ interface BackgroundStar {
   twinklePhase: number;
 }
 
-// Nebula cloud for background atmosphere
 interface NebulaCloud {
   x: number;
   y: number;
@@ -452,7 +417,6 @@ interface NebulaCloud {
   rotation: number;
   color: { r: number; g: number; b: number };
   opacity: number;
-  // Gentle drift
   driftX: number;
   driftY: number;
   driftRotation: number;
@@ -472,12 +436,9 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Disable image smoothing for crisp pixels
     ctx.imageSmoothingEnabled = false;
     
-    // Initialize static background elements once
     const initBackground = () => {
-      // Generate static star field (200-400 stars)
       const starCount = 250 + Math.floor(Math.random() * 150);
       backgroundStarsRef.current = [];
       for (let i = 0; i < starCount; i++) {
@@ -486,20 +447,19 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
           y: Math.random() * canvas.height,
           size: Math.random() < 0.7 ? 1 : (Math.random() < 0.9 ? 2 : 3),
           brightness: 0.15 + Math.random() * 0.25,
-          twinkleSpeed: 0.0005 + Math.random() * 0.001, // Very slow twinkle
+          twinkleSpeed: 0.0005 + Math.random() * 0.001,
           twinklePhase: Math.random() * Math.PI * 2,
         });
       }
       
-      // Generate subtle nebula clouds (3-5)
       const nebulaCount = 3 + Math.floor(Math.random() * 3);
       nebulaeRef.current = [];
       const nebulaColors = [
-        { r: 80, g: 60, b: 40 },    // Warm brown
-        { r: 60, g: 70, b: 80 },    // Cool blue-grey
-        { r: 70, g: 50, b: 60 },    // Dusty purple
-        { r: 50, g: 60, b: 55 },    // Muted teal
-        { r: 90, g: 75, b: 50 },    // Amber dust
+        { r: 80, g: 60, b: 40 },
+        { r: 60, g: 70, b: 80 },
+        { r: 70, g: 50, b: 60 },
+        { r: 50, g: 60, b: 55 },
+        { r: 90, g: 75, b: 50 },
       ];
       for (let i = 0; i < nebulaCount; i++) {
         nebulaeRef.current.push({
@@ -510,7 +470,6 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
           rotation: Math.random() * Math.PI,
           color: nebulaColors[Math.floor(Math.random() * nebulaColors.length)],
           opacity: 0.015 + Math.random() * 0.025,
-          // Extremely slow drift velocities (barely perceptible)
           driftX: (Math.random() - 0.5) * 0.001,
           driftY: (Math.random() - 0.5) * 0.001,
           driftRotation: (Math.random() - 0.5) * 0.000005,
@@ -522,9 +481,7 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      // Re-apply after resize
       ctx.imageSmoothingEnabled = false;
-      // Only initialize background ONCE - not on every effect re-run
       if (!initializedRef.current) {
         initBackground();
       }
@@ -539,19 +496,16 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
 
     let animationId: number;
     const draw = () => {
-      // Base background
       ctx.fillStyle = '#050403';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // ─── NEBULA CLOUDS (subtle background atmosphere) ───
+      // Nebulae
       if (CONFIG.showNebulae) {
         nebulaeRef.current.forEach(nebula => {
-          // Gentle drift - update position slowly
           nebula.x += nebula.driftX;
           nebula.y += nebula.driftY;
           nebula.rotation += nebula.driftRotation;
           
-          // Wrap around screen edges
           if (nebula.x < -nebula.radiusX) nebula.x = canvas.width + nebula.radiusX;
           if (nebula.x > canvas.width + nebula.radiusX) nebula.x = -nebula.radiusX;
           if (nebula.y < -nebula.radiusY) nebula.y = canvas.height + nebula.radiusY;
@@ -561,11 +515,9 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
           ctx.translate(nebula.x, nebula.y);
           ctx.rotate(nebula.rotation);
 
-          // Fixed size - no breathing/flickering
           const rx = nebula.radiusX;
           const ry = nebula.radiusY;
 
-          // Multiple layered gradients for depth
           const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(rx, ry));
           const { r, g, b } = nebula.color;
           gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${nebula.opacity * 1.5})`);
@@ -582,36 +534,27 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         });
       }
       
-      // ─── STATIC STAR FIELD (persistent background) ───
+      // Background stars
       if (CONFIG.showBackgroundStars) {
         backgroundStarsRef.current.forEach(star => {
-          // Static brightness - no flickering
           const alpha = star.brightness;
-
-          // Fixed color based on star's phase (warm/cool variation)
           const warmth = Math.sin(star.twinklePhase) * 0.5 + 0.5;
           const r = Math.round(236 - warmth * 20);
           const g = Math.round(227 - warmth * 10);
           const b = Math.round(214 + warmth * 20);
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-          ctx.fillRect(
-            Math.round(star.x),
-            Math.round(star.y),
-            star.size,
-            star.size
-          );
+          ctx.fillRect(Math.round(star.x), Math.round(star.y), star.size, star.size);
         });
       }
       
-
-      // Draw spheres
+      // Draw domain spheres
       spheres.forEach(sphere => {
         const { color, particles, centerX, centerY, entities } = sphere;
         const screenCenter = worldToScreen(centerX, centerY);
         const screenRadius = CONFIG.sphereRadius * scale;
 
-        // Particles - crisp pixel rendering (no anti-aliasing blur)
+        // Particles
         particles.forEach(p => {
           const cosR = Math.cos(rotationAngle);
           const sinR = Math.sin(rotationAngle);
@@ -622,29 +565,20 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
           if (projected.screenX < -50 || projected.screenX > canvas.width + 50 ||
               projected.screenY < -50 || projected.screenY > canvas.height + 50) return;
 
-          // Static alpha - no breathing animation
           let alpha = p.alpha * projected.depthAlpha;
           if (p.isCore) alpha *= 1.5;
 
-          // Core particles slightly larger, with depth variation
           const baseSize = p.isCore ? CONFIG.GRID + 1 : CONFIG.GRID;
           const pSize = Math.max(1, Math.round(baseSize * (0.6 + projected.depthAlpha * 0.5)));
 
           ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
-          
-          // Crisp pixel-aligned rectangles (no anti-aliasing)
-          ctx.fillRect(
-            Math.round(projected.screenX),
-            Math.round(projected.screenY),
-            pSize,
-            pSize
-          );
+          ctx.fillRect(Math.round(projected.screenX), Math.round(projected.screenY), pSize, pSize);
         });
 
-        // Core glow - elliptical for galaxy shape
+        // Core glow
         ctx.save();
         ctx.translate(screenCenter.x, screenCenter.y);
-        ctx.scale(1, 0.4); // Flatten vertically for galaxy disc effect
+        ctx.scale(1, 0.4);
         
         const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, screenRadius * 0.6);
         const coreAlpha = CONFIG.coreIntensity * 0.2;
@@ -658,10 +592,10 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         ctx.fill();
         ctx.restore();
 
-        // Outer galaxy glow - wider ellipse
+        // Outer glow
         ctx.save();
         ctx.translate(screenCenter.x, screenCenter.y);
-        ctx.scale(1, 0.35); // Even flatter for outer disc
+        ctx.scale(1, 0.35);
         
         const outerGradient = ctx.createRadialGradient(0, 0, screenRadius * 0.2, 0, 0, screenRadius * 1.5);
         outerGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.06)`);
@@ -692,7 +626,6 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
           ctx.lineTo(projected.screenX, projected.screenY);
           ctx.stroke();
           
-          // Node
           ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 1.5})`;
           ctx.beginPath();
           ctx.arc(projected.screenX, projected.screenY, 4, 0, Math.PI * 2);
@@ -700,7 +633,7 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         });
       });
       
-      // ─── SUBTLE VIGNETTE (frames the view) ───
+      // Vignette
       if (CONFIG.showVignette) {
         const vignetteGradient = ctx.createRadialGradient(
           canvas.width / 2, canvas.height / 2, canvas.height * 0.3,
@@ -713,9 +646,8 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // ─── OCCASIONAL DATA LATTICE HINTS ───
+      // Scan lines
       if (CONFIG.showScanLines && Math.random() < 0.003) {
-        // Rare horizontal scan line
         const scanY = Math.random() * canvas.height;
         ctx.fillStyle = 'rgba(202, 165, 84, 0.025)';
         ctx.fillRect(0, scanY, canvas.width, 1);
@@ -736,18 +668,21 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MAIN PAGE COMPONENT
+// MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 
-export default function CelestialConstellationPage() {
+interface CelestialConstellationViewProps {
+  denizens: Denizen[];
+  connections: Connection[];
+}
+
+export function CelestialConstellationView({ denizens }: CelestialConstellationViewProps) {
   const [offset, setOffset] = useState<Position>({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [isRotating, setIsRotating] = useState(true);
   const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
-  const [denizens, setDenizens] = useState<Denizen[]>([]);
-  const [loading, setLoading] = useState(true);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [filters, setFilters] = useState<FilterState>({
     domains: new Set(),
@@ -759,7 +694,7 @@ export default function CelestialConstellationPage() {
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const configLoadedRef = useRef(false);
 
-  // Load config from localStorage on mount
+  // Load config from localStorage
   useEffect(() => {
     if (configLoadedRef.current) return;
     configLoadedRef.current = true;
@@ -775,9 +710,9 @@ export default function CelestialConstellationPage() {
     }
   }, []);
 
-  // Save config to localStorage when it changes
+  // Save config to localStorage
   useEffect(() => {
-    if (!configLoadedRef.current) return; // Don't save before initial load
+    if (!configLoadedRef.current) return;
     try {
       localStorage.setItem('celestial-config', JSON.stringify(config));
     } catch (e) {
@@ -785,7 +720,7 @@ export default function CelestialConstellationPage() {
     }
   }, [config]);
 
-  // Sync mutable CONFIG when state changes
+  // Sync mutable CONFIG
   useEffect(() => {
     Object.assign(CONFIG, config);
   }, [config]);
@@ -811,30 +746,6 @@ export default function CelestialConstellationPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch REAL denizens from API (with images from Supabase)
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/admin/denizens');
-        if (res.ok) {
-          const json = await res.json();
-          // API returns { success, data: { denizens: [...] } }
-          if (json.success && json.data?.denizens) {
-            setDenizens(json.data.denizens);
-          } else if (Array.isArray(json)) {
-            // Fallback if direct array
-            setDenizens(json);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch denizens:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
   // Filter denizens
   const filteredDenizens = useMemo(() => {
     const hasDomainFilter = filters.domains.size > 0;
@@ -853,37 +764,43 @@ export default function CelestialConstellationPage() {
     });
   }, [denizens, filters]);
 
-  // Build TWO domain spheres - rebuild when config changes
-  const domainSpheres = useMemo(() => {
-    const mapToTargetDomain = (d: Denizen): string => {
-      if (d.domain === 'Starhaven Reaches' || d.domain === 'The Gradient Throne') {
-        return d.domain;
-      }
-      if (d.allegiance === 'Nomenclate' || d.threatLevel === 'Existential') {
-        return 'The Gradient Throne';
-      }
-      return d.position.x > 0 ? 'The Gradient Throne' : 'Starhaven Reaches';
-    };
+  // Get unique domains from data
+  const uniqueDomains = useMemo(() => {
+    const domains = new Set<string>();
+    denizens.forEach(d => {
+      if (d.domain) domains.add(d.domain);
+    });
+    return Array.from(domains);
+  }, [denizens]);
 
+  // Build domain spheres dynamically
+  const domainSpheres = useMemo(() => {
     const groups = new Map<string, Denizen[]>();
-    TARGET_DOMAINS.forEach(domain => groups.set(domain, []));
     
     filteredDenizens.forEach(d => {
-      const domain = mapToTargetDomain(d);
+      const domain = d.domain || 'default';
+      if (!groups.has(domain)) {
+        groups.set(domain, []);
+      }
       groups.get(domain)!.push(d);
     });
 
     const spheres: DomainSphere[] = [];
+    const domainList = Array.from(groups.keys());
+    const domainCount = domainList.length;
 
-    TARGET_DOMAINS.forEach((domain, domainIndex) => {
+    domainList.forEach((domain, domainIndex) => {
       const group = groups.get(domain) || [];
       if (group.length === 0) return;
       
-      const color = DOMAIN_COLORS[domain];
-      const centerX = domainIndex === 0 ? -config.domainSeparation / 2 : config.domainSeparation / 2;
+      const color = getDomainColor(domain);
+      
+      // Position domains in a row, centered
+      const totalWidth = (domainCount - 1) * config.domainSeparation;
+      const startX = -totalWidth / 2;
+      const centerX = startX + domainIndex * config.domainSeparation;
       const centerY = 0;
 
-      // Generate attractor base points
       const attractorPoints = normalizeAttractorPoints(
         generateAttractorPoints(config.attractorType, Math.max(2000, config.particleDensity)),
         config.sphereRadius,
@@ -891,11 +808,9 @@ export default function CelestialConstellationPage() {
       );
       
       const particles: SphereParticle[] = [];
-      // Core particles (dense center) - controlled by coreParticleRatio
       for (let i = 0; i < config.particleDensity * config.coreParticleRatio; i++) {
         particles.push(createAttractorParticle(attractorPoints, true));
       }
-      // Shell particles (outer form) - the rest
       for (let i = 0; i < config.particleDensity * (1 - config.coreParticleRatio); i++) {
         particles.push(createAttractorParticle(attractorPoints, false));
       }
@@ -926,14 +841,10 @@ export default function CelestialConstellationPage() {
   }, [isRotating, config.rotationSpeed]);
 
   const handleCardClick = useCallback((denizen: Denizen, entity: EntitySphereData) => {
-    // Calculate target rotation to bring this card to the front (z = max)
-    // Card is at front when phi + rotationAngle = π/2 (facing viewer)
-    const targetPhi = Math.PI / 2; // Front position
+    const targetPhi = Math.PI / 2;
     const currentPhi = entity.basePhi;
-    // Calculate rotation needed to bring this card to front
     const targetRotation = targetPhi - currentPhi;
     
-    // Animate rotation to target
     setRotationAngle(targetRotation);
     setSelectedDenizen(denizen);
     setIsRotating(false);
@@ -946,10 +857,10 @@ export default function CelestialConstellationPage() {
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    // Don't start drag if clicking on interactive elements
     if (target.closest('.entity-card')) return;
     if (target.closest('button')) return;
     if (target.closest('input')) return;
+    if (target.closest('select')) return;
     if (target.closest('[class*="settingsPanel"]')) return;
     if (target.closest('[class*="settingsButton"]')) return;
     setIsDragging(true);
@@ -972,7 +883,6 @@ export default function CelestialConstellationPage() {
     setScale(prev => Math.max(0.3, Math.min(3, prev * zoomFactor)));
   }, []);
 
-
   if (windowSize.width === 0) return null;
 
   return (
@@ -991,27 +901,23 @@ export default function CelestialConstellationPage() {
         rotationAngle={rotationAngle}
       />
 
-      {loading ? (
-        <div className={styles.loading}>Loading denizens...</div>
-      ) : (
-        domainSpheres.map(sphere => 
-          sphere.entities.map(entity => (
-            <CelestialEntityCard
-              key={entity.denizen.id}
-              entity={entity}
-              sphereCenterX={sphere.centerX}
-              sphereCenterY={sphere.centerY}
-              rotationAngle={rotationAngle}
-              viewOffset={offset}
-              viewScale={scale}
-              domainColor={sphere.color}
-              isSelected={selectedDenizen?.id === entity.denizen.id}
-              onClick={handleCardClick}
-              windowSize={windowSize}
-              cardGlow={config.cardGlow}
-            />
-          ))
-        )
+      {domainSpheres.map(sphere => 
+        sphere.entities.map(entity => (
+          <CelestialEntityCard
+            key={entity.denizen.id}
+            entity={entity}
+            sphereCenterX={sphere.centerX}
+            sphereCenterY={sphere.centerY}
+            rotationAngle={rotationAngle}
+            viewOffset={offset}
+            viewScale={scale}
+            domainColor={sphere.color}
+            isSelected={selectedDenizen?.id === entity.denizen.id}
+            onClick={handleCardClick}
+            windowSize={windowSize}
+            cardGlow={config.cardGlow}
+          />
+        ))
       )}
 
       {selectedDenizen && (
@@ -1028,13 +934,6 @@ export default function CelestialConstellationPage() {
         filteredCount={filteredDenizens.length}
         totalCount={denizens.length}
       />
-
-      <div className={styles.mockupLabel}>
-        CELESTIAL MOCKUP — {loading ? 'LOADING' : isRotating ? 'ROTATING' : 'PAUSED'}
-      </div>
-
-      {/* Performance Monitor */}
-      <PerformanceMonitor />
 
       {/* Settings Button */}
       <button
@@ -1089,21 +988,6 @@ export default function CelestialConstellationPage() {
 
             <div className={styles.settingsRow}>
               <label className={styles.settingsLabel}>
-                <span>Depth Effect</span>
-                <span className={styles.settingsValue}>{config.depthEffect.toFixed(2)}</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="0"
-                max="100"
-                value={config.depthEffect * 100}
-                onChange={(e) => updateConfig('depthEffect', Number(e.target.value) / 100)}
-              />
-            </div>
-
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
                 <span>Core Particle Ratio</span>
                 <span className={styles.settingsValue}>{Math.round(config.coreParticleRatio * 100)}%</span>
               </label>
@@ -1136,7 +1020,6 @@ export default function CelestialConstellationPage() {
                 onChange={(e) => updateConfig('cardGlow', Number(e.target.value) / 100)}
               />
             </div>
-
           </div>
 
           {/* Nebula Section */}
@@ -1205,21 +1088,6 @@ export default function CelestialConstellationPage() {
                 max="1500"
                 value={config.domainSeparation}
                 onChange={(e) => updateConfig('domainSeparation', Number(e.target.value))}
-              />
-            </div>
-
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Card Offset</span>
-                <span className={styles.settingsValue}>{config.cardOffset.toFixed(2)}x</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="100"
-                max="250"
-                value={config.cardOffset * 100}
-                onChange={(e) => updateConfig('cardOffset', Number(e.target.value) / 100)}
               />
             </div>
           </div>
@@ -1317,63 +1185,6 @@ export default function CelestialConstellationPage() {
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-// Simple FPS/Performance monitor component
-function PerformanceMonitor() {
-  const [fps, setFps] = useState(0);
-  const [memory, setMemory] = useState<number | null>(null);
-  const frameTimesRef = useRef<number[]>([]);
-  const lastTimeRef = useRef(performance.now());
-
-  useEffect(() => {
-    let animationId: number;
-    
-    const measure = () => {
-      const now = performance.now();
-      const delta = now - lastTimeRef.current;
-      lastTimeRef.current = now;
-      
-      // Track last 60 frame times
-      frameTimesRef.current.push(delta);
-      if (frameTimesRef.current.length > 60) {
-        frameTimesRef.current.shift();
-      }
-      
-      // Calculate average FPS
-      const avgDelta = frameTimesRef.current.reduce((a, b) => a + b, 0) / frameTimesRef.current.length;
-      setFps(Math.round(1000 / avgDelta));
-      
-      // Memory (Chrome only)
-      // @ts-expect-error Chrome-specific API
-      if (performance.memory) {
-        // @ts-expect-error Chrome-specific API
-        setMemory(Math.round(performance.memory.usedJSHeapSize / 1024 / 1024));
-      }
-      
-      animationId = requestAnimationFrame(measure);
-    };
-    
-    animationId = requestAnimationFrame(measure);
-    return () => cancelAnimationFrame(animationId);
-  }, []);
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 20,
-      right: 80,
-      fontFamily: 'var(--font-mono)',
-      fontSize: '10px',
-      letterSpacing: '0.1em',
-      color: fps < 30 ? '#ff6b6b' : fps < 50 ? '#ffd93d' : '#6bcb77',
-      zIndex: 100,
-      textAlign: 'right',
-    }}>
-      <div>FPS: {fps}</div>
-      {memory !== null && <div>MEM: {memory}MB</div>}
     </div>
   );
 }

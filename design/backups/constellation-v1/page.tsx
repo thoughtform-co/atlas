@@ -1,4 +1,4 @@
-import { CelestialConstellationView } from '@/components/constellation';
+import { ConstellationView } from '@/components/constellation';
 import { fetchDenizens, fetchConnections, checkDatabaseHealth } from '@/lib/data';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
 
@@ -70,7 +70,7 @@ export default async function Home() {
           </span>
         </div>
       )}
-      <CelestialConstellationView denizens={denizens} connections={connections} />
+      <ConstellationView denizens={denizens} connections={connections} />
     </main>
   );
 }
