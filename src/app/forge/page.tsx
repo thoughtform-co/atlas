@@ -26,11 +26,11 @@ export default function ForgePage() {
           const data = await response.json();
           setSessions(data.sessions || []);
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Failed to fetch sessions:', error);
-      } finally {
-        setLoading(false);
-      }
+    } finally {
+      setLoading(false);
+    }
     };
 
     fetchSessions();
@@ -52,7 +52,7 @@ export default function ForgePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: `Session ${new Date().toLocaleDateString()}` }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         router.push(`/forge/${data.session.id}`);
@@ -77,8 +77,8 @@ export default function ForgePage() {
             Create your first session to start generating videos from images
           </span>
           <button className={styles.createButton} onClick={handleCreateSession}>
-            CREATE SESSION
-          </button>
+              CREATE SESSION
+            </button>
         </div>
       ) : (
         // While redirecting, show loading state

@@ -136,10 +136,10 @@ export async function generateVideo(
     // Other models may use different parameter formats
     if (params.duration) {
       input.duration = params.duration;
-    }
-    if (params.resolution) {
-      input.resolution = params.resolution;
-    }
+  }
+  if (params.resolution) {
+    input.resolution = params.resolution;
+  }
   }
   
   if (params.seed !== undefined) {

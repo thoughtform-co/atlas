@@ -39,46 +39,62 @@ function getDomainColor(domain: string): { r: number; g: number; b: number } {
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════
 
-type AttractorType = 'galaxy' | 'lorenz' | 'halvorsen' | 'aizawa' | 'thomas' | 'sprott' | 'rossler' | 'dadras';
+export type AttractorType = 'galaxy' | 'lorenz' | 'halvorsen' | 'aizawa' | 'thomas' | 'sprott' | 'rossler' | 'dadras';
 
-interface Config {
-  GRID: number;
-  sphereRadius: number;
-  coreIntensity: number;
+// Per-domain configuration (particle/attractor settings)
+export interface DomainConfig {
+  attractorType: AttractorType;
   particleDensity: number;
+  coreIntensity: number;
+  coreParticleRatio: number;
+  nebulaScale: number;
+  sphereRadius: number;
+  cardGlow: number;
+}
+
+export const DEFAULT_DOMAIN_CONFIG: DomainConfig = {
+  attractorType: 'lorenz',
+  particleDensity: 800,
+  coreIntensity: 0.6,
+  coreParticleRatio: 0.2,
+  nebulaScale: 1.0,
+  sphereRadius: 180,
+  cardGlow: 0.6,
+};
+
+// Global configuration (background/canvas settings)
+interface GlobalConfig {
+  GRID: number;
   connectionOpacity: number;
   depthEffect: number;
   rotationSpeed: number;
   cardOffset: number;
   domainSeparation: number;
-  cardGlow: number;
-  coreParticleRatio: number;
-  nebulaScale: number;
-  attractorType: AttractorType;
   showBackgroundStars: boolean;
   showNebulae: boolean;
   showScanLines: boolean;
   showVignette: boolean;
 }
 
-const DEFAULT_CONFIG: Config = {
+const DEFAULT_GLOBAL_CONFIG: GlobalConfig = {
   GRID: 2,
-  sphereRadius: 180,
-  coreIntensity: 0.6,
-  particleDensity: 800,
   connectionOpacity: 0.4,
   depthEffect: 0.5,
   rotationSpeed: 0.0003,
   cardOffset: 1.4,
   domainSeparation: 700,
-  cardGlow: 0.6,
-  coreParticleRatio: 0.2,
-  nebulaScale: 1.0,
-  attractorType: 'lorenz',
   showBackgroundStars: false,
   showNebulae: false,
   showScanLines: false,
   showVignette: true,
+};
+
+// Combined config for backwards compatibility with canvas code
+interface Config extends GlobalConfig, DomainConfig {}
+
+const DEFAULT_CONFIG: Config = {
+  ...DEFAULT_GLOBAL_CONFIG,
+  ...DEFAULT_DOMAIN_CONFIG,
 };
 
 // Mutable config for non-React code (canvas)
@@ -391,6 +407,7 @@ interface DomainSphere {
   color: { r: number; g: number; b: number };
   particles: SphereParticle[];
   entities: EntitySphereData[];
+  domainConfig: DomainConfig;
 }
 
 interface CelestialCanvasProps {
@@ -550,9 +567,9 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
       
       // Draw domain spheres
       spheres.forEach(sphere => {
-        const { color, particles, centerX, centerY, entities } = sphere;
+        const { color, particles, centerX, centerY, entities, domainConfig } = sphere;
         const screenCenter = worldToScreen(centerX, centerY);
-        const screenRadius = CONFIG.sphereRadius * scale;
+        const screenRadius = domainConfig.sphereRadius * scale;
 
         // Particles
         particles.forEach(p => {
@@ -581,7 +598,7 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         ctx.scale(1, 0.4);
         
         const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, screenRadius * 0.6);
-        const coreAlpha = CONFIG.coreIntensity * 0.2;
+        const coreAlpha = domainConfig.coreIntensity * 0.2;
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${coreAlpha})`);
         gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${coreAlpha * 0.6})`);
         gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, ${coreAlpha * 0.2})`);
@@ -690,49 +707,92 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
     allegiances: new Set(),
   });
   const [showSettings, setShowSettings] = useState(false);
-  const [config, setConfig] = useState<Config>({ ...DEFAULT_CONFIG });
+  const [globalConfig, setGlobalConfig] = useState<GlobalConfig>({ ...DEFAULT_GLOBAL_CONFIG });
+  const [domainConfigs, setDomainConfigs] = useState<Record<string, DomainConfig>>({});
+  const particlesCacheRef = useRef<Record<string, { sig: string; particles: SphereParticle[] }>>({});
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
   const configLoadedRef = useRef(false);
 
-  // Load config from localStorage
+  // Combined config for backwards compatibility
+  const config = useMemo(() => ({
+    ...globalConfig,
+    ...DEFAULT_DOMAIN_CONFIG, // fallback domain config for global use
+  }), [globalConfig]);
+
+  // Load configs from localStorage
   useEffect(() => {
     if (configLoadedRef.current) return;
     configLoadedRef.current = true;
     
     try {
-      const saved = localStorage.getItem('celestial-config');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setConfig(prev => ({ ...prev, ...parsed }));
+      const savedGlobal = localStorage.getItem('celestial-global-config');
+      if (savedGlobal) {
+        const parsed = JSON.parse(savedGlobal);
+        setGlobalConfig(prev => ({ ...prev, ...parsed }));
+      }
+      const savedDomains = localStorage.getItem('celestial-domain-configs');
+      if (savedDomains) {
+        setDomainConfigs(JSON.parse(savedDomains));
       }
     } catch (e) {
       console.warn('Failed to load celestial config:', e);
     }
   }, []);
 
-  // Save config to localStorage
+  // Save global config to localStorage
   useEffect(() => {
     if (!configLoadedRef.current) return;
     try {
-      localStorage.setItem('celestial-config', JSON.stringify(config));
+      localStorage.setItem('celestial-global-config', JSON.stringify(globalConfig));
     } catch (e) {
-      console.warn('Failed to save celestial config:', e);
+      console.warn('Failed to save celestial global config:', e);
     }
-  }, [config]);
+  }, [globalConfig]);
+
+  // Save domain configs to localStorage
+  useEffect(() => {
+    if (!configLoadedRef.current) return;
+    try {
+      localStorage.setItem('celestial-domain-configs', JSON.stringify(domainConfigs));
+    } catch (e) {
+      console.warn('Failed to save celestial domain configs:', e);
+    }
+  }, [domainConfigs]);
 
   // Sync mutable CONFIG
   useEffect(() => {
     Object.assign(CONFIG, config);
   }, [config]);
 
-  const updateConfig = useCallback(<K extends keyof Config>(key: K, value: Config[K]) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
+  const updateGlobalConfig = useCallback(<K extends keyof GlobalConfig>(key: K, value: GlobalConfig[K]) => {
+    setGlobalConfig(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  // Direct lookup function - no useCallback to avoid stale closures
+  const getDomainConfig = (domain: string): DomainConfig => {
+    return domainConfigs[domain] || { ...DEFAULT_DOMAIN_CONFIG };
+  };
+
+  const updateDomainConfig = useCallback((domain: string, key: keyof DomainConfig, value: DomainConfig[keyof DomainConfig]) => {
+    setDomainConfigs(prev => {
+      const currentConfig = prev[domain] || { ...DEFAULT_DOMAIN_CONFIG };
+      const newState = {
+        ...prev,
+        [domain]: {
+          ...currentConfig,
+          [key]: value,
+        },
+      };
+      return newState;
+    });
   }, []);
 
   const resetConfig = useCallback(() => {
-    setConfig({ ...DEFAULT_CONFIG });
+    setGlobalConfig({ ...DEFAULT_GLOBAL_CONFIG });
+    setDomainConfigs({});
     try {
-      localStorage.removeItem('celestial-config');
+      localStorage.removeItem('celestial-global-config');
+      localStorage.removeItem('celestial-domain-configs');
     } catch (e) {
       console.warn('Failed to clear celestial config:', e);
     }
@@ -773,7 +833,7 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
     return Array.from(domains);
   }, [denizens]);
 
-  // Build domain spheres dynamically
+  // Build domain spheres dynamically using per-domain configs
   const domainSpheres = useMemo(() => {
     const groups = new Map<string, Denizen[]>();
     
@@ -795,24 +855,38 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
       
       const color = getDomainColor(domain);
       
+      // Get per-domain config (fallback to defaults) - directly from state
+      const domainCfg = domainConfigs[domain] || { ...DEFAULT_DOMAIN_CONFIG };
+      
       // Position domains in a row, centered
-      const totalWidth = (domainCount - 1) * config.domainSeparation;
+      const totalWidth = (domainCount - 1) * globalConfig.domainSeparation;
       const startX = -totalWidth / 2;
-      const centerX = startX + domainIndex * config.domainSeparation;
+      const centerX = startX + domainIndex * globalConfig.domainSeparation;
       const centerY = 0;
 
-      const attractorPoints = normalizeAttractorPoints(
-        generateAttractorPoints(config.attractorType, Math.max(2000, config.particleDensity)),
-        config.sphereRadius,
-        config.nebulaScale
-      );
-      
-      const particles: SphereParticle[] = [];
-      for (let i = 0; i < config.particleDensity * config.coreParticleRatio; i++) {
-        particles.push(createAttractorParticle(attractorPoints, true));
-      }
-      for (let i = 0; i < config.particleDensity * (1 - config.coreParticleRatio); i++) {
-        particles.push(createAttractorParticle(attractorPoints, false));
+      // Keep particle clouds stable per-domain.
+      // Only regenerate particles when particle-shape inputs change for that domain.
+      const genSig = `${domainCfg.attractorType}|${domainCfg.particleDensity}|${domainCfg.coreParticleRatio}|${domainCfg.sphereRadius}|${domainCfg.nebulaScale}`;
+      const cached = particlesCacheRef.current[domain];
+      let particles: SphereParticle[];
+
+      if (cached && cached.sig === genSig) {
+        particles = cached.particles;
+      } else {
+        const attractorPoints = normalizeAttractorPoints(
+          generateAttractorPoints(domainCfg.attractorType, Math.max(2000, domainCfg.particleDensity)),
+          domainCfg.sphereRadius,
+          domainCfg.nebulaScale
+        );
+
+        particles = [];
+        for (let i = 0; i < domainCfg.particleDensity * domainCfg.coreParticleRatio; i++) {
+          particles.push(createAttractorParticle(attractorPoints, true));
+        }
+        for (let i = 0; i < domainCfg.particleDensity * (1 - domainCfg.coreParticleRatio); i++) {
+          particles.push(createAttractorParticle(attractorPoints, false));
+        }
+        particlesCacheRef.current[domain] = { sig: genSig, particles };
       }
 
       const entities: EntitySphereData[] = group.map((denizen, idx) => ({
@@ -822,11 +896,11 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
         domain,
       }));
 
-      spheres.push({ domain, centerX, centerY, color, particles, entities });
+      spheres.push({ domain, centerX, centerY, color, particles, entities, domainConfig: domainCfg });
     });
 
     return spheres;
-  }, [filteredDenizens, config.domainSeparation, config.particleDensity, config.sphereRadius, config.coreParticleRatio, config.nebulaScale, config.attractorType]);
+  }, [filteredDenizens, globalConfig.domainSeparation, domainConfigs]);
 
   // Rotation animation
   useEffect(() => {
@@ -915,7 +989,7 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
             isSelected={selectedDenizen?.id === entity.denizen.id}
             onClick={handleCardClick}
             windowSize={windowSize}
-            cardGlow={config.cardGlow}
+            cardGlow={sphere.domainConfig.cardGlow}
           />
         ))
       )}
@@ -933,6 +1007,8 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
         onFiltersChange={setFilters}
         filteredCount={filteredDenizens.length}
         totalCount={denizens.length}
+        domainConfigs={domainConfigs}
+        onDomainConfigChange={updateDomainConfig}
       />
 
       {/* Settings Button */}
@@ -947,147 +1023,27 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
         </svg>
       </button>
 
-      {/* Settings Panel */}
+      {/* Settings Panel - Global settings only (per-domain settings moved to NavigationHUD) */}
       {showSettings && (
         <div className={styles.settingsPanel}>
-          <div className={styles.settingsTitle}>Celestial Settings</div>
+          <div className={styles.settingsTitle}>Global Settings</div>
 
-          {/* Particles Section */}
+          {/* Layout Section */}
           <div className={styles.settingsSection}>
-            <div className={styles.settingsSectionTitle}>Particles</div>
-            
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Density</span>
-                <span className={styles.settingsValue}>{config.particleDensity}</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="100"
-                max="2000"
-                value={config.particleDensity}
-                onChange={(e) => updateConfig('particleDensity', Number(e.target.value))}
-              />
-            </div>
-
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Core Intensity</span>
-                <span className={styles.settingsValue}>{config.coreIntensity.toFixed(2)}</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="0"
-                max="100"
-                value={config.coreIntensity * 100}
-                onChange={(e) => updateConfig('coreIntensity', Number(e.target.value) / 100)}
-              />
-            </div>
-
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Core Particle Ratio</span>
-                <span className={styles.settingsValue}>{Math.round(config.coreParticleRatio * 100)}%</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="5"
-                max="80"
-                value={config.coreParticleRatio * 100}
-                onChange={(e) => updateConfig('coreParticleRatio', Number(e.target.value) / 100)}
-              />
-            </div>
-          </div>
-
-          {/* Cards Section */}
-          <div className={styles.settingsSection}>
-            <div className={styles.settingsSectionTitle}>Cards</div>
-
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Glow Intensity</span>
-                <span className={styles.settingsValue}>{Math.round(config.cardGlow * 100)}%</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="0"
-                max="100"
-                value={config.cardGlow * 100}
-                onChange={(e) => updateConfig('cardGlow', Number(e.target.value) / 100)}
-              />
-            </div>
-          </div>
-
-          {/* Nebula Section */}
-          <div className={styles.settingsSection}>
-            <div className={styles.settingsSectionTitle}>Nebula Shape</div>
-
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Attractor</span>
-              </label>
-              <select
-                className={styles.settingsSelect}
-                value={config.attractorType}
-                onChange={(e) => updateConfig('attractorType', e.target.value as AttractorType)}
-              >
-                <option value="lorenz">Lorenz (Butterfly)</option>
-                <option value="halvorsen">Halvorsen (Twisted)</option>
-                <option value="aizawa">Aizawa (Disc)</option>
-                <option value="thomas">Thomas (Smooth)</option>
-                <option value="sprott">Sprott B (Spiral)</option>
-                <option value="rossler">Rössler (Fold)</option>
-                <option value="dadras">Dadras (Flow)</option>
-                <option value="galaxy">Galaxy (Classic)</option>
-              </select>
-            </div>
-
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Nebula Scale</span>
-                <span className={styles.settingsValue}>{config.nebulaScale.toFixed(1)}x</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="5"
-                max="25"
-                value={config.nebulaScale * 10}
-                onChange={(e) => updateConfig('nebulaScale', Number(e.target.value) / 10)}
-              />
-            </div>
-            
-            <div className={styles.settingsRow}>
-              <label className={styles.settingsLabel}>
-                <span>Radius</span>
-                <span className={styles.settingsValue}>{config.sphereRadius}px</span>
-              </label>
-              <input
-                type="range"
-                className={styles.settingsSlider}
-                min="80"
-                max="400"
-                value={config.sphereRadius}
-                onChange={(e) => updateConfig('sphereRadius', Number(e.target.value))}
-              />
-            </div>
+            <div className={styles.settingsSectionTitle}>Layout</div>
 
             <div className={styles.settingsRow}>
               <label className={styles.settingsLabel}>
                 <span>Domain Separation</span>
-                <span className={styles.settingsValue}>{config.domainSeparation}px</span>
+                <span className={styles.settingsValue}>{globalConfig.domainSeparation}px</span>
               </label>
               <input
                 type="range"
                 className={styles.settingsSlider}
                 min="300"
                 max="1500"
-                value={config.domainSeparation}
-                onChange={(e) => updateConfig('domainSeparation', Number(e.target.value))}
+                value={globalConfig.domainSeparation}
+                onChange={(e) => updateGlobalConfig('domainSeparation', Number(e.target.value))}
               />
             </div>
           </div>
@@ -1099,30 +1055,30 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
             <div className={styles.settingsRow}>
               <label className={styles.settingsLabel}>
                 <span>Rotation Speed</span>
-                <span className={styles.settingsValue}>{(config.rotationSpeed * 10000).toFixed(1)}</span>
+                <span className={styles.settingsValue}>{(globalConfig.rotationSpeed * 10000).toFixed(1)}</span>
               </label>
               <input
                 type="range"
                 className={styles.settingsSlider}
                 min="0"
                 max="50"
-                value={config.rotationSpeed * 10000}
-                onChange={(e) => updateConfig('rotationSpeed', Number(e.target.value) / 10000)}
+                value={globalConfig.rotationSpeed * 10000}
+                onChange={(e) => updateGlobalConfig('rotationSpeed', Number(e.target.value) / 10000)}
               />
             </div>
 
             <div className={styles.settingsRow}>
               <label className={styles.settingsLabel}>
                 <span>Connection Opacity</span>
-                <span className={styles.settingsValue}>{config.connectionOpacity.toFixed(2)}</span>
+                <span className={styles.settingsValue}>{globalConfig.connectionOpacity.toFixed(2)}</span>
               </label>
               <input
                 type="range"
                 className={styles.settingsSlider}
                 min="0"
                 max="100"
-                value={config.connectionOpacity * 100}
-                onChange={(e) => updateConfig('connectionOpacity', Number(e.target.value) / 100)}
+                value={globalConfig.connectionOpacity * 100}
+                onChange={(e) => updateGlobalConfig('connectionOpacity', Number(e.target.value) / 100)}
               />
             </div>
           </div>
@@ -1136,8 +1092,8 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
                 <span>Background Stars</span>
                 <input
                   type="checkbox"
-                  checked={config.showBackgroundStars}
-                  onChange={(e) => updateConfig('showBackgroundStars', e.target.checked)}
+                  checked={globalConfig.showBackgroundStars}
+                  onChange={(e) => updateGlobalConfig('showBackgroundStars', e.target.checked)}
                   style={{ accentColor: 'var(--gold, #CAA554)' }}
                 />
               </label>
@@ -1148,8 +1104,8 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
                 <span>Nebulae</span>
                 <input
                   type="checkbox"
-                  checked={config.showNebulae}
-                  onChange={(e) => updateConfig('showNebulae', e.target.checked)}
+                  checked={globalConfig.showNebulae}
+                  onChange={(e) => updateGlobalConfig('showNebulae', e.target.checked)}
                   style={{ accentColor: 'var(--gold, #CAA554)' }}
                 />
               </label>
@@ -1160,8 +1116,8 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
                 <span>Scan Lines</span>
                 <input
                   type="checkbox"
-                  checked={config.showScanLines}
-                  onChange={(e) => updateConfig('showScanLines', e.target.checked)}
+                  checked={globalConfig.showScanLines}
+                  onChange={(e) => updateGlobalConfig('showScanLines', e.target.checked)}
                   style={{ accentColor: 'var(--gold, #CAA554)' }}
                 />
               </label>
@@ -1172,8 +1128,8 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
                 <span>Vignette</span>
                 <input
                   type="checkbox"
-                  checked={config.showVignette}
-                  onChange={(e) => updateConfig('showVignette', e.target.checked)}
+                  checked={globalConfig.showVignette}
+                  onChange={(e) => updateGlobalConfig('showVignette', e.target.checked)}
                   style={{ accentColor: 'var(--gold, #CAA554)' }}
                 />
               </label>
@@ -1181,7 +1137,7 @@ export function CelestialConstellationView({ denizens }: CelestialConstellationV
           </div>
 
           <button className={styles.resetButton} onClick={resetConfig}>
-            Reset to Defaults
+            Reset All to Defaults
           </button>
         </div>
       )}

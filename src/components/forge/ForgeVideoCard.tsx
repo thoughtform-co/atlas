@@ -234,7 +234,7 @@ export function ForgeVideoCard({ generation, onApprove, onReuse, onSendToLibrary
               <div className={styles.progressBarContainer}>
                 <div className={styles.progressBar} style={{ width: `${progress}%` }} />
               </div>
-            </div>
+          </div>
           </>
         )}
 
@@ -246,17 +246,17 @@ export function ForgeVideoCard({ generation, onApprove, onReuse, onSendToLibrary
               alt="Source" 
               className={styles.sourceImageBackground}
             />
-            <div className={styles.failedOverlay}>
+          <div className={styles.failedOverlay}>
               <div className={styles.failedIcon}>
                 <svg viewBox="0 0 24 24" width="20" height="20">
                   <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </div>
               <span className={styles.failedTitle}>{errorTitle}</span>
-              {generation.error_message && (
-                <span className={styles.errorMessage}>{generation.error_message}</span>
-              )}
-            </div>
+            {generation.error_message && (
+              <span className={styles.errorMessage}>{generation.error_message}</span>
+            )}
+          </div>
           </>
         )}
 

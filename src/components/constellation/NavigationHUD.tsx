@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Denizen, DenizenType, Allegiance, Domain } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
+import { DomainConfig, AttractorType, DEFAULT_DOMAIN_CONFIG } from './CelestialConstellationView';
 
 export interface FilterState {
   domains: Set<string>;
@@ -16,6 +17,8 @@ interface NavigationHUDProps {
   onFiltersChange: (filters: FilterState) => void;
   filteredCount: number;
   totalCount: number;
+  domainConfigs?: Record<string, DomainConfig>;
+  onDomainConfigChange?: (domain: string, key: keyof DomainConfig, value: DomainConfig[keyof DomainConfig]) => void;
 }
 
 export function NavigationHUD({
@@ -24,10 +27,13 @@ export function NavigationHUD({
   onFiltersChange,
   filteredCount,
   totalCount,
+  domainConfigs = {},
+  onDomainConfigChange,
 }: NavigationHUDProps) {
   const { isAdmin } = useAuth();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [editingDomain, setEditingDomain] = useState<string | null>(null);
+  const [settingsDomain, setSettingsDomain] = useState<string | null>(null);
   const [editingDomainName, setEditingDomainName] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -540,70 +546,367 @@ export function NavigationHUD({
               );
             }
             
+            const domainConfig = domainConfigs[domain] || DEFAULT_DOMAIN_CONFIG;
+            const isShowingSettings = settingsDomain === domain;
+
             return (
-              <div key={domain} className="group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {isAdmin && (
+              <div key={domain} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div className="group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Settings button - admin only */}
+                  {isAdmin && onDomainConfigChange && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSettingsDomain(isShowingSettings ? null : domain);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Domain particle settings"
+                      style={{
+                        background: isShowingSettings ? 'var(--gold)' : 'rgba(5, 4, 3, 0.8)',
+                        border: `1px solid ${isShowingSettings ? 'var(--gold)' : 'var(--dawn-30)'}`,
+                        width: '14px',
+                        height: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke={isShowingSettings ? 'var(--void)' : 'var(--dawn-50)'} strokeWidth="1.5">
+                        <circle cx="6" cy="6" r="2" />
+                        <path d="M6 1V3M6 9V11M1 6H3M9 6H11M2.5 2.5L3.9 3.9M8.1 8.1L9.5 9.5M2.5 9.5L3.9 8.1M8.1 3.9L9.5 2.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDomainDoubleClick(domain, e);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Edit domain name"
+                      style={{
+                        background: 'rgba(5, 4, 3, 0.8)',
+                        border: '1px solid var(--dawn-30)',
+                        width: '14px',
+                        height: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="var(--dawn-50)" strokeWidth="1.5">
+                        <path d="M8 2L10 4L3 11H1V9L8 2Z" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  )}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDomainDoubleClick(domain, e);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Edit domain name"
+                    onClick={() => navigateToDomain(domain)}
+                    className="text-right transition-all"
                     style={{
-                      background: 'rgba(5, 4, 3, 0.8)',
-                      border: '1px solid var(--dawn-30)',
-                      width: '14px',
-                      height: '14px',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '9px',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: isActive ? 'var(--gold)' : 'var(--dawn-30)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px 0',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
+                      gap: '8px',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.currentTarget.style.color = 'var(--dawn-50)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.currentTarget.style.color = 'var(--dawn-30)';
                     }}
                   >
-                    <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="var(--dawn-50)" strokeWidth="1.5">
-                      <path d="M8 2L10 4L3 11H1V9L8 2Z" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <span style={{ opacity: 0.4, fontSize: '8px' }}>{domainCount}</span>
+                    <span>{domain}</span>
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
+                        background: isActive ? 'var(--gold)' : 'transparent',
+                        transform: isActive ? 'rotate(45deg)' : 'none',
+                        transition: 'all 150ms ease',
+                      }}
+                    />
                   </button>
-                )}
-                <button
-                  onClick={() => navigateToDomain(domain)}
-                  className="text-right transition-all"
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '9px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: isActive ? 'var(--gold)' : 'var(--dawn-30)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '2px 0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-50)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) e.currentTarget.style.color = 'var(--dawn-30)';
-                  }}
-                >
-                  <span style={{ opacity: 0.4, fontSize: '8px' }}>{domainCount}</span>
-                  <span>{domain}</span>
-                  <span
+                </div>
+
+                {/* Domain Settings Panel - admin only */}
+                {isAdmin && isShowingSettings && onDomainConfigChange && (
+                  <div
+                    className="domain-settings-panel"
                     style={{
-                      width: '6px',
-                      height: '6px',
-                      border: `1px solid ${isActive ? 'var(--gold)' : 'var(--dawn-30)'}`,
-                      background: isActive ? 'var(--gold)' : 'transparent',
-                      transform: isActive ? 'rotate(45deg)' : 'none',
-                      transition: 'all 150ms ease',
+                      background: 'rgba(5, 4, 3, 0.85)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid var(--dawn-20)',
+                      padding: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '14px',
+                      minWidth: '240px',
+                      marginTop: '8px',
                     }}
-                  />
-                </button>
+                  >
+                    <div style={{ 
+                      fontFamily: 'var(--font-mono)', 
+                      fontSize: '9px', 
+                      color: 'var(--dawn-30)', 
+                      letterSpacing: '0.15em', 
+                      textTransform: 'uppercase',
+                      borderBottom: '1px solid var(--dawn-15)',
+                      paddingBottom: '10px',
+                    }}>
+                      PARTICLE SETTINGS
+                    </div>
+
+                    {/* Attractor Type */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ 
+                        fontFamily: 'var(--font-mono)', 
+                        fontSize: '9px', 
+                        color: 'var(--dawn-40)', 
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        Equation
+                      </label>
+                      <select
+                        key={`${domain}-attractorType`}
+                        value={domainConfig.attractorType}
+                        onChange={(e) => {
+                          onDomainConfigChange(domain, 'attractorType', e.target.value as AttractorType);
+                        }}
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '10px',
+                          letterSpacing: '0.02em',
+                          color: 'var(--dawn-70)',
+                          background: 'rgba(5, 4, 3, 0.6)',
+                          border: '1px solid var(--dawn-20)',
+                          padding: '8px 10px',
+                          cursor: 'pointer',
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23666' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 10px center',
+                          paddingRight: '28px',
+                        }}
+                      >
+                        <option value="lorenz">Lorenz (Butterfly)</option>
+                        <option value="halvorsen">Halvorsen</option>
+                        <option value="aizawa">Aizawa</option>
+                        <option value="thomas">Thomas</option>
+                        <option value="sprott">Sprott B</option>
+                        <option value="rossler">Rössler</option>
+                        <option value="dadras">Dadras</option>
+                        <option value="galaxy">Galaxy Spiral</option>
+                      </select>
+                    </div>
+
+                    {/* Particle Density */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ 
+                        fontFamily: 'var(--font-mono)', 
+                        fontSize: '9px', 
+                        color: 'var(--dawn-40)', 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        <span>Density</span>
+                        <span style={{ color: 'var(--gold)', fontWeight: 500 }}>{domainConfig.particleDensity}</span>
+                      </label>
+                      <input
+                        key={`${domain}-particleDensity`}
+                        type="range"
+                        min="200"
+                        max="2000"
+                        value={domainConfig.particleDensity}
+                        onChange={(e) => onDomainConfigChange(domain, 'particleDensity', Number(e.target.value))}
+                        className="domain-slider"
+                      />
+                    </div>
+
+                    {/* Core Intensity */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ 
+                        fontFamily: 'var(--font-mono)', 
+                        fontSize: '9px', 
+                        color: 'var(--dawn-40)', 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        <span>Core Intensity</span>
+                        <span style={{ color: 'var(--gold)', fontWeight: 500 }}>{Math.round(domainConfig.coreIntensity * 100)}%</span>
+                      </label>
+                      <input
+                        key={`${domain}-coreIntensity`}
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={domainConfig.coreIntensity * 100}
+                        onChange={(e) => onDomainConfigChange(domain, 'coreIntensity', Number(e.target.value) / 100)}
+                        className="domain-slider"
+                      />
+                    </div>
+
+                    {/* Core Particle Ratio */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ 
+                        fontFamily: 'var(--font-mono)', 
+                        fontSize: '9px', 
+                        color: 'var(--dawn-40)', 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        <span>Core Ratio</span>
+                        <span style={{ color: 'var(--gold)', fontWeight: 500 }}>{Math.round(domainConfig.coreParticleRatio * 100)}%</span>
+                      </label>
+                      <input
+                        key={`${domain}-coreParticleRatio`}
+                        type="range"
+                        min="0"
+                        max="80"
+                        value={domainConfig.coreParticleRatio * 100}
+                        onChange={(e) => onDomainConfigChange(domain, 'coreParticleRatio', Number(e.target.value) / 100)}
+                        className="domain-slider"
+                      />
+                    </div>
+
+                    {/* Nebula Scale */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ 
+                        fontFamily: 'var(--font-mono)', 
+                        fontSize: '9px', 
+                        color: 'var(--dawn-40)', 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        <span>Nebula Scale</span>
+                        <span style={{ color: 'var(--gold)', fontWeight: 500 }}>{domainConfig.nebulaScale.toFixed(1)}x</span>
+                      </label>
+                      <input
+                        key={`${domain}-nebulaScale`}
+                        type="range"
+                        min="1"
+                        max="25"
+                        value={domainConfig.nebulaScale * 10}
+                        onChange={(e) => onDomainConfigChange(domain, 'nebulaScale', Number(e.target.value) / 10)}
+                        className="domain-slider"
+                      />
+                    </div>
+
+                    {/* Sphere Radius */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ 
+                        fontFamily: 'var(--font-mono)', 
+                        fontSize: '9px', 
+                        color: 'var(--dawn-40)', 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        <span>Sphere Radius</span>
+                        <span style={{ color: 'var(--gold)', fontWeight: 500 }}>{domainConfig.sphereRadius}px</span>
+                      </label>
+                      <input
+                        key={`${domain}-sphereRadius`}
+                        type="range"
+                        min="80"
+                        max="400"
+                        value={domainConfig.sphereRadius}
+                        onChange={(e) => onDomainConfigChange(domain, 'sphereRadius', Number(e.target.value))}
+                        className="domain-slider"
+                      />
+                    </div>
+
+                    {/* Card Glow */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ 
+                        fontFamily: 'var(--font-mono)', 
+                        fontSize: '9px', 
+                        color: 'var(--dawn-40)', 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>
+                        <span>Card Glow</span>
+                        <span style={{ color: 'var(--gold)', fontWeight: 500 }}>{Math.round(domainConfig.cardGlow * 100)}%</span>
+                      </label>
+                      <input
+                        key={`${domain}-cardGlow`}
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={domainConfig.cardGlow * 100}
+                        onChange={(e) => onDomainConfigChange(domain, 'cardGlow', Number(e.target.value) / 100)}
+                        className="domain-slider"
+                      />
+                    </div>
+
+                    {/* Custom slider styles */}
+                    <style>{`
+                      .domain-slider {
+                        -webkit-appearance: none;
+                        appearance: none;
+                        width: 100%;
+                        height: 2px;
+                        background: var(--dawn-20);
+                        outline: none;
+                        cursor: pointer;
+                      }
+                      .domain-slider::-webkit-slider-thumb {
+                        -webkit-appearance: none;
+                        appearance: none;
+                        width: 6px;
+                        height: 6px;
+                        background: var(--gold, #CAA554);
+                        cursor: pointer;
+                        border: none;
+                        border-radius: 0;
+                        margin-top: -2px;
+                      }
+                      .domain-slider::-moz-range-thumb {
+                        width: 6px;
+                        height: 6px;
+                        background: var(--gold, #CAA554);
+                        cursor: pointer;
+                        border: none;
+                        border-radius: 0;
+                      }
+                      .domain-slider::-webkit-slider-runnable-track {
+                        height: 2px;
+                        background: var(--dawn-20);
+                      }
+                      .domain-slider::-moz-range-track {
+                        height: 2px;
+                        background: var(--dawn-20);
+                      }
+                    `}</style>
+                  </div>
+                )}
               </div>
             );
           })}

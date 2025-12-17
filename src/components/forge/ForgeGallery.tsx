@@ -60,7 +60,7 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams, o
       setError(null);
     } catch (err) {
       if (!silent) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'Unknown error');
       }
     } finally {
       if (!silent) setLoading(false);
@@ -71,12 +71,12 @@ export function ForgeGallery({ sessionId, approvedOnly = false, onReuseParams, o
   useEffect(() => {
     fetchGenerations();
   }, [fetchGenerations]);
-
+    
   // Polling for in-progress generations (separate effect to avoid dependency issues)
   useEffect(() => {
     const pendingGenerations = generations.filter(g => 
-      g.status === 'pending' || g.status === 'processing'
-    );
+        g.status === 'pending' || g.status === 'processing'
+      );
 
     // Clear existing interval
     if (pollIntervalRef.current) {

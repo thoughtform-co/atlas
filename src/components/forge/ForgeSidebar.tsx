@@ -189,53 +189,53 @@ export function ForgeSidebar() {
         </div>
       )}
 
-      <aside className={styles.sidebar}>
-        {/* New Session Button */}
-        <button 
-          className={styles.newButton}
-          onClick={() => setShowNewInput(true)}
-          title="New Session"
-        >
-          <span className={styles.newIcon}>+</span>
-        </button>
+    <aside className={styles.sidebar}>
+      {/* New Session Button */}
+      <button 
+        className={styles.newButton}
+        onClick={() => setShowNewInput(true)}
+        title="New Session"
+      >
+        <span className={styles.newIcon}>+</span>
+      </button>
 
-        {/* New Session Input */}
-        {showNewInput && (
-          <div className={styles.newInputContainer}>
-            <input
-              type="text"
-              value={newSessionName}
-              onChange={(e) => setNewSessionName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Session name..."
-              className={styles.newInput}
-              autoFocus
-              disabled={creating}
-            />
+      {/* New Session Input */}
+      {showNewInput && (
+        <div className={styles.newInputContainer}>
+          <input
+            type="text"
+            value={newSessionName}
+            onChange={(e) => setNewSessionName(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Session name..."
+            className={styles.newInput}
+            autoFocus
+            disabled={creating}
+          />
+        </div>
+      )}
+
+      {/* Session List */}
+      <div className={styles.sessionList}>
+        {loading ? (
+          <div className={styles.loading}>
+            <div className={styles.loadingDot} />
+            <div className={styles.loadingDot} />
+            <div className={styles.loadingDot} />
           </div>
-        )}
-
-        {/* Session List */}
-        <div className={styles.sessionList}>
-          {loading ? (
-            <div className={styles.loading}>
-              <div className={styles.loadingDot} />
-              <div className={styles.loadingDot} />
-              <div className={styles.loadingDot} />
-            </div>
-          ) : sessions.length === 0 ? (
-            <div className={styles.empty}>
-              <span className={styles.emptyText}>No sessions</span>
-            </div>
-          ) : (
-            sessions.map((session) => (
+        ) : sessions.length === 0 ? (
+          <div className={styles.empty}>
+            <span className={styles.emptyText}>No sessions</span>
+          </div>
+        ) : (
+          sessions.map((session) => (
               <div key={session.id} className={styles.sessionItemWrapper}>
                 <div
-                  className={`${styles.sessionItem} ${
-                    currentSessionId === session.id ? styles.sessionActive : ''
-                  }`}
-                  onClick={() => router.push(`/forge/${session.id}`)}
-                  title={session.name}
+              className={`${styles.sessionItem} ${
+                currentSessionId === session.id ? styles.sessionActive : ''
+              }`}
+              onClick={() => router.push(`/forge/${session.id}`)}
+              title={session.name}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
@@ -243,23 +243,23 @@ export function ForgeSidebar() {
                       router.push(`/forge/${session.id}`);
                     }
                   }}
-                >
-                  {/* Thumbnail */}
-                  <div className={styles.thumbnail}>
-                    {session.thumbnail_url ? (
+            >
+              {/* Thumbnail */}
+              <div className={styles.thumbnail}>
+                {session.thumbnail_url ? (
                       <>
                         <img
-                          src={session.thumbnail_url}
+                    src={session.thumbnail_url}
                           alt={session.name}
                           className={styles.thumbnailImage}
                         />
                         <div className={styles.thumbnailOverlay} />
                       </>
-                    ) : (
-                      <div className={styles.thumbnailPlaceholder}>
+                ) : (
+                  <div className={styles.thumbnailPlaceholder}>
                         <span>◇</span>
-                      </div>
-                    )}
+                  </div>
+                )}
                   </div>
                 </div>
 
@@ -300,10 +300,10 @@ export function ForgeSidebar() {
                       </svg>
                     )}
                   </button>
-                </div>
+              </div>
 
-                {/* Session Info (shown on hover) */}
-                <div className={styles.sessionInfo}>
+              {/* Session Info (shown on hover) */}
+              <div className={styles.sessionInfo}>
                   {editingSessionId === session.id ? (
                     <input
                       ref={editInputRef}
@@ -318,18 +318,18 @@ export function ForgeSidebar() {
                     />
                   ) : (
                     <>
-                      <span className={styles.sessionName}>{session.name}</span>
-                      <span className={styles.sessionCount}>
-                        {session.completed_count} / {session.generation_count}
-                      </span>
+                <span className={styles.sessionName}>{session.name}</span>
+                <span className={styles.sessionCount}>
+                  {session.completed_count} / {session.generation_count}
+                </span>
                     </>
                   )}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </aside>
+          ))
+        )}
+      </div>
+    </aside>
     </div>
   );
 }
