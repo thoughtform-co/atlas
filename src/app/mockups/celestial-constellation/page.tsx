@@ -182,21 +182,39 @@ function CelestialEntityCard({
         top: projected.screenY,
         zIndex,
         opacity: cardOpacity,
-        transform: isSelected
-          ? `translate(-50%, -50%) perspective(800px) rotateY(0deg) rotateX(0deg) scale(1.1)`
-          : `translate(-50%, -50%) perspective(800px) rotateY(${rotationY}deg) rotateX(${rotationX}deg) scale(${depthScale})`,
         // @ts-expect-error CSS custom property
         '--glow-color': glowColor,
       }}
     >
-      {/* Use the REAL EntityCard - override its absolute positioning */}
-      <div className={styles.cardInner}>
-        <EntityCard
-          denizen={denizen}
-          onClick={() => onClick(denizen)}
-          isSelected={isSelected}
-          style={{ position: 'relative', transform: 'none' }}
-        />
+      {/* 3D card container with depth */}
+      <div
+        className={styles.card3d}
+        style={{
+          transform: isSelected
+            ? `rotateY(0deg) rotateX(0deg) scale(1.1)`
+            : `rotateY(${rotationY}deg) rotateX(${rotationX}deg) scale(${depthScale})`,
+        }}
+      >
+        {/* Front face - contains the real EntityCard */}
+        <div className={styles.cardFront}>
+          <EntityCard
+            denizen={denizen}
+            onClick={() => onClick(denizen)}
+            isSelected={isSelected}
+            style={{ position: 'relative', transform: 'none' }}
+          />
+        </div>
+        
+        {/* 3D Edge faces for depth effect */}
+        <div className={`${styles.cardEdge} ${styles.cardEdgeRight}`} />
+        <div className={`${styles.cardEdge} ${styles.cardEdgeLeft}`} />
+        <div className={`${styles.cardEdge} ${styles.cardEdgeTop}`} />
+        <div className={`${styles.cardEdge} ${styles.cardEdgeBottom}`} />
+        
+        {/* Back face */}
+        <div className={styles.cardBack}>
+          <div className={styles.backPattern} />
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    CELESTIAL CONSTELLATION MOCKUP - CSS MODULE
    
-   Wraps the REAL EntityCard component in a 3D transformable container.
-   Key: Override EntityCard's absolute positioning to make 3D work.
+   3D card wrapper with actual depth (edge faces) around EntityCard
    ═══════════════════════════════════════════════════════════════ */
 
 .container {
@@ -25,41 +24,160 @@
 }
 
 /* ─── 3D CARD WRAPPER ─── */
-/* This wrapper handles 2D positioning AND 3D transforms */
 .cardWrapper {
   position: absolute;
   pointer-events: auto;
   z-index: 10;
-  /* 3D transform applied directly on wrapper */
-  transform-style: preserve-3d;
-  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-  will-change: transform, opacity;
+  transform: translate(-50%, -50%);
+  /* Perspective for 3D effect */
+  perspective: 1000px;
+  perspective-origin: center center;
+  transition: opacity 0.3s ease;
+  --glow-color: rgba(202, 165, 84, 0.6);
+  --card-depth: 8px;
 }
 
-/* Glow effect behind card */
+/* Glow effect */
 .cardWrapper::before {
   content: '';
   position: absolute;
-  inset: -30px;
+  inset: -40px;
   background: radial-gradient(
-    ellipse 60% 60% at 50% 50%,
-    var(--glow-color, rgba(202, 165, 84, 0.3)) 0%,
+    ellipse 50% 50% at 50% 50%,
+    var(--glow-color) 0%,
     transparent 70%
   );
-  opacity: 0.5;
+  opacity: 0.4;
   pointer-events: none;
   z-index: -1;
 }
 
-/* Inner container - CRITICAL: makes EntityCard relative instead of absolute */
-.cardInner {
+/* ─── 3D CARD STRUCTURE ─── */
+.card3d {
+  position: relative;
+  width: 200px;
+  height: 266px;
   transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-/* Override EntityCard's absolute positioning for 3D to work */
-.cardInner :global(.entity-card) {
+/* ─── FRONT FACE ─── */
+.cardFront {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(calc(var(--card-depth) / 2));
+  /* Glowing border on front */
+  box-shadow: 
+    0 0 15px var(--glow-color),
+    0 0 30px rgba(202, 165, 84, 0.1);
+}
+
+/* Override EntityCard's absolute positioning */
+.cardFront :global(.entity-card) {
   position: relative !important;
   transform: none !important;
+}
+
+/* ─── EDGE FACES (actual 3D depth) ─── */
+.cardEdge {
+  position: absolute;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  /* Glass-like edge material with glow at corners */
+  background: linear-gradient(
+    180deg,
+    var(--glow-color) 0%,
+    rgba(30, 28, 25, 0.6) 10%,
+    rgba(20, 18, 16, 0.4) 50%,
+    rgba(30, 28, 25, 0.6) 90%,
+    var(--glow-color) 100%
+  );
+  border: 1px solid rgba(202, 165, 84, 0.3);
+}
+
+/* Right edge */
+.cardEdgeRight {
+  width: var(--card-depth);
+  height: 100%;
+  top: 0;
+  left: 100%;
+  transform-origin: 0% 50%;
+  transform: rotateY(90deg) translateX(calc(var(--card-depth) / -2));
+}
+
+/* Left edge */
+.cardEdgeLeft {
+  width: var(--card-depth);
+  height: 100%;
+  top: 0;
+  right: 100%;
+  transform-origin: 100% 50%;
+  transform: rotateY(-90deg) translateX(calc(var(--card-depth) / 2));
+}
+
+/* Top edge */
+.cardEdgeTop {
+  width: 100%;
+  height: var(--card-depth);
+  left: 0;
+  bottom: 100%;
+  transform-origin: 50% 100%;
+  transform: rotateX(90deg) translateY(calc(var(--card-depth) / 2));
+  background: linear-gradient(
+    90deg,
+    var(--glow-color) 0%,
+    rgba(30, 28, 25, 0.6) 10%,
+    rgba(20, 18, 16, 0.4) 50%,
+    rgba(30, 28, 25, 0.6) 90%,
+    var(--glow-color) 100%
+  );
+}
+
+/* Bottom edge */
+.cardEdgeBottom {
+  width: 100%;
+  height: var(--card-depth);
+  left: 0;
+  top: 100%;
+  transform-origin: 50% 0%;
+  transform: rotateX(-90deg) translateY(calc(var(--card-depth) / -2));
+  background: linear-gradient(
+    90deg,
+    var(--glow-color) 0%,
+    rgba(30, 28, 25, 0.6) 10%,
+    rgba(20, 18, 16, 0.4) 50%,
+    rgba(30, 28, 25, 0.6) 90%,
+    var(--glow-color) 100%
+  );
+}
+
+/* ─── BACK FACE ─── */
+.cardBack {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--surface-0, #0A0908);
+  border: 1px solid rgba(202, 165, 84, 0.2);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(calc(var(--card-depth) / -2)) rotateY(180deg);
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(202, 165, 84, 0.1);
+}
+
+.backPattern {
+  position: absolute;
+  inset: 15px;
+  border: 1px solid rgba(202, 165, 84, 0.15);
+  opacity: 0.5;
+  /* Grid pattern */
+  background: 
+    linear-gradient(90deg, transparent 49%, rgba(236, 227, 214, 0.05) 49%, rgba(236, 227, 214, 0.05) 51%, transparent 51%),
+    linear-gradient(0deg, transparent 49%, rgba(236, 227, 214, 0.05) 49%, rgba(236, 227, 214, 0.05) 51%, transparent 51%);
+  background-size: 25px 25px;
 }
 
 /* ─── LOADING STATE ─── */
