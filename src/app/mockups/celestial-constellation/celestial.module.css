@@ -53,22 +53,79 @@
   z-index: -1;
 }
 
-/* ─── CARD CONTAINER ─── */
+/* ─── 3D CARD STRUCTURE ─── */
 .card3d {
   position: relative;
+  width: 160px;  /* Slightly smaller */
+  height: 213px;
   transform-style: preserve-3d;
   transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-  /* Glowing border effect */
-  filter: drop-shadow(0 0 8px var(--glow-color));
 }
 
-/* Scale down the EntityCard slightly */
-.card3d :global(.entity-card) {
+/* ─── FRONT FACE ─── */
+.cardFront {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  /* VISIBLE from both sides - transparent tablet effect */
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  transform: translateZ(calc(var(--card-depth) / 2));
+  /* Semi-transparent glass effect */
+  opacity: 0.92;
+  /* Glowing border */
+  box-shadow: 
+    0 0 12px var(--glow-color),
+    0 0 25px rgba(202, 165, 84, 0.08);
+  overflow: hidden;
+}
+
+/* Scale down the EntityCard to fit smaller container */
+.cardFront :global(.entity-card) {
   position: relative !important;
-  transform: scale(0.85) !important;
-  transform-origin: center center !important;
-  /* Show card content from both sides (mirrored when behind) */
-  backface-visibility: visible !important;
+  transform: scale(0.8) !important;
+  transform-origin: top left !important;
+}
+
+/* Wrapper to contain scaled card */
+.cardFront :global(.entity-card > div) {
+  width: 200px;
+  height: 266px;
+}
+
+/* ─── EDGE FACES (actual 3D depth) ─── */
+.cardEdge {
+  position: absolute;
+  /* Semi-transparent glass edge */
+  background: linear-gradient(
+    180deg,
+    var(--glow-color) 0%,
+    rgba(40, 38, 35, 0.5) 10%,
+    rgba(30, 28, 25, 0.3) 50%,
+    rgba(40, 38, 35, 0.5) 90%,
+    var(--glow-color) 100%
+  );
+  border: 1px solid rgba(202, 165, 84, 0.25);
+}
+
+/* Right edge */
+.cardEdgeRight {
+  width: var(--card-depth);
+  height: 100%;
+  top: 0;
+  left: 100%;
+  transform-origin: 0% 50%;
+  transform: rotateY(90deg);
+}
+
+/* Left edge */
+.cardEdgeLeft {
+  width: var(--card-depth);
+  height: 100%;
+  top: 0;
+  right: 100%;
+  transform-origin: 100% 50%;
+  transform: rotateY(-90deg);
 }
 
 /* ─── LOADING STATE ─── */

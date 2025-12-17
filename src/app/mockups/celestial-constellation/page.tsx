@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Denizen, Position, Domain } from '@/lib/types';
+import { Denizen, Position } from '@/lib/types';
 import { NavigationHUD, FilterState } from '@/components/constellation/NavigationHUD';
 import { EntityCard } from '@/components/constellation/EntityCard';
 import { DenizenModalV3 } from '@/components/constellation/DenizenModalV3';
@@ -149,11 +149,12 @@ function CelestialEntityCard({
   // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
   
-  // TIDALLY LOCKED: Card faces outward from sphere center
-  // Use the current phi angle directly (continuous, no discontinuity)
-  const currentPhi = entity.basePhi + rotationAngle;
-  // Convert to degrees - card rotates WITH the orbit
-  const rotationY = currentPhi * (180 / Math.PI);
+  // TIDALLY LOCKED: Card always faces outward from sphere center
+  // atan2(x, z) gives angle from +Z axis to the position vector in XZ plane
+  // This makes the card front face away from center at all times
+  const rotationY = Math.atan2(pos.x, pos.z) * (180 / Math.PI);
+  
+  // No X rotation - keeps cards upright and prevents flip artifacts
   const rotationX = 0;
   
   // Project to screen
@@ -191,21 +192,28 @@ function CelestialEntityCard({
         '--glow-color': glowColor,
       }}
     >
-      {/* Card container with tidal lock rotation */}
+      {/* 3D card container - simple Y rotation only */}
       <div
         className={styles.card3d}
         style={{
-          transform: isSelected 
-            ? `rotateY(0deg) scale(1.1)` 
+          transform: isSelected
+            ? `rotateY(0deg) scale(1.1)`
             : `rotateY(${rotationY}deg) scale(${depthScale})`,
         }}
       >
-        <EntityCard
-          denizen={denizen}
-          onClick={() => onClick(denizen, entity)}
-          isSelected={isSelected}
-          style={{ position: 'relative', transform: 'none' }}
-        />
+        {/* Card content - visible from both sides (transparent tablet) */}
+        <div className={styles.cardFront}>
+          <EntityCard
+            denizen={denizen}
+            onClick={() => onClick(denizen, entity)}
+            isSelected={isSelected}
+            style={{ position: 'relative', transform: 'none' }}
+          />
+        </div>
+        
+        {/* 3D Edge faces for depth effect */}
+        <div className={`${styles.cardEdge} ${styles.cardEdgeRight}`} />
+        <div className={`${styles.cardEdge} ${styles.cardEdgeLeft}`} />
       </div>
     </div>
   );
