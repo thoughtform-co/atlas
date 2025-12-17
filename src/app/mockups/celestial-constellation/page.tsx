@@ -7,9 +7,6 @@ import { EntityCard } from '@/components/constellation/EntityCard';
 import { DenizenModalV3 } from '@/components/constellation/DenizenModalV3';
 import styles from './celestial.module.css';
 
-// Use static data for mockup
-import { denizens as staticDenizens } from '@/data/denizens';
-
 /**
  * CELESTIAL CONSTELLATION MOCKUP
  * 
@@ -17,8 +14,8 @@ import { denizens as staticDenizens } from '@/data/denizens';
  * - Starhaven Reaches (gold/orange)
  * - The Gradient Throne (teal/white)
  * 
+ * Fetches REAL denizens from Supabase (with images!)
  * Entity cards orbit ON spherical domain clusters
- * Uses the REAL EntityCard component for full functionality
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -45,8 +42,8 @@ const CONFIG = {
   connectionOpacity: 0.4,
   depthEffect: 0.5,
   rotationSpeed: 0.0008,
-  cardOffset: 1.3, // How far outside the sphere (multiplier of radius)
-  domainSeparation: 500, // Distance between the TWO domain spheres
+  cardOffset: 1.3,
+  domainSeparation: 500,
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -99,19 +96,19 @@ function project3D(
 
 interface EntitySphereData {
   denizen: Denizen;
-  baseTheta: number; // Vertical angle on sphere (0 to π)
-  basePhi: number;   // Horizontal angle on sphere (0 to 2π)
+  baseTheta: number;
+  basePhi: number;
   domain: string;
 }
 
 function getEntityPosition(entity: EntitySphereData, rotationAngle: number) {
   const theta = entity.baseTheta;
-  const phi = entity.basePhi + rotationAngle; // Rotate around Y axis
+  const phi = entity.basePhi + rotationAngle;
   const r = CONFIG.sphereRadius * CONFIG.cardOffset;
   
   return {
     x: r * Math.sin(theta) * Math.cos(phi),
-    y: r * Math.cos(theta), // Y is vertical
+    y: r * Math.cos(theta),
     z: r * Math.sin(theta) * Math.sin(phi),
   };
 }
@@ -130,6 +127,7 @@ interface CelestialCardProps {
   domainColor: { r: number; g: number; b: number };
   isSelected: boolean;
   onClick: (denizen: Denizen) => void;
+  windowSize: { width: number; height: number };
 }
 
 function CelestialEntityCard({
@@ -142,29 +140,20 @@ function CelestialEntityCard({
   domainColor,
   isSelected,
   onClick,
+  windowSize,
 }: CelestialCardProps) {
   const { denizen } = entity;
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   if (windowSize.width === 0) return null;
   
   // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
   
-  // Calculate facing angle for card rotation
+  // Calculate facing angle for 3D card rotation
   const facingAngle = Math.atan2(pos.z, pos.x);
   const rotationY = -facingAngle * (180 / Math.PI) + 90;
-  
-  // Add X rotation based on vertical position
   const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
-  const rotationX = verticalRatio * 30;
+  const rotationX = verticalRatio * 25;
   
   // Project to screen
   const screenCenterX = windowSize.width / 2 + viewOffset.x + sphereCenterX * viewScale;
@@ -178,49 +167,35 @@ function CelestialEntityCard({
   );
   
   // Depth-based scale and opacity
-  const depthScale = 0.5 + projected.depthAlpha * 0.7;
-  const cardOpacity = isSelected ? 1 : 0.4 + projected.depthAlpha * 0.6;
+  const depthScale = 0.6 + projected.depthAlpha * 0.5;
+  const cardOpacity = isSelected ? 1 : 0.5 + projected.depthAlpha * 0.5;
   const zIndex = isSelected ? 1000 : Math.floor(50 + pos.z / 5);
   
-  // Glow colors from domain
-  const glowColor = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.8)`;
-  const glowColorDim = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.3)`;
-
-  // When selected, card comes to center and faces forward
-  const selectedStyle = isSelected ? {
-    left: windowSize.width / 2 - 100,
-    top: windowSize.height / 2 - 133,
-    transform: 'none',
-    opacity: 1,
-  } : {};
+  // Glow colors
+  const glowColor = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.6)`;
 
   return (
     <div
-      className={`${styles.cardWrapper} ${isSelected ? styles.cardSelected : ''}`}
+      className={styles.cardWrapper}
       style={{
-        left: projected.screenX - 100,
-        top: projected.screenY - 133,
+        left: projected.screenX,
+        top: projected.screenY,
         zIndex,
         opacity: cardOpacity,
-        // @ts-expect-error CSS custom properties
+        transform: isSelected
+          ? `translate(-50%, -50%) perspective(800px) rotateY(0deg) rotateX(0deg) scale(1.1)`
+          : `translate(-50%, -50%) perspective(800px) rotateY(${rotationY}deg) rotateX(${rotationX}deg) scale(${depthScale})`,
+        // @ts-expect-error CSS custom property
         '--glow-color': glowColor,
-        '--glow-color-dim': glowColorDim,
-        ...selectedStyle,
       }}
     >
-      <div
-        className={styles.card3dContainer}
-        style={{
-          transform: isSelected 
-            ? 'perspective(800px) rotateY(0deg) rotateX(0deg) scale(1.2)'
-            : `perspective(800px) rotateY(${rotationY}deg) rotateX(${rotationX}deg) scale(${depthScale})`,
-        }}
-      >
-        {/* Use the REAL EntityCard component */}
+      {/* Use the REAL EntityCard - override its absolute positioning */}
+      <div className={styles.cardInner}>
         <EntityCard
           denizen={denizen}
           onClick={() => onClick(denizen)}
           isSelected={isSelected}
+          style={{ position: 'relative', transform: 'none' }}
         />
       </div>
     </div>
@@ -271,13 +246,12 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
       y: canvas.height / 2 + offset.y + worldY * scale,
     });
 
-    // Animation loop
     let animationId: number;
     const draw = () => {
       ctx.fillStyle = '#050403';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw stars
+      // Stars
       if (starsRef.current.length < 60 && Math.random() < 0.08) {
         starsRef.current.push({
           x: Math.random() * canvas.width,
@@ -291,14 +265,11 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
       starsRef.current = starsRef.current.filter(star => {
         star.life++;
         if (star.life >= star.maxLife) return false;
-        
         const progress = star.life / star.maxLife;
         const alpha = Math.sin(progress * Math.PI) * 0.4;
-        
         if (star.type === 'glitch') {
           ctx.fillStyle = `rgba(236, 227, 214, ${alpha * 0.3})`;
-          const glitchWidth = 20 + Math.random() * 40;
-          ctx.fillRect(star.x - glitchWidth / 2, star.y, glitchWidth, 1);
+          ctx.fillRect(star.x - 15, star.y, 30, 1);
         } else {
           ctx.fillStyle = `rgba(236, 227, 214, ${alpha})`;
           ctx.fillRect(Math.floor(star.x / 2) * 2, Math.floor(star.y / 2) * 2, star.size, star.size);
@@ -306,13 +277,13 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         return true;
       });
 
-      // Draw each sphere
+      // Draw spheres
       spheres.forEach(sphere => {
         const { color, particles, centerX, centerY, entities } = sphere;
         const screenCenter = worldToScreen(centerX, centerY);
         const screenRadius = CONFIG.sphereRadius * scale;
 
-        // Rotate and draw particles
+        // Particles
         particles.forEach(p => {
           const cosR = Math.cos(rotationAngle);
           const sinR = Math.sin(rotationAngle);
@@ -320,28 +291,23 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
           const rz = p.x * sinR + p.z * cosR;
           
           const projected = project3D(rx, p.y, rz, screenCenter.x, screenCenter.y, scale, CONFIG.depthEffect);
-          
           if (projected.screenX < -50 || projected.screenX > canvas.width + 50 ||
-              projected.screenY < -50 || projected.screenY > canvas.height + 50) {
-            return;
-          }
+              projected.screenY < -50 || projected.screenY > canvas.height + 50) return;
           
           const breathe = Math.sin(timeRef.current * 0.02 + p.phase) * 0.3 + 0.7;
           let alpha = p.alpha * breathe * projected.depthAlpha;
           if (p.isCore) alpha *= 1.5;
           
-          const px = Math.floor(projected.screenX / CONFIG.GRID) * CONFIG.GRID;
-          const py = Math.floor(projected.screenY / CONFIG.GRID) * CONFIG.GRID;
-          
           ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
-          ctx.fillRect(px, py, CONFIG.GRID - 1, CONFIG.GRID - 1);
+          ctx.fillRect(
+            Math.floor(projected.screenX / CONFIG.GRID) * CONFIG.GRID,
+            Math.floor(projected.screenY / CONFIG.GRID) * CONFIG.GRID,
+            CONFIG.GRID - 1, CONFIG.GRID - 1
+          );
         });
 
-        // Draw sphere core glow
-        const gradient = ctx.createRadialGradient(
-          screenCenter.x, screenCenter.y, 0,
-          screenCenter.x, screenCenter.y, screenRadius * 0.5
-        );
+        // Core glow
+        const gradient = ctx.createRadialGradient(screenCenter.x, screenCenter.y, 0, screenCenter.x, screenCenter.y, screenRadius * 0.5);
         const coreAlpha = CONFIG.coreIntensity * 0.15;
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${coreAlpha})`);
         gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${coreAlpha * 0.5})`);
@@ -351,11 +317,8 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         ctx.arc(screenCenter.x, screenCenter.y, screenRadius * 0.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw outer glow
-        const outerGradient = ctx.createRadialGradient(
-          screenCenter.x, screenCenter.y, screenRadius * 0.3,
-          screenCenter.x, screenCenter.y, screenRadius * 1.3
-        );
+        // Outer glow
+        const outerGradient = ctx.createRadialGradient(screenCenter.x, screenCenter.y, screenRadius * 0.3, screenCenter.x, screenCenter.y, screenRadius * 1.3);
         outerGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.05)`);
         outerGradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, 0.02)`);
         outerGradient.addColorStop(1, 'transparent');
@@ -364,15 +327,12 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
         ctx.arc(screenCenter.x, screenCenter.y, screenRadius * 1.3, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw connection lines from entities to center
+        // Connection lines
         entities.forEach(entity => {
           const pos = getEntityPosition(entity, rotationAngle);
           const projected = project3D(pos.x, pos.y, pos.z, screenCenter.x, screenCenter.y, scale, CONFIG.depthEffect);
           
-          const lineGradient = ctx.createLinearGradient(
-            screenCenter.x, screenCenter.y,
-            projected.screenX, projected.screenY
-          );
+          const lineGradient = ctx.createLinearGradient(screenCenter.x, screenCenter.y, projected.screenX, projected.screenY);
           const lineAlpha = CONFIG.connectionOpacity * projected.depthAlpha;
           lineGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 0.8})`);
           lineGradient.addColorStop(0.4, `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 0.4})`);
@@ -385,23 +345,10 @@ function CelestialCanvas({ spheres, offset, scale, rotationAngle }: CelestialCan
           ctx.lineTo(projected.screenX, projected.screenY);
           ctx.stroke();
           
-          // Connection point
-          const nodeAlpha = lineAlpha * 1.5;
-          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${nodeAlpha})`;
+          // Node
+          ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${lineAlpha * 1.5})`;
           ctx.beginPath();
           ctx.arc(projected.screenX, projected.screenY, 4, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Node glow
-          const nodeGlow = ctx.createRadialGradient(
-            projected.screenX, projected.screenY, 0,
-            projected.screenX, projected.screenY, 12
-          );
-          nodeGlow.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${nodeAlpha * 0.5})`);
-          nodeGlow.addColorStop(1, 'transparent');
-          ctx.fillStyle = nodeGlow;
-          ctx.beginPath();
-          ctx.arc(projected.screenX, projected.screenY, 12, 0, Math.PI * 2);
           ctx.fill();
         });
       });
@@ -429,9 +376,11 @@ export default function CelestialConstellationPage() {
   const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
-  const [isRotating, setIsRotating] = useState(true); // Rotation state
-  const [mounted, setMounted] = useState(false);
+  const [isRotating, setIsRotating] = useState(true);
   const [selectedDenizen, setSelectedDenizen] = useState<Denizen | null>(null);
+  const [denizens, setDenizens] = useState<Denizen[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [filters, setFilters] = useState<FilterState>({
     domains: new Set(),
     entityTypes: new Set(),
@@ -439,11 +388,30 @@ export default function CelestialConstellationPage() {
   });
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
 
-  // Use static data
-  const denizens = staticDenizens;
-
+  // Window size for SSR safety
   useEffect(() => {
-    setMounted(true);
+    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch REAL denizens from API (with images from Supabase)
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/admin/denizens');
+        if (res.ok) {
+          const data = await res.json();
+          setDenizens(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch denizens:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
   }, []);
 
   // Filter denizens
@@ -464,25 +432,18 @@ export default function CelestialConstellationPage() {
     });
   }, [denizens, filters]);
 
-  // Build TWO domain spheres - Starhaven Reaches and The Gradient Throne
+  // Build TWO domain spheres
   const domainSpheres = useMemo(() => {
-    // Map each denizen to one of the two target domains
-    // Use their actual domain if it matches, otherwise assign based on allegiance/type
     const mapToTargetDomain = (d: Denizen): string => {
-      // If denizen already has one of the target domains, use it
       if (d.domain === 'Starhaven Reaches' || d.domain === 'The Gradient Throne') {
         return d.domain;
       }
-      // Otherwise, map based on allegiance or position
-      // Nomenclate/hostile -> Gradient Throne, others -> Starhaven Reaches
       if (d.allegiance === 'Nomenclate' || d.threatLevel === 'Existential') {
         return 'The Gradient Throne';
       }
-      // Roughly split: use index-based distribution for demo
       return d.position.x > 0 ? 'The Gradient Throne' : 'Starhaven Reaches';
     };
 
-    // Group by the two target domains
     const groups = new Map<string, Denizen[]>();
     TARGET_DOMAINS.forEach(domain => groups.set(domain, []));
     
@@ -495,15 +456,12 @@ export default function CelestialConstellationPage() {
 
     TARGET_DOMAINS.forEach((domain, domainIndex) => {
       const group = groups.get(domain) || [];
-      if (group.length === 0) return; // Skip empty domains
+      if (group.length === 0) return;
       
       const color = DOMAIN_COLORS[domain];
-      
-      // Position the two domains horizontally: left and right
       const centerX = domainIndex === 0 ? -CONFIG.domainSeparation / 2 : CONFIG.domainSeparation / 2;
       const centerY = 0;
 
-      // Create particles for this sphere
       const particles: SphereParticle[] = [];
       for (let i = 0; i < CONFIG.particleDensity * 0.2; i++) {
         particles.push(createSphereParticle(CONFIG.sphereRadius, true));
@@ -512,33 +470,22 @@ export default function CelestialConstellationPage() {
         particles.push(createSphereParticle(CONFIG.sphereRadius, false));
       }
 
-      // Assign each entity a position ON the sphere (theta, phi)
       const entities: EntitySphereData[] = group.map((denizen, idx) => ({
         denizen,
-        // Spread vertically between 0.3π and 0.7π (visible band)
         baseTheta: Math.PI * (0.3 + (idx / Math.max(group.length - 1, 1)) * 0.4),
-        // Spread horizontally around sphere
         basePhi: (idx / group.length) * Math.PI * 2,
         domain,
       }));
 
-      spheres.push({
-        domain,
-        centerX,
-        centerY,
-        color,
-        particles,
-        entities,
-      });
+      spheres.push({ domain, centerX, centerY, color, particles, entities });
     });
 
     return spheres;
   }, [filteredDenizens]);
 
-  // Animation loop for rotation - STOPS when a card is selected
+  // Rotation animation
   useEffect(() => {
     if (!isRotating) return;
-    
     let animationId: number;
     const animate = () => {
       setRotationAngle(prev => prev + CONFIG.rotationSpeed);
@@ -548,19 +495,16 @@ export default function CelestialConstellationPage() {
     return () => cancelAnimationFrame(animationId);
   }, [isRotating]);
 
-  // Handle card click - stop rotation and show popup
   const handleCardClick = useCallback((denizen: Denizen) => {
     setSelectedDenizen(denizen);
-    setIsRotating(false); // Stop rotation when card is selected
+    setIsRotating(false);
   }, []);
 
-  // Handle popup close - resume rotation
   const handleClosePopup = useCallback(() => {
     setSelectedDenizen(null);
-    setIsRotating(true); // Resume rotation when popup closes
+    setIsRotating(true);
   }, []);
 
-  // Mouse handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.entity-card')) return;
     setIsDragging(true);
@@ -575,9 +519,7 @@ export default function CelestialConstellationPage() {
     lastMouseRef.current = { x: e.clientX, y: e.clientY };
   }, [isDragging]);
 
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+  const handleMouseUp = useCallback(() => setIsDragging(false), []);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -585,7 +527,6 @@ export default function CelestialConstellationPage() {
     setScale(prev => Math.max(0.3, Math.min(3, prev * zoomFactor)));
   }, []);
 
-  // Only show the TWO target domains in HUD
   const uniqueDomains = useMemo(() => {
     return TARGET_DOMAINS.map(name => ({
       id: name,
@@ -595,7 +536,7 @@ export default function CelestialConstellationPage() {
     }));
   }, []);
 
-  if (!mounted) return null;
+  if (windowSize.width === 0) return null;
 
   return (
     <div
@@ -606,7 +547,6 @@ export default function CelestialConstellationPage() {
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      {/* Canvas renders spheres, particles, connection lines */}
       <CelestialCanvas
         spheres={domainSpheres}
         offset={offset}
@@ -614,25 +554,28 @@ export default function CelestialConstellationPage() {
         rotationAngle={rotationAngle}
       />
 
-      {/* Entity Cards - using REAL EntityCard with 3D wrapper */}
-      {domainSpheres.map(sphere => 
-        sphere.entities.map(entity => (
-          <CelestialEntityCard
-            key={entity.denizen.id}
-            entity={entity}
-            sphereCenterX={sphere.centerX}
-            sphereCenterY={sphere.centerY}
-            rotationAngle={rotationAngle}
-            viewOffset={offset}
-            viewScale={scale}
-            domainColor={sphere.color}
-            isSelected={selectedDenizen?.id === entity.denizen.id}
-            onClick={handleCardClick}
-          />
-        ))
+      {loading ? (
+        <div className={styles.loading}>Loading denizens...</div>
+      ) : (
+        domainSpheres.map(sphere => 
+          sphere.entities.map(entity => (
+            <CelestialEntityCard
+              key={entity.denizen.id}
+              entity={entity}
+              sphereCenterX={sphere.centerX}
+              sphereCenterY={sphere.centerY}
+              rotationAngle={rotationAngle}
+              viewOffset={offset}
+              viewScale={scale}
+              domainColor={sphere.color}
+              isSelected={selectedDenizen?.id === entity.denizen.id}
+              onClick={handleCardClick}
+              windowSize={windowSize}
+            />
+          ))
+        )
       )}
 
-      {/* Entity Modal - same as main constellation view */}
       {selectedDenizen && (
         <DenizenModalV3
           denizen={selectedDenizen}
@@ -640,7 +583,6 @@ export default function CelestialConstellationPage() {
         />
       )}
 
-      {/* Navigation HUD */}
       <NavigationHUD
         denizens={denizens}
         domains={uniqueDomains}
@@ -650,9 +592,8 @@ export default function CelestialConstellationPage() {
         onFiltersChange={setFilters}
       />
 
-      {/* Mockup label */}
       <div className={styles.mockupLabel}>
-        CELESTIAL MOCKUP — {isRotating ? 'ROTATING' : 'PAUSED'}
+        CELESTIAL MOCKUP — {loading ? 'LOADING' : isRotating ? 'ROTATING' : 'PAUSED'}
       </div>
     </div>
   );

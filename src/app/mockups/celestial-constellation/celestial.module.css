@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
    CELESTIAL CONSTELLATION MOCKUP - CSS MODULE
    
-   Wraps the REAL EntityCard component in a 3D transformable container
-   for spherical orbit visualization.
+   Wraps the REAL EntityCard component in a 3D transformable container.
+   Key: Override EntityCard's absolute positioning to make 3D work.
    ═══════════════════════════════════════════════════════════════ */
 
 .container {
@@ -25,48 +25,55 @@
 }
 
 /* ─── 3D CARD WRAPPER ─── */
-/* Positions the card in 2D screen space and provides perspective context */
+/* This wrapper handles 2D positioning AND 3D transforms */
 .cardWrapper {
   position: absolute;
   pointer-events: auto;
   z-index: 10;
-  transition: opacity 0.3s ease;
-}
-
-/* Selected card rises above others */
-.cardWrapper.cardSelected {
-  z-index: 1000 !important;
-}
-
-/* 3D container that applies rotation transforms */
-.card3dContainer {
+  /* 3D transform applied directly on wrapper */
   transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  will-change: transform, opacity;
 }
 
-/* When card is selected, remove 3D rotation for popup viewing */
-.cardSelected .card3dContainer {
-  transform: perspective(800px) rotateY(0deg) rotateX(0deg) scale(1) !important;
-}
-
-/* Add subtle glow effect based on domain color */
+/* Glow effect behind card */
 .cardWrapper::before {
   content: '';
   position: absolute;
-  inset: -20px;
+  inset: -30px;
   background: radial-gradient(
-    ellipse 80% 80% at 50% 50%,
-    var(--glow-color-dim, rgba(202, 165, 84, 0.2)) 0%,
+    ellipse 60% 60% at 50% 50%,
+    var(--glow-color, rgba(202, 165, 84, 0.3)) 0%,
     transparent 70%
   );
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  opacity: 0.5;
   pointer-events: none;
   z-index: -1;
 }
 
-.cardWrapper:hover::before {
-  opacity: 1;
+/* Inner container - CRITICAL: makes EntityCard relative instead of absolute */
+.cardInner {
+  transform-style: preserve-3d;
+}
+
+/* Override EntityCard's absolute positioning for 3D to work */
+.cardInner :global(.entity-card) {
+  position: relative !important;
+  transform: none !important;
+}
+
+/* ─── LOADING STATE ─── */
+.loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dawn-50, rgba(236, 227, 214, 0.5));
+  z-index: 100;
 }
 
 /* ─── MOCKUP LABEL ─── */
