@@ -224,7 +224,7 @@ function initializeSpheres() {
 }
 
 /**
- * Create a card DOM element for an entity with front and back faces
+ * Create a card DOM element for an entity with front, back, and edge faces
  */
 function createCardElement(entity, color) {
   if (!state.cardsContainer) return;
@@ -232,11 +232,19 @@ function createCardElement(entity, color) {
   const card = document.createElement('div');
   card.className = 'entity-card';
   card.id = `card-${entity.id}`;
+  
+  // Set domain color as CSS variables for dynamic theming
+  card.style.setProperty('--glow-color', `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`);
+  card.style.setProperty('--glow-color-dim', `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`);
+  card.style.setProperty('--glow-color-bright', `rgba(${color.r}, ${color.g}, ${color.b}, 1)`);
+  card.style.setProperty('--glow-color-subtle', `rgba(${color.r}, ${color.g}, ${color.b}, 0.08)`);
+  
   card.innerHTML = `
-    <div class="card-front" style="border-color: rgba(${color.r}, ${color.g}, ${color.b}, 0.3);">
-      <div class="image" style="border-color: rgba(${color.r}, ${color.g}, ${color.b}, 0.2);">◇</div>
+    <div class="card-front">
+      <div class="image">◇</div>
       <div class="name">${entity.name}</div>
     </div>
+    <div class="card-edge"></div>
     <div class="card-back"></div>
   `;
   
