@@ -150,11 +150,12 @@ function CelestialEntityCard({
   const pos = getEntityPosition(entity, rotationAngle);
   
   // TIDALLY LOCKED: Card always faces outward from sphere center
-  // atan2(x, z) gives angle from +Z axis to the position vector in XZ plane
-  // This makes the card front face away from center at all times
-  const rotationY = Math.atan2(pos.x, pos.z) * (180 / Math.PI);
+  // Use the continuous phi angle directly instead of atan2 to avoid
+  // the ±180° branch cut discontinuity that causes flip artifacts
+  const continuousPhi = entity.basePhi + rotationAngle;
+  const rotationY = 90 - (continuousPhi * (180 / Math.PI));
   
-  // No X rotation - keeps cards upright and prevents flip artifacts
+  // No X rotation - keeps cards upright
   const rotationX = 0;
   
   // Project to screen

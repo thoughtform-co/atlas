@@ -364,11 +364,10 @@ function updateCards() {
       // Get rotated position
       const pos = getEntityPosition(entity, state.rotationAngle);
       
-      // Calculate the angle the card is facing (in radians)
-      const facingAngle = Math.atan2(pos.z, pos.x);
-      
-      // Convert to degrees - cards face outward from sphere center
-      const rotationY = -facingAngle * (180 / Math.PI) + 90;
+      // FIXED: Use continuous phi angle directly instead of atan2
+      // This avoids the ±180° branch cut discontinuity
+      const continuousPhi = entity.basePhi + state.rotationAngle;
+      const rotationY = 90 - (continuousPhi * (180 / Math.PI));
       
       // Add X rotation based on vertical position
       const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);

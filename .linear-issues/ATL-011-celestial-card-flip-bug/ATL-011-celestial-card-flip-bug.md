@@ -1,6 +1,6 @@
 # ATL-011: Celestial Constellation - Card Flip Bug on Horizontal X-Axis
 
-## Status: UNRESOLVED
+## Status: ✅ RESOLVED
 
 ## Priority: High
 
@@ -114,6 +114,28 @@ See the attached files in this folder:
 ## Visual Reference
 
 The HTML mockup at `design/mockups/celestial-constellation/index.html` exhibits the same issue, proving it's a fundamental math problem, not a React/CSS-specific issue.
+
+## ✅ THE FIX
+
+### Insight
+You already **know** the angle—it's `entity.basePhi + rotationAngle`. No need to recalculate it from position coordinates using `atan2`.
+
+### Before (broken):
+```typescript
+const rotationY = Math.atan2(pos.x, pos.z) * (180 / Math.PI);
+```
+
+### After (fixed):
+```typescript
+const continuousPhi = entity.basePhi + rotationAngle;
+const rotationY = 90 - (continuousPhi * (180 / Math.PI));
+```
+
+### Why It Works
+| Approach | Transition |
+|----------|------------|
+| `atan2(x, z)` | **JUMPS** at ±180° branch cut |
+| `90 - phi°` | **SMOOTH** always (continuous) |
 
 ## Related Commits
 
