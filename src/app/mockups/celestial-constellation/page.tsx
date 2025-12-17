@@ -243,7 +243,6 @@ export default function CelestialConstellationPage() {
 
   // Use static data
   const denizens = staticDenizens;
-  const connections = staticConnections;
 
   // Domain colors
   const domainColors: Record<string, { r: number; g: number; b: number }> = {
