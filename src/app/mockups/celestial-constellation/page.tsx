@@ -36,14 +36,14 @@ const DOMAIN_COLORS: Record<string, { r: number; g: number; b: number }> = {
 
 const CONFIG = {
   GRID: 3,
-  sphereRadius: 200,
+  sphereRadius: 180,
   coreIntensity: 0.6,
   particleDensity: 200,
   connectionOpacity: 0.4,
   depthEffect: 0.5,
   rotationSpeed: 0.0008,
-  cardOffset: 1.3,
-  domainSeparation: 500,
+  cardOffset: 1.4,
+  domainSeparation: 700, // Increased spacing between clusters
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -149,11 +149,16 @@ function CelestialEntityCard({
   // Get 3D position on sphere
   const pos = getEntityPosition(entity, rotationAngle);
   
-  // Calculate facing angle for 3D card rotation
-  const facingAngle = Math.atan2(pos.z, pos.x);
-  const rotationY = -facingAngle * (180 / Math.PI) + 90;
+  // Calculate rotation based on orbit position (phi angle)
+  // This gives continuous rotation without sudden flips
+  const currentPhi = entity.basePhi + rotationAngle;
+  // Card faces outward: when phi=0 (right side), card faces right (rotY=90)
+  // When phi=π (left side), card faces left (rotY=-90)
+  // When phi=π/2 (front), card faces viewer (rotY=0)
+  // When phi=3π/2 (back), card faces away (rotY=180)
+  const rotationY = -currentPhi * (180 / Math.PI);
   const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
-  const rotationX = verticalRatio * 25;
+  const rotationX = verticalRatio * 20;
   
   // Project to screen
   const screenCenterX = windowSize.width / 2 + viewOffset.x + sphereCenterX * viewScale;
