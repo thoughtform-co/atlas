@@ -559,14 +559,6 @@ export default function CelestialConstellationPage() {
     setScale(prev => Math.max(0.3, Math.min(3, prev * zoomFactor)));
   }, []);
 
-  const uniqueDomains = useMemo(() => {
-    return TARGET_DOMAINS.map(name => ({
-      id: name,
-      name,
-      description: '',
-      colorHue: name === 'Starhaven Reaches' ? 40 : 170,
-    }));
-  }, []);
 
   if (windowSize.width === 0) return null;
 
@@ -617,11 +609,10 @@ export default function CelestialConstellationPage() {
 
       <NavigationHUD
         denizens={denizens}
-        domains={uniqueDomains}
-        offset={offset}
-        scale={scale}
         filters={filters}
         onFiltersChange={setFilters}
+        filteredCount={filteredDenizens.length}
+        totalCount={denizens.length}
       />
 
       <div className={styles.mockupLabel}>
