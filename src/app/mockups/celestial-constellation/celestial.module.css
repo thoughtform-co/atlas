@@ -28,12 +28,12 @@
 .cardWrapper {
   position: absolute;
   pointer-events: auto;
-  z-index: 10;
+  /* z-index is set dynamically based on depth, kept low (< 50) */
   transform: translate(-50%, -50%);
   /* Perspective for 3D effect */
   perspective: 1200px;
   perspective-origin: center center;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
   --glow-color: rgba(202, 165, 84, 0.6);
   --card-depth: 6px;
 }

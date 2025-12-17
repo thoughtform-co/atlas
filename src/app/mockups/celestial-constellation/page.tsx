@@ -126,7 +126,7 @@ interface CelestialCardProps {
   viewScale: number;
   domainColor: { r: number; g: number; b: number };
   isSelected: boolean;
-  onClick: (denizen: Denizen) => void;
+  onClick: (denizen: Denizen, entity: EntitySphereData) => void;
   windowSize: { width: number; height: number };
 }
 
@@ -172,7 +172,8 @@ function CelestialEntityCard({
   // Depth-based scale and opacity
   const depthScale = 0.6 + projected.depthAlpha * 0.5;
   const cardOpacity = isSelected ? 1 : 0.5 + projected.depthAlpha * 0.5;
-  const zIndex = isSelected ? 1000 : Math.floor(50 + pos.z / 5);
+  // Keep z-index low so cards stay behind popup (popup is z-index 100+)
+  const zIndex = Math.floor(10 + pos.z / 10);
   
   // Glow colors
   const glowColor = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.6)`;
@@ -202,7 +203,7 @@ function CelestialEntityCard({
         <div className={styles.cardFront}>
           <EntityCard
             denizen={denizen}
-            onClick={() => onClick(denizen)}
+            onClick={() => onClick(denizen, entity)}
             isSelected={isSelected}
             style={{ position: 'relative', transform: 'none' }}
           />
@@ -522,7 +523,16 @@ export default function CelestialConstellationPage() {
     return () => cancelAnimationFrame(animationId);
   }, [isRotating]);
 
-  const handleCardClick = useCallback((denizen: Denizen) => {
+  const handleCardClick = useCallback((denizen: Denizen, entity: EntitySphereData) => {
+    // Calculate target rotation to bring this card to the front (z = max)
+    // Card is at front when phi + rotationAngle = π/2 (facing viewer)
+    const targetPhi = Math.PI / 2; // Front position
+    const currentPhi = entity.basePhi;
+    // Calculate rotation needed to bring this card to front
+    const targetRotation = targetPhi - currentPhi;
+    
+    // Animate rotation to target
+    setRotationAngle(targetRotation);
     setSelectedDenizen(denizen);
     setIsRotating(false);
   }, []);
