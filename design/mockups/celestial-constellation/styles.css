@@ -79,75 +79,200 @@ body {
   transform-origin: center center;
   transform-style: preserve-3d;
   /* Actual 3D depth of the terminal slab */
-  --card-depth: 8px;
+  --card-depth: 6px;
   /* Default glow color - overridden per-card via JS */
   --glow-color: rgba(202, 165, 84, 0.8);
   --glow-color-dim: rgba(202, 165, 84, 0.3);
   --glow-color-bright: rgba(202, 165, 84, 1);
 }
 
-.entity-card:hover .card-front {
-  box-shadow: 
-    0 0 30px var(--glow-color),
-    0 0 60px var(--glow-color-dim);
-}
 
-/* ─── FRONT FACE - Transparent Glass Display ─── */
+/* ─── FRONT FACE - Glass Terminal with Captured Media ─── */
 .entity-card .card-front {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    135deg,
-    rgba(40, 36, 32, 0.25) 0%,
-    rgba(20, 18, 16, 0.15) 50%,
-    rgba(40, 36, 32, 0.25) 100%
-  );
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--surface-0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  /* Push front face forward by half depth */
-  transform: translateZ(4px);
+  transform: translateZ(3px);
+  overflow: hidden;
   
   /* Thin glowing border */
-  border: 1px solid var(--glow-color);
+  border: 1px solid var(--glow-color-dim);
   box-shadow: 
-    inset 0 0 15px var(--glow-color-subtle, rgba(202, 165, 84, 0.08)),
     0 0 12px var(--glow-color-dim);
 }
 
-/* Screen content container */
-.entity-card .card-screen {
+/* Media container - "captured in amber" effect */
+.entity-card .card-media {
   position: absolute;
-  inset: 8px;
-  display: flex;
-  flex-direction: column;
-  padding: 6px;
+  inset: 0;
+  overflow: hidden;
+}
+
+.entity-card .card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Slight amber/gold tint to feel "captured" */
+  filter: sepia(0.08) saturate(1.1);
+  transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.entity-card:hover .card-image {
+  transform: scale(1.03);
+}
+
+/* Gradient overlay for readability */
+.entity-card .card-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(5, 4, 3, 0.1) 0%,
+    transparent 30%,
+    transparent 50%,
+    rgba(5, 4, 3, 0.4) 80%,
+    rgba(5, 4, 3, 0.85) 100%
+  );
+  pointer-events: none;
+}
+
+/* Scanlines effect */
+.entity-card .card-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.entity-card:hover .card-scanlines {
+  opacity: 1;
+}
+
+/* Glyphs */
+.entity-card .card-glyphs {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: var(--font-mono);
+  font-size: 7px;
+  line-height: 1.6;
+  color: var(--dawn-30);
+  letter-spacing: 0.1em;
+  writing-mode: vertical-rl;
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.entity-card:hover .card-glyphs {
+  opacity: 0.75;
+}
+
+/* Threat indicator dot */
+.entity-card .card-threat {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  opacity: 0.8;
+  transition: transform 0.3s ease;
+}
+
+.entity-card:hover .card-threat {
+  transform: scale(1.2);
+}
+
+/* Info overlay with glassmorphism */
+.entity-card .card-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: rgba(10, 9, 8, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(236, 227, 214, 0.1);
+}
+
+.entity-card .card-name {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dawn);
+  line-height: 1.35;
+}
+
+.entity-card .card-subtitle {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dawn-50);
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+.entity-card .card-meta {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--dawn-08);
+}
+
+.entity-card .card-type {
+  font-family: var(--font-mono);
+  font-size: 6px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dawn-30);
+}
+
+.entity-card .card-type em {
+  font-style: normal;
+  color: var(--dawn-50);
 }
 
 /* Corner accents */
-.entity-card .card-front::before,
-.entity-card .card-front::after {
-  content: '';
+.entity-card .corner-tl,
+.entity-card .corner-br {
   position: absolute;
-  width: 6px;
-  height: 6px;
-  border: 1px solid var(--glow-color);
+  width: 8px;
+  height: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.entity-card .card-front::before {
-  top: 3px;
-  left: 3px;
-  border-right: none;
-  border-bottom: none;
+.entity-card:hover .corner-tl,
+.entity-card:hover .corner-br {
+  opacity: 1;
 }
 
-.entity-card .card-front::after {
-  bottom: 3px;
-  right: 3px;
-  border-left: none;
-  border-top: none;
+.entity-card .corner-tl {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--glow-color);
+  border-left: 1px solid var(--glow-color);
+}
+
+.entity-card .corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--glow-color);
+  border-right: 1px solid var(--glow-color);
 }
 
 /* ─── 3D EDGE FACES - Actual perpendicular depth ─── */
@@ -165,9 +290,9 @@ body {
   border: 1px solid var(--glow-color-dim);
 }
 
-/* Right edge - 8px deep perpendicular face */
+/* Right edge - 6px deep perpendicular face */
 .entity-card .card-edge-right {
-  width: 8px;
+  width: 6px;
   height: 100%;
   top: 0;
   left: 100%;
@@ -177,7 +302,7 @@ body {
 
 /* Left edge */
 .entity-card .card-edge-left {
-  width: 8px;
+  width: 6px;
   height: 100%;
   top: 0;
   right: 100%;
@@ -188,7 +313,7 @@ body {
 /* Top edge */
 .entity-card .card-edge-top {
   width: 100%;
-  height: 8px;
+  height: 6px;
   left: 0;
   bottom: 100%;
   transform-origin: 50% 100%;
@@ -206,7 +331,7 @@ body {
 /* Bottom edge */
 .entity-card .card-edge-bottom {
   width: 100%;
-  height: 8px;
+  height: 6px;
   left: 0;
   top: 100%;
   transform-origin: 50% 0%;
@@ -226,68 +351,42 @@ body {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    135deg,
-    rgba(25, 22, 18, 0.2) 0%,
-    rgba(15, 13, 11, 0.1) 50%,
-    rgba(25, 22, 18, 0.2) 100%
-  );
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--surface-0);
   border: 1px solid var(--glow-color-dim);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  /* Push back face backward by depth, then flip */
-  transform: translateZ(-4px) rotateY(180deg);
+  transform: translateZ(-3px) rotateY(180deg);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 
-    inset 0 0 15px var(--glow-color-subtle, rgba(202, 165, 84, 0.05)),
-    0 0 8px var(--glow-color-dim);
+  box-shadow: 0 0 8px var(--glow-color-dim);
+  overflow: hidden;
 }
 
-/* Subtle pattern on back */
-.entity-card .card-back::before {
-  content: '';
+/* Grid pattern on back */
+.entity-card .back-pattern {
   position: absolute;
-  inset: 15px;
+  inset: 12px;
   border: 1px solid var(--glow-color-dim);
-  opacity: 0.5;
+  opacity: 0.3;
+  background: 
+    linear-gradient(90deg, transparent 49%, var(--dawn-08) 49%, var(--dawn-08) 51%, transparent 51%),
+    linear-gradient(0deg, transparent 49%, var(--dawn-08) 49%, var(--dawn-08) 51%, transparent 51%);
+  background-size: 20px 20px;
 }
 
-.entity-card .card-back::after {
-  content: '◇';
+.entity-card .back-glyph {
   color: var(--glow-color-dim);
   font-size: 20px;
+  z-index: 1;
 }
 
-/* ─── SCREEN CONTENT ─── */
-.entity-card .image {
-  flex: 1;
-  width: 100%;
-  background: rgba(5, 4, 3, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--glow-color);
-  font-size: 14px;
-  border: 1px solid var(--glow-color-dim);
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
-  margin-bottom: 4px;
-}
-
-.entity-card .name {
-  font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--glow-color);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-shadow: 0 0 6px var(--glow-color-dim);
+/* Hover glow effect on entire card */
+.entity-card:hover .card-front {
+  border-color: var(--glow-color);
+  box-shadow: 
+    0 0 20px var(--glow-color-dim),
+    0 0 40px var(--glow-color-subtle);
 }
 
 /* ─── HUD ELEMENTS ─── */

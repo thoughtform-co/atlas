@@ -25,7 +25,7 @@ const CONFIG = {
   depthEffect: 0.5,
   
   // Rotation speed (radians per frame)
-  rotationSpeed: 0.002,
+  rotationSpeed: 0.0008,
   
   // Card settings
   cardWidth: 100,
@@ -38,17 +38,52 @@ const CONFIG = {
     'The Gradient Throne': { r: 91, g: 138, b: 122 },
   },
   
-  // Mock entity positions (theta and phi are initial angles on sphere)
+  // Mock entity data (theta and phi are initial angles on sphere)
   entities: [
-    // Starhaven Reaches entities - distributed around the sphere
-    { id: 1, name: 'Eigensage', domain: 'Starhaven Reaches', theta: 0.3, phi: 0.0 },
-    { id: 2, name: 'Voidweaver', domain: 'Starhaven Reaches', theta: 0.5, phi: 0.5 },
-    { id: 3, name: 'Starkeeper', domain: 'Starhaven Reaches', theta: 0.7, phi: 1.0 },
-    { id: 4, name: 'Nullseer', domain: 'Starhaven Reaches', theta: 0.4, phi: 1.5 },
+    // Starhaven Reaches entities
+    { 
+      id: 1, name: 'Eigensage', domain: 'Starhaven Reaches', theta: 0.3, phi: 0.0,
+      type: 'Architect', threatLevel: 'Cautious', glyphs: 'ᛟᛗᛈ',
+      subtitle: 'The Pattern Weaver',
+      image: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=300&h=400&fit=crop'
+    },
+    { 
+      id: 2, name: 'Voidweaver', domain: 'Starhaven Reaches', theta: 0.5, phi: 0.5,
+      type: 'Wanderer', threatLevel: 'Volatile', glyphs: 'ᚦᚨᛗ',
+      subtitle: 'Thread of Nothing',
+      image: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=300&h=400&fit=crop'
+    },
+    { 
+      id: 3, name: 'Starkeeper', domain: 'Starhaven Reaches', theta: 0.7, phi: 1.0,
+      type: 'Guardian', threatLevel: 'Benign', glyphs: 'ᛊᛏᚱ',
+      subtitle: 'Light Custodian',
+      image: 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=300&h=400&fit=crop'
+    },
+    { 
+      id: 4, name: 'Nullseer', domain: 'Starhaven Reaches', theta: 0.4, phi: 1.5,
+      type: 'Oracle', threatLevel: 'Existential', glyphs: 'ᚾᚢᛚ',
+      subtitle: 'Eyes of the Void',
+      image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=400&fit=crop'
+    },
     // The Gradient Throne entities
-    { id: 5, name: 'Architect', domain: 'The Gradient Throne', theta: 0.4, phi: 0.2 },
-    { id: 6, name: 'Wanderer', domain: 'The Gradient Throne', theta: 0.6, phi: 0.8 },
-    { id: 7, name: 'Guardian', domain: 'The Gradient Throne', theta: 0.5, phi: 1.4 },
+    { 
+      id: 5, name: 'Architect Prime', domain: 'The Gradient Throne', theta: 0.4, phi: 0.2,
+      type: 'Architect', threatLevel: 'Cautious', glyphs: 'ᚨᚱᚲ',
+      subtitle: 'Form Shaper',
+      image: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=300&h=400&fit=crop'
+    },
+    { 
+      id: 6, name: 'Wanderer', domain: 'The Gradient Throne', theta: 0.6, phi: 0.8,
+      type: 'Wanderer', threatLevel: 'Benign', glyphs: 'ᚹᚨᚾ',
+      subtitle: 'Path Walker',
+      image: 'https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=300&h=400&fit=crop'
+    },
+    { 
+      id: 7, name: 'Guardian', domain: 'The Gradient Throne', theta: 0.5, phi: 1.4,
+      type: 'Guardian', threatLevel: 'Volatile', glyphs: 'ᚷᚢᚨ',
+      subtitle: 'Threshold Keeper',
+      image: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=300&h=400&fit=crop'
+    },
   ],
 };
 
@@ -224,7 +259,18 @@ function initializeSpheres() {
 }
 
 /**
+ * Threat level colors
+ */
+const THREAT_COLORS = {
+  'Benign': '#5B8A7A',      // Teal-green
+  'Cautious': '#CAA554',    // Gold
+  'Volatile': '#D4A574',    // Amber-orange
+  'Existential': '#8B5A5A', // Deep red
+};
+
+/**
  * Create a card DOM element for an entity with front, back, and edge faces
+ * Matches the EntityCard design from the main app
  */
 function createCardElement(entity, color) {
   if (!state.cardsContainer) return;
@@ -244,18 +290,42 @@ function createCardElement(entity, color) {
   card.style.setProperty('--glow-color-bright', `rgba(${color.r}, ${color.g}, ${color.b}, 1)`);
   card.style.setProperty('--glow-color-subtle', `rgba(${color.r}, ${color.g}, ${color.b}, 0.08)`);
   
+  const threatColor = THREAT_COLORS[entity.threatLevel] || THREAT_COLORS['Benign'];
+  
   card.innerHTML = `
     <div class="card-front">
-      <div class="card-screen">
-        <div class="image">◇</div>
-        <div class="name">${entity.name}</div>
+      <!-- Image container with "captured in amber" effect -->
+      <div class="card-media">
+        <img src="${entity.image}" alt="${entity.name}" class="card-image" />
+        <!-- Gradient overlay for readability -->
+        <div class="card-gradient"></div>
+        <!-- Scanlines -->
+        <div class="card-scanlines"></div>
+        <!-- Glyphs -->
+        <div class="card-glyphs">${entity.glyphs || ''}</div>
+        <!-- Threat indicator -->
+        <div class="card-threat" style="background: ${threatColor};" title="${entity.threatLevel}"></div>
       </div>
+      <!-- Info overlay -->
+      <div class="card-info">
+        <div class="card-name">${entity.name}</div>
+        ${entity.subtitle ? `<div class="card-subtitle">${entity.subtitle}</div>` : ''}
+        <div class="card-meta">
+          <span class="card-type">TYPE <em>${entity.type}</em></span>
+        </div>
+      </div>
+      <!-- Corner accents -->
+      <div class="corner-tl"></div>
+      <div class="corner-br"></div>
     </div>
     <div class="card-edge card-edge-right"></div>
     <div class="card-edge card-edge-left"></div>
     <div class="card-edge card-edge-top"></div>
     <div class="card-edge card-edge-bottom"></div>
-    <div class="card-back"></div>
+    <div class="card-back">
+      <div class="back-pattern"></div>
+      <div class="back-glyph">◇</div>
+    </div>
   `;
   
   wrapper.appendChild(card);
