@@ -627,6 +627,66 @@ export default function CelestialConstellationPage() {
       <div className={styles.mockupLabel}>
         CELESTIAL MOCKUP — {loading ? 'LOADING' : isRotating ? 'ROTATING' : 'PAUSED'}
       </div>
+
+      {/* Performance Monitor */}
+      <PerformanceMonitor />
+    </div>
+  );
+}
+
+// Simple FPS/Performance monitor component
+function PerformanceMonitor() {
+  const [fps, setFps] = useState(0);
+  const [memory, setMemory] = useState<number | null>(null);
+  const frameTimesRef = useRef<number[]>([]);
+  const lastTimeRef = useRef(performance.now());
+
+  useEffect(() => {
+    let animationId: number;
+    
+    const measure = () => {
+      const now = performance.now();
+      const delta = now - lastTimeRef.current;
+      lastTimeRef.current = now;
+      
+      // Track last 60 frame times
+      frameTimesRef.current.push(delta);
+      if (frameTimesRef.current.length > 60) {
+        frameTimesRef.current.shift();
+      }
+      
+      // Calculate average FPS
+      const avgDelta = frameTimesRef.current.reduce((a, b) => a + b, 0) / frameTimesRef.current.length;
+      setFps(Math.round(1000 / avgDelta));
+      
+      // Memory (Chrome only)
+      // @ts-expect-error Chrome-specific API
+      if (performance.memory) {
+        // @ts-expect-error Chrome-specific API
+        setMemory(Math.round(performance.memory.usedJSHeapSize / 1024 / 1024));
+      }
+      
+      animationId = requestAnimationFrame(measure);
+    };
+    
+    animationId = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(animationId);
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 20,
+      right: 80,
+      fontFamily: 'var(--font-mono)',
+      fontSize: '10px',
+      letterSpacing: '0.1em',
+      color: fps < 30 ? '#ff6b6b' : fps < 50 ? '#ffd93d' : '#6bcb77',
+      zIndex: 100,
+      textAlign: 'right',
+    }}>
+      <div>FPS: {fps}</div>
+      {memory !== null && <div>MEM: {memory}MB</div>}
     </div>
   );
 }
