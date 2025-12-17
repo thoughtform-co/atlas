@@ -171,9 +171,12 @@ function CelestialEntityCard({
   
   // Depth-based scale and opacity
   const depthScale = 0.6 + projected.depthAlpha * 0.5;
-  const cardOpacity = isSelected ? 1 : 0.5 + projected.depthAlpha * 0.5;
-  // Keep z-index low so cards stay behind popup (popup is z-index 100+)
-  const zIndex = Math.floor(10 + pos.z / 10);
+  // Cards at back are dimmer but still visible
+  const cardOpacity = isSelected ? 1 : 0.4 + projected.depthAlpha * 0.6;
+  // Z-index: always positive (5-50 range), cards behind popup (popup is 100+)
+  // pos.z ranges from -sphereRadius to +sphereRadius
+  const normalizedZ = (pos.z + CONFIG.sphereRadius * CONFIG.cardOffset) / (CONFIG.sphereRadius * CONFIG.cardOffset * 2);
+  const zIndex = Math.floor(5 + normalizedZ * 45);
   
   // Glow colors
   const glowColor = `rgba(${domainColor.r}, ${domainColor.g}, ${domainColor.b}, 0.6)`;

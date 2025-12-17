@@ -21,7 +21,7 @@
 .canvas {
   position: fixed;
   inset: 0;
-  z-index: 1;
+  z-index: 1; /* Cards are z-index 5-50, popup is 100+ */
 }
 
 /* ─── 3D CARD WRAPPER ─── */
