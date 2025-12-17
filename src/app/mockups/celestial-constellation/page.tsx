@@ -154,9 +154,8 @@ function CelestialEntityCard({
   // This makes the card front face away from center at all times
   const rotationY = Math.atan2(pos.x, pos.z) * (180 / Math.PI);
   
-  // Subtle vertical tilt based on Y position
-  const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
-  const rotationX = -verticalRatio * 15;
+  // No X rotation - keeps cards upright and prevents flip artifacts
+  const rotationX = 0;
   
   // Project to screen
   const screenCenterX = windowSize.width / 2 + viewOffset.x + sphereCenterX * viewScale;
