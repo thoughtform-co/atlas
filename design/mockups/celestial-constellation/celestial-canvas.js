@@ -241,10 +241,15 @@ function createCardElement(entity, color) {
   
   card.innerHTML = `
     <div class="card-front">
-      <div class="image">◇</div>
-      <div class="name">${entity.name}</div>
+      <div class="card-screen">
+        <div class="image">◇</div>
+        <div class="name">${entity.name}</div>
+      </div>
     </div>
-    <div class="card-edge"></div>
+    <div class="card-edge card-edge-right"></div>
+    <div class="card-edge card-edge-left"></div>
+    <div class="card-edge card-edge-top"></div>
+    <div class="card-edge card-edge-bottom"></div>
     <div class="card-back"></div>
   `;
   
@@ -287,13 +292,11 @@ function updateCards() {
       
       // Convert to degrees for CSS transform
       // Cards face outward from sphere, so rotate by the facing angle
-      // When z > 0 (behind), card back should show
-      // When z < 0 (in front), card front should show
       const rotationY = -facingAngle * (180 / Math.PI) + 90;
       
-      // Add slight X rotation based on vertical position (theta)
+      // Add slight X rotation based on vertical position
       const verticalRatio = pos.y / (CONFIG.sphereRadius * CONFIG.cardOffset);
-      const rotationX = verticalRatio * 15; // Subtle tilt
+      const rotationX = verticalRatio * 20;
       
       // Project to screen
       const projected = project3D(
@@ -305,28 +308,28 @@ function updateCards() {
       
       // Position card centered on the projected point
       const cardX = projected.screenX - CONFIG.cardWidth / 2;
-      const cardY = projected.screenY - CONFIG.cardHeight / 2;
+      const cardY = projected.screenY - 70; // Half of card height (140px)
       
       card.style.left = `${cardX}px`;
       card.style.top = `${cardY}px`;
       card.style.width = `${CONFIG.cardWidth}px`;
       
       // Z-index based on depth (front cards on top)
-      card.style.zIndex = Math.floor(50 + pos.z / 10);
+      card.style.zIndex = Math.floor(50 + pos.z / 5);
       
       // Scale based on depth for perspective effect
-      const depthScale = 0.7 + projected.depthAlpha * 0.5;
+      const depthScale = 0.6 + projected.depthAlpha * 0.6;
       
-      // Apply 3D transform: position, rotation, and scale
+      // Apply 3D transform with proper perspective for terminal depth
       card.style.transform = `
-        perspective(800px)
+        perspective(600px)
         rotateY(${rotationY}deg)
         rotateX(${rotationX}deg)
         scale(${depthScale})
       `;
       
-      // Adjust overall opacity slightly (cards at back are a bit dimmer)
-      card.style.opacity = 0.6 + projected.depthAlpha * 0.4;
+      // Adjust opacity - cards at back are dimmer but still visible
+      card.style.opacity = 0.5 + projected.depthAlpha * 0.5;
     });
   });
 }
