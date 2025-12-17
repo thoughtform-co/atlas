@@ -34,17 +34,32 @@ const DOMAIN_COLORS: Record<string, { r: number; g: number; b: number }> = {
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════
 
-const CONFIG = {
+interface Config {
+  GRID: number;
+  sphereRadius: number;
+  coreIntensity: number;
+  particleDensity: number;
+  connectionOpacity: number;
+  depthEffect: number;
+  rotationSpeed: number;
+  cardOffset: number;
+  domainSeparation: number;
+}
+
+const DEFAULT_CONFIG: Config = {
   GRID: 3,
   sphereRadius: 180,
   coreIntensity: 0.6,
   particleDensity: 200,
   connectionOpacity: 0.4,
   depthEffect: 0.5,
-  rotationSpeed: 0.0008,
+  rotationSpeed: 0.0003,
   cardOffset: 1.4,
-  domainSeparation: 700, // Increased spacing between clusters
+  domainSeparation: 700,
 };
+
+// Mutable config for non-React code (canvas)
+let CONFIG = { ...DEFAULT_CONFIG };
 
 // ═══════════════════════════════════════════════════════════════
 // SPHERE PARTICLE SYSTEM
@@ -404,7 +419,22 @@ export default function CelestialConstellationPage() {
     entityTypes: new Set(),
     allegiances: new Set(),
   });
+  const [showSettings, setShowSettings] = useState(false);
+  const [config, setConfig] = useState<Config>({ ...DEFAULT_CONFIG });
   const lastMouseRef = useRef<Position>({ x: 0, y: 0 });
+
+  // Sync mutable CONFIG when state changes
+  useEffect(() => {
+    Object.assign(CONFIG, config);
+  }, [config]);
+
+  const updateConfig = useCallback(<K extends keyof Config>(key: K, value: Config[K]) => {
+    setConfig(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const resetConfig = useCallback(() => {
+    setConfig({ ...DEFAULT_CONFIG });
+  }, []);
 
   // Window size for SSR safety
   useEffect(() => {
@@ -456,7 +486,7 @@ export default function CelestialConstellationPage() {
     });
   }, [denizens, filters]);
 
-  // Build TWO domain spheres
+  // Build TWO domain spheres - rebuild when config changes
   const domainSpheres = useMemo(() => {
     const mapToTargetDomain = (d: Denizen): string => {
       if (d.domain === 'Starhaven Reaches' || d.domain === 'The Gradient Throne') {
@@ -483,15 +513,15 @@ export default function CelestialConstellationPage() {
       if (group.length === 0) return;
       
       const color = DOMAIN_COLORS[domain];
-      const centerX = domainIndex === 0 ? -CONFIG.domainSeparation / 2 : CONFIG.domainSeparation / 2;
+      const centerX = domainIndex === 0 ? -config.domainSeparation / 2 : config.domainSeparation / 2;
       const centerY = 0;
 
       const particles: SphereParticle[] = [];
-      for (let i = 0; i < CONFIG.particleDensity * 0.2; i++) {
-        particles.push(createSphereParticle(CONFIG.sphereRadius, true));
+      for (let i = 0; i < config.particleDensity * 0.2; i++) {
+        particles.push(createSphereParticle(config.sphereRadius, true));
       }
-      for (let i = 0; i < CONFIG.particleDensity * 0.8; i++) {
-        particles.push(createSphereParticle(CONFIG.sphereRadius, false));
+      for (let i = 0; i < config.particleDensity * 0.8; i++) {
+        particles.push(createSphereParticle(config.sphereRadius, false));
       }
 
       const entities: EntitySphereData[] = group.map((denizen, idx) => ({
@@ -505,19 +535,19 @@ export default function CelestialConstellationPage() {
     });
 
     return spheres;
-  }, [filteredDenizens]);
+  }, [filteredDenizens, config.domainSeparation, config.particleDensity, config.sphereRadius]);
 
   // Rotation animation
   useEffect(() => {
     if (!isRotating) return;
     let animationId: number;
     const animate = () => {
-      setRotationAngle(prev => prev + CONFIG.rotationSpeed);
+      setRotationAngle(prev => prev + config.rotationSpeed);
       animationId = requestAnimationFrame(animate);
     };
     animationId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationId);
-  }, [isRotating]);
+  }, [isRotating, config.rotationSpeed]);
 
   const handleCardClick = useCallback((denizen: Denizen, entity: EntitySphereData) => {
     // Calculate target rotation to bring this card to the front (z = max)
@@ -622,6 +652,164 @@ export default function CelestialConstellationPage() {
 
       {/* Performance Monitor */}
       <PerformanceMonitor />
+
+      {/* Settings Button */}
+      <button
+        className={`${styles.settingsButton} ${showSettings ? styles.active : ''}`}
+        onClick={() => setShowSettings(!showSettings)}
+        title="Settings"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+        </svg>
+      </button>
+
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className={styles.settingsPanel}>
+          <div className={styles.settingsTitle}>Celestial Settings</div>
+
+          {/* Particles Section */}
+          <div className={styles.settingsSection}>
+            <div className={styles.settingsSectionTitle}>Particles</div>
+            
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Density</span>
+                <span className={styles.settingsValue}>{config.particleDensity}</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="50"
+                max="800"
+                value={config.particleDensity}
+                onChange={(e) => updateConfig('particleDensity', Number(e.target.value))}
+              />
+            </div>
+
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Core Intensity</span>
+                <span className={styles.settingsValue}>{config.coreIntensity.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="0"
+                max="100"
+                value={config.coreIntensity * 100}
+                onChange={(e) => updateConfig('coreIntensity', Number(e.target.value) / 100)}
+              />
+            </div>
+
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Depth Effect</span>
+                <span className={styles.settingsValue}>{config.depthEffect.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="0"
+                max="100"
+                value={config.depthEffect * 100}
+                onChange={(e) => updateConfig('depthEffect', Number(e.target.value) / 100)}
+              />
+            </div>
+          </div>
+
+          {/* Sphere Section */}
+          <div className={styles.settingsSection}>
+            <div className={styles.settingsSectionTitle}>Sphere</div>
+            
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Radius</span>
+                <span className={styles.settingsValue}>{config.sphereRadius}px</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="80"
+                max="400"
+                value={config.sphereRadius}
+                onChange={(e) => updateConfig('sphereRadius', Number(e.target.value))}
+              />
+            </div>
+
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Domain Separation</span>
+                <span className={styles.settingsValue}>{config.domainSeparation}px</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="300"
+                max="1500"
+                value={config.domainSeparation}
+                onChange={(e) => updateConfig('domainSeparation', Number(e.target.value))}
+              />
+            </div>
+
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Card Offset</span>
+                <span className={styles.settingsValue}>{config.cardOffset.toFixed(2)}x</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="100"
+                max="250"
+                value={config.cardOffset * 100}
+                onChange={(e) => updateConfig('cardOffset', Number(e.target.value) / 100)}
+              />
+            </div>
+          </div>
+
+          {/* Animation Section */}
+          <div className={styles.settingsSection}>
+            <div className={styles.settingsSectionTitle}>Animation</div>
+            
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Rotation Speed</span>
+                <span className={styles.settingsValue}>{(config.rotationSpeed * 10000).toFixed(1)}</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="0"
+                max="50"
+                value={config.rotationSpeed * 10000}
+                onChange={(e) => updateConfig('rotationSpeed', Number(e.target.value) / 10000)}
+              />
+            </div>
+
+            <div className={styles.settingsRow}>
+              <label className={styles.settingsLabel}>
+                <span>Connection Opacity</span>
+                <span className={styles.settingsValue}>{config.connectionOpacity.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                className={styles.settingsSlider}
+                min="0"
+                max="100"
+                value={config.connectionOpacity * 100}
+                onChange={(e) => updateConfig('connectionOpacity', Number(e.target.value) / 100)}
+              />
+            </div>
+          </div>
+
+          <button className={styles.resetButton} onClick={resetConfig}>
+            Reset to Defaults
+          </button>
+        </div>
+      )}
     </div>
   );
 }

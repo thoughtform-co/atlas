@@ -25,7 +25,7 @@ const CONFIG = {
   depthEffect: 0.5,
   
   // Rotation speed (radians per frame)
-  rotationSpeed: 0.0008,
+  rotationSpeed: 0.0003,
   
   // Card settings
   cardWidth: 100,

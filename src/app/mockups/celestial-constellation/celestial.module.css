@@ -154,3 +154,165 @@
   color: var(--gold, #CAA554);
   z-index: 100;
 }
+
+/* ─── SETTINGS PANEL ─── */
+.settingsButton {
+  position: fixed;
+  bottom: 80px;
+  right: 64px;
+  width: 36px;
+  height: 36px;
+  background: rgba(20, 18, 15, 0.8);
+  border: 1px solid rgba(202, 165, 84, 0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 90;
+  transition: all 0.2s ease;
+  color: var(--dawn-50, rgba(236, 227, 214, 0.5));
+}
+
+.settingsButton:hover {
+  background: rgba(30, 28, 25, 0.9);
+  border-color: var(--gold, #CAA554);
+  color: var(--gold, #CAA554);
+}
+
+.settingsButton.active {
+  background: rgba(202, 165, 84, 0.15);
+  border-color: var(--gold, #CAA554);
+  color: var(--gold, #CAA554);
+}
+
+.settingsPanel {
+  position: fixed;
+  bottom: 130px;
+  right: 64px;
+  width: 280px;
+  background: rgba(12, 11, 10, 0.95);
+  border: 1px solid rgba(202, 165, 84, 0.25);
+  border-radius: 4px;
+  padding: 16px;
+  z-index: 90;
+  backdrop-filter: blur(12px);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.settingsPanel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.settingsPanel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settingsPanel::-webkit-scrollbar-thumb {
+  background: rgba(202, 165, 84, 0.3);
+  border-radius: 2px;
+}
+
+.settingsTitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold, #CAA554);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(202, 165, 84, 0.15);
+}
+
+.settingsSection {
+  margin-bottom: 16px;
+}
+
+.settingsSectionTitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(236, 227, 214, 0.4);
+  margin-bottom: 10px;
+}
+
+.settingsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.settingsLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(236, 227, 214, 0.7);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settingsValue {
+  color: var(--gold, #CAA554);
+  font-weight: 500;
+}
+
+.settingsSlider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(236, 227, 214, 0.1);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.settingsSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--gold, #CAA554);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.settingsSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.settingsSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--gold, #CAA554);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.resetButton {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid rgba(202, 165, 84, 0.3);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(236, 227, 214, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.resetButton:hover {
+  background: rgba(202, 165, 84, 0.1);
+  border-color: var(--gold, #CAA554);
+  color: var(--gold, #CAA554);
+}
