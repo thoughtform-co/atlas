@@ -1,11 +1,12 @@
 'use client';
 
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import styles from './forge.module.css';
 import { ForgeSidebar } from '@/components/forge/ForgeSidebar';
 import { ForgeCostTicker } from '@/components/forge/ForgeCostTicker';
+import { SigilLab } from '@/components/forge/SigilLab';
 
 interface ForgeLayoutProps {
   children: React.ReactNode;
@@ -15,10 +16,12 @@ export default function ForgeLayout({ children }: ForgeLayoutProps) {
   const pathname = usePathname();
   const rightRailRef = useRef<HTMLDivElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
+  const [showSigilLab, setShowSigilLab] = useState(false);
   
   // Determine active tab
-  const isVideoTab = pathname === '/forge' || pathname.startsWith('/forge/');
+  const isVideoTab = !showSigilLab && (pathname === '/forge' || pathname.startsWith('/forge/'));
   const isEditTab = false; // Placeholder for future Edit tab
+  const isSigilsTab = showSigilLab;
 
   // Update energy beam position based on scroll
   const updateScrollBeam = useCallback(() => {
@@ -104,6 +107,7 @@ export default function ForgeLayout({ children }: ForgeLayoutProps) {
         <Link 
           href="/forge" 
           className={`${styles.tab} ${isVideoTab ? styles.tabActive : ''}`}
+          onClick={() => setShowSigilLab(false)}
         >
           VIDEO
         </Link>
@@ -111,6 +115,12 @@ export default function ForgeLayout({ children }: ForgeLayoutProps) {
           EDIT
           <span className={styles.tabBadge}>SOON</span>
         </div>
+        <button 
+          className={`${styles.tab} ${isSigilsTab ? styles.tabActive : ''}`}
+          onClick={() => setShowSigilLab(true)}
+        >
+          SIGILS
+        </button>
       </div>
 
       {/* Session Sidebar */}
@@ -120,6 +130,11 @@ export default function ForgeLayout({ children }: ForgeLayoutProps) {
       <main className={styles.mainContent} ref={mainContentRef}>
         {children}
       </main>
+
+      {/* Sigil Lab Modal */}
+      {showSigilLab && (
+        <SigilLab onClose={() => setShowSigilLab(false)} />
+      )}
     </div>
   );
 }

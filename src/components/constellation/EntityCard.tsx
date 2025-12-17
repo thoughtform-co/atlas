@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Denizen, DenizenMedia } from '@/lib/types';
 import { getMediaPublicUrl } from '@/lib/media';
 import Image from 'next/image';
+import { GenerativeSigil } from '@/components/shared';
 
 interface EntityCardProps {
   denizen: Denizen;
@@ -319,8 +320,19 @@ export function EntityCard({ denizen, style, onHover, onClick, onEdit, isSelecte
             {denizen.glyphs}
           </div>
 
-          {/* Threat indicator */}
-          <div className="absolute top-4 left-4 flex items-center gap-[5px]">
+          {/* Threat indicator with Entity Sigil */}
+          <div className="absolute top-4 left-4 flex items-center gap-[6px]">
+            {/* Entity Sigil - generative particle cluster */}
+            <div
+              className="opacity-60 group-hover:opacity-90 transition-opacity duration-300"
+              title={`${denizen.domain} · ${denizen.entityClass || denizen.type}`}
+            >
+              <GenerativeSigil
+                domain={denizen.domain}
+                entityId={denizen.id}
+                size={20}
+              />
+            </div>
             <div
               className={`
                 threat-dot w-[5px] h-[5px] rounded-full opacity-80

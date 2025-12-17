@@ -5,3 +5,4 @@ export { ForgeDenizenSelect } from './ForgeDenizenSelect';
 export { ForgeGallery } from './ForgeGallery';
 export { ForgeVideoCard, type ForgeGeneration } from './ForgeVideoCard';
 export { ForgeLoadingOverlay } from './ForgeLoadingOverlay';
+export { SigilLab } from './SigilLab';
