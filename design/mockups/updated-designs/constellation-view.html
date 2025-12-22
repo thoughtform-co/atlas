@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas · Constellation View</title>
+  <link rel="stylesheet" href="shared-styles.css">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════════
+       CONSTELLATION VIEW SPECIFIC STYLES
+       ═══════════════════════════════════════════════════════════════════════════ */
+
+    .constellation-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      cursor: grab;
+    }
+
+    .constellation-canvas:active {
+      cursor: grabbing;
+    }
+
+    .constellation-canvas canvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    /* Domain Cluster */
+    .domain-cluster {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .domain-core {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        var(--domain-color, var(--gold-20)) 0%,
+        transparent 70%
+      );
+      opacity: 0.3;
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+    }
+
+    /* Entity Card (orbiting) */
+    .entity-card {
+      position: absolute;
+      width: 160px;
+      background: rgba(10, 9, 8, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--dawn-08);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      transform-style: preserve-3d;
+      pointer-events: auto;
+    }
+
+    .entity-card:hover {
+      border-color: var(--dawn-30);
+      transform: scale(1.02);
+    }
+
+    .entity-card-image {
+      width: 100%;
+      aspect-ratio: 4/5;
+      background: var(--void-base);
+      overflow: hidden;
+    }
+
+    .entity-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .entity-card-content {
+      padding: var(--space-sm);
+    }
+
+    .entity-card-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-xs);
+    }
+
+    .entity-card-sigil {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .entity-card-name {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--dawn);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .entity-card-threat {
+      display: flex;
+      gap: 2px;
+    }
+
+    .entity-card-threat-segment {
+      width: 10px;
+      height: 2px;
+      background: var(--dawn-15);
+    }
+
+    /* Top Navigation */
+    .top-nav {
+      position: fixed;
+      top: var(--hud-padding);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: var(--space-lg);
+      z-index: 150;
+      pointer-events: auto;
+    }
+
+    .nav-item {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      cursor: pointer;
+      padding: var(--space-sm) var(--space-md);
+      transition: color var(--duration-fast);
+    }
+
+    .nav-item:hover {
+      color: var(--dawn-50);
+    }
+
+    .nav-item.active {
+      color: var(--dawn);
+    }
+
+    /* Page Label */
+    .page-label {
+      position: fixed;
+      top: calc(var(--hud-padding) + 8px);
+      left: calc(var(--hud-padding) + 8px);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+      z-index: 150;
+    }
+
+    /* Filter Panel (Left HUD) */
+    .filter-panel {
+      position: fixed;
+      top: calc(var(--hud-padding) + 80px);
+      left: calc(var(--hud-padding) + 48px);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+      z-index: 150;
+      pointer-events: auto;
+    }
+
+    .filter-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .filter-title {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--dawn-50);
+      cursor: pointer;
+      transition: color var(--duration-fast);
+    }
+
+    .filter-item:hover {
+      color: var(--dawn);
+    }
+
+    .filter-item.active {
+      color: var(--gold);
+    }
+
+    .filter-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--dawn-30);
+      transform: rotate(45deg);
+    }
+
+    .filter-item.active .filter-dot {
+      background: var(--gold);
+    }
+
+    .filter-count {
+      font-size: 9px;
+      color: var(--dawn-30);
+      margin-left: auto;
+    }
+
+    /* Domain Panel (Right HUD) */
+    .domain-panel {
+      position: fixed;
+      top: calc(var(--hud-padding) + 80px);
+      right: calc(var(--hud-padding) + 48px);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      align-items: flex-end;
+      z-index: 150;
+      pointer-events: auto;
+    }
+
+    .domain-title {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      margin-bottom: var(--space-xs);
+    }
+
+    .domain-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--dawn-50);
+      cursor: pointer;
+      transition: color var(--duration-fast);
+    }
+
+    .domain-item:hover {
+      color: var(--dawn);
+    }
+
+    .domain-item.active {
+      color: var(--gold);
+    }
+
+    .domain-sigil {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .domain-count {
+      font-size: 9px;
+      color: var(--dawn-30);
+    }
+
+    /* Settings Button */
+    .settings-btn {
+      position: fixed;
+      bottom: calc(var(--hud-padding) + 48px);
+      right: calc(var(--hud-padding) + 48px);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--dawn-15);
+      color: var(--dawn-50);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      z-index: 150;
+      pointer-events: auto;
+    }
+
+    .settings-btn:hover {
+      border-color: var(--dawn-30);
+      color: var(--dawn);
+    }
+
+    /* Add Entity Button */
+    .add-entity-btn {
+      position: fixed;
+      bottom: calc(var(--hud-padding) + 48px);
+      left: calc(var(--hud-padding) + 48px);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: transparent;
+      border: 1px solid var(--gold-40);
+      color: var(--gold);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      z-index: 150;
+      pointer-events: auto;
+    }
+
+    .add-entity-btn:hover {
+      border-color: var(--gold);
+      background: var(--gold-20);
+    }
+  </style>
+</head>
+<body>
+  <!-- Particle Canvas (Background) -->
+  <div class="particle-canvas">
+    <canvas id="particles"></canvas>
+  </div>
+
+  <!-- Navigation Grid (Mission Control Frame) -->
+  <div class="navigation-grid">
+    <div class="hud-corner hud-corner-tl"></div>
+    <div class="hud-corner hud-corner-tr"></div>
+    <div class="hud-corner hud-corner-bl"></div>
+    <div class="hud-corner hud-corner-br"></div>
+    
+    <aside class="hud-rail hud-rail-left">
+      <div class="scale-ticks">
+        <div class="tick tick-major"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-major"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-major"></div>
+      </div>
+    </aside>
+    
+    <aside class="hud-rail hud-rail-right">
+      <div class="scale-ticks">
+        <div class="tick tick-major"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-major"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-minor"></div>
+        <div class="tick tick-major"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Page Label -->
+  <div class="page-label">ATLAS</div>
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <div class="nav-item active">ATLAS</div>
+    <div class="nav-item">LORE</div>
+    <div class="nav-item">USER</div>
+  </nav>
+
+  <!-- Filter Panel (Left) -->
+  <div class="filter-panel">
+    <div class="filter-section">
+      <div class="filter-title">TYPE</div>
+      <div class="filter-item active">
+        <div class="filter-dot"></div>
+        <span>ALL</span>
+        <span class="filter-count">9</span>
+      </div>
+      <div class="filter-item">
+        <div class="filter-dot"></div>
+        <span>EMERGENT</span>
+        <span class="filter-count">4</span>
+      </div>
+      <div class="filter-item">
+        <div class="filter-dot"></div>
+        <span>RESIDENT</span>
+        <span class="filter-count">3</span>
+      </div>
+      <div class="filter-item">
+        <div class="filter-dot"></div>
+        <span>THEORETICAL</span>
+        <span class="filter-count">2</span>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">THREAT</div>
+      <div class="filter-item active">
+        <div class="filter-dot"></div>
+        <span>ALL</span>
+      </div>
+      <div class="filter-item">
+        <div class="filter-dot" style="background: var(--threat-benign);"></div>
+        <span>BENIGN</span>
+      </div>
+      <div class="filter-item">
+        <div class="filter-dot" style="background: var(--threat-cautious);"></div>
+        <span>CAUTIOUS</span>
+      </div>
+      <div class="filter-item">
+        <div class="filter-dot" style="background: var(--threat-volatile);"></div>
+        <span>VOLATILE</span>
+      </div>
+      <div class="filter-item">
+        <div class="filter-dot" style="background: var(--threat-existential);"></div>
+        <span>EXISTENTIAL</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Domain Panel (Right) -->
+  <div class="domain-panel">
+    <div class="domain-title">DOMAIN</div>
+    
+    <div class="domain-item active">
+      <span class="domain-count">4</span>
+      <span>STARHAVEN REACHES</span>
+      <div class="domain-sigil">
+        <!-- Triangle sigil (SVG) -->
+        <svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+          <polygon points="12,3 21,21 3,21" fill="none" stroke="rgb(202,165,84)" stroke-width="1"/>
+          <circle cx="12" cy="15" r="1" fill="rgb(202,165,84)"/>
+        </svg>
+      </div>
+    </div>
+    
+    <div class="domain-item">
+      <span class="domain-count">5</span>
+      <span>THE GRADIENT THRONE</span>
+      <div class="domain-sigil">
+        <!-- Diamond sigil (SVG) -->
+        <svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+          <polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="rgb(180,200,200)" stroke-width="1"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Constellation Canvas (Interactive) -->
+  <div class="constellation-canvas">
+    <canvas id="constellation"></canvas>
+    
+    <!-- Example Entity Cards (positioned via JS in real implementation) -->
+    <div class="entity-card" style="left: 30%; top: 35%;">
+      <div class="entity-card-image">
+        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, var(--void-surface-1), var(--void-base));"></div>
+      </div>
+      <div class="entity-card-content">
+        <div class="entity-card-header">
+          <div class="entity-card-sigil">
+            <svg width="18" height="18" viewBox="0 0 18 18" style="image-rendering: pixelated;">
+              <polygon points="9,2 16,16 2,16" fill="none" stroke="rgb(202,165,84)" stroke-width="1"/>
+            </svg>
+          </div>
+          <span class="entity-card-name">SPASMODITE</span>
+        </div>
+        <div class="entity-card-threat">
+          <div class="entity-card-threat-segment" style="background: var(--threat-benign);"></div>
+          <div class="entity-card-threat-segment" style="background: var(--threat-cautious);"></div>
+          <div class="entity-card-threat-segment"></div>
+          <div class="entity-card-threat-segment"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="entity-card" style="left: 65%; top: 55%;">
+      <div class="entity-card-image">
+        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, var(--void-surface-2), var(--void-surface-0));"></div>
+      </div>
+      <div class="entity-card-content">
+        <div class="entity-card-header">
+          <div class="entity-card-sigil">
+            <svg width="18" height="18" viewBox="0 0 18 18" style="image-rendering: pixelated;">
+              <polygon points="9,1 17,9 9,17 1,9" fill="none" stroke="rgb(180,200,200)" stroke-width="1"/>
+            </svg>
+          </div>
+          <span class="entity-card-name">VECTOR HERALD</span>
+        </div>
+        <div class="entity-card-threat">
+          <div class="entity-card-threat-segment" style="background: var(--threat-benign);"></div>
+          <div class="entity-card-threat-segment"></div>
+          <div class="entity-card-threat-segment"></div>
+          <div class="entity-card-threat-segment"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Entity Button -->
+  <button class="add-entity-btn" onclick="window.location.href='add-entity.html'">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+    <span>ADD ENTITY</span>
+  </button>
+
+  <!-- Settings Button -->
+  <button class="settings-btn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  </button>
+
+  <script src="particles.js"></script>
+  <script>
+    // Initialize particle canvas
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    
+    function resize() {
+      canvas.width = window.innerWidth * window.devicePixelRatio;
+      canvas.height = window.innerHeight * window.devicePixelRatio;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    
+    resize();
+    window.addEventListener('resize', resize);
+    
+    // Simple background stars
+    const GRID = 3;
+    const stars = [];
+    
+    for (let i = 0; i < 150; i++) {
+      stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        alpha: 0.1 + Math.random() * 0.3,
+      });
+    }
+    
+    function draw() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      
+      stars.forEach(star => {
+        const px = Math.floor(star.x / GRID) * GRID;
+        const py = Math.floor(star.y / GRID) * GRID;
+        ctx.fillStyle = `rgba(236, 227, 214, ${star.alpha})`;
+        ctx.fillRect(px, py, GRID - 1, GRID - 1);
+      });
+      
+      requestAnimationFrame(draw);
+    }
+    
+    draw();
+  </script>
+</body>
+</html>
+
+
+

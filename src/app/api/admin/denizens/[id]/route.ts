@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase-server';
+import { isUserAdmin } from '@/lib/auth/admin-check';
 import { fetchDenizenById, updateDenizen, deleteDenizen } from '@/lib/data';
 import { deleteDenizenMedia, fetchDenizenMedia } from '@/lib/media';
 
@@ -67,6 +68,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Check admin role
+    const isAdmin = await isUserAdmin(user.id);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
 
     // Check if denizen exists
@@ -126,6 +136,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check admin role
+    const isAdmin = await isUserAdmin(user.id);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
       );
     }
 

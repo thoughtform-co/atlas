@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { estimateCost, type ReplicateWebhookPayload } from '@/lib/replicate';
 
 // Use service role client for webhook (bypasses RLS)
@@ -15,19 +16,65 @@ function getServiceClient() {
 }
 
 /**
+ * Verify Replicate webhook signature using HMAC-SHA256
+ * @see https://replicate.com/docs/webhooks#verifying-webhooks
+ */
+function verifyWebhookSignature(body: string, signatureHeader: string | null, secret: string): boolean {
+  if (!signatureHeader) {
+    return false;
+  }
+
+  // Replicate sends signature in format: "sha256=<hex-signature>"
+  const [algorithm, signature] = signatureHeader.split('=');
+  if (algorithm !== 'sha256' || !signature) {
+    return false;
+  }
+
+  const expectedSignature = createHmac('sha256', secret)
+    .update(body, 'utf8')
+    .digest('hex');
+
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    return timingSafeEqual(
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * POST /api/forge/webhook
  * Handle Replicate prediction completion webhooks
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook authenticity (Replicate sends a specific header)
-    // In production, you should verify the webhook signature
     const contentType = request.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
       return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
     }
 
-    const payload: ReplicateWebhookPayload = await request.json();
+    // Get raw body for signature verification
+    const rawBody = await request.text();
+    
+    // Verify webhook signature
+    const webhookSecret = process.env.REPLICATE_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const signatureHeader = request.headers.get('webhook-signature');
+      const isValid = verifyWebhookSignature(rawBody, signatureHeader, webhookSecret);
+      
+      if (!isValid) {
+        console.error('[Forge Webhook] Invalid signature');
+        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+      }
+    } else {
+      // Log warning but don't block - allows gradual rollout
+      console.warn('[Forge Webhook] REPLICATE_WEBHOOK_SECRET not configured - signature verification skipped');
+    }
+
+    const payload: ReplicateWebhookPayload = JSON.parse(rawBody);
     
     console.log('[Forge Webhook] Received:', {
       id: payload.id,

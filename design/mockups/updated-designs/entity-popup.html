@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas · Entity Popup</title>
+  <link rel="stylesheet" href="shared-styles.css">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════════
+       ENTITY POPUP SPECIFIC STYLES
+       ═══════════════════════════════════════════════════════════════════════════ */
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: auto;
+    }
+
+    /* Modal Overlay */
+    .entity-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 4, 3, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: var(--space-xl);
+    }
+
+    /* Modal Container */
+    .entity-modal {
+      position: relative;
+      display: flex;
+      gap: var(--space-xl);
+      max-width: 900px;
+      max-height: 90vh;
+      animation: fadeIn 0.3s var(--ease-out);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Close Button */
+    .entity-modal-close {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--dawn-15);
+      color: var(--dawn-50);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      z-index: 10;
+    }
+
+    .entity-modal-close:hover {
+      border-color: var(--dawn-30);
+      color: var(--dawn);
+    }
+
+    /* Entity Card (Main Image) */
+    .entity-card-full {
+      width: 400px;
+      flex-shrink: 0;
+      background: var(--void-surface-0);
+      border: 1px solid var(--dawn-08);
+      overflow: hidden;
+    }
+
+    .entity-card-image {
+      width: 100%;
+      aspect-ratio: 4/5;
+      background: var(--void-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .entity-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Placeholder gradient for demo */
+    .entity-card-image-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        135deg,
+        var(--void-surface-1) 0%,
+        var(--void-base) 50%,
+        var(--void-surface-2) 100%
+      );
+    }
+
+    /* Type Badge */
+    .entity-type-badge {
+      position: absolute;
+      top: var(--space-md);
+      left: var(--space-md);
+      padding: var(--space-xs) var(--space-sm);
+      background: rgba(5, 4, 3, 0.85);
+      border: 1px solid var(--dawn-08);
+    }
+
+    .entity-type-badge span {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+    }
+
+    /* Sigil Badge */
+    .entity-sigil-badge {
+      position: absolute;
+      top: var(--space-md);
+      right: var(--space-md);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 4, 3, 0.85);
+      border: 1px solid var(--dawn-08);
+    }
+
+    /* Entity Details Panel */
+    .entity-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+      padding: var(--space-lg) 0;
+      min-width: 300px;
+      max-width: 400px;
+    }
+
+    /* Header Section */
+    .entity-header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .entity-name {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--dawn);
+      margin: 0;
+    }
+
+    .entity-epithet {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-style: italic;
+      color: var(--dawn-50);
+      margin: 0;
+    }
+
+    /* Domain Section */
+    .entity-domain {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .entity-domain-sigil {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .entity-domain-name {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+    }
+
+    /* Divider */
+    .entity-divider {
+      height: 1px;
+      background: var(--dawn-08);
+    }
+
+    /* Threat Section */
+    .entity-threat {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .entity-threat-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+
+    .entity-threat-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .entity-threat-segment {
+      width: 24px;
+      height: 6px;
+      background: var(--dawn-15);
+      transition: background var(--duration-fast);
+    }
+
+    .entity-threat-segment.active.benign { background: var(--threat-benign); }
+    .entity-threat-segment.active.cautious { background: var(--threat-cautious); }
+    .entity-threat-segment.active.volatile { background: var(--threat-volatile); }
+    .entity-threat-segment.active.existential { background: var(--threat-existential); }
+
+    .entity-threat-text {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      margin-left: var(--space-sm);
+    }
+
+    .entity-threat-text.benign { color: var(--threat-benign); }
+    .entity-threat-text.cautious { color: var(--threat-cautious); }
+    .entity-threat-text.volatile { color: var(--threat-volatile); }
+    .entity-threat-text.existential { color: var(--threat-existential); }
+
+    /* Parameters Section */
+    .entity-params {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .entity-param {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .entity-param-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      width: 80px;
+    }
+
+    .entity-param-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--dawn-08);
+      max-width: 120px;
+    }
+
+    .entity-param-fill {
+      height: 100%;
+      background: var(--dawn-50);
+    }
+
+    .entity-param-value {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--dawn-50);
+      width: 32px;
+      text-align: right;
+    }
+
+    /* Description Section */
+    .entity-description {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .entity-description-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+
+    .entity-description-text {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--dawn-70);
+    }
+
+    /* Actions */
+    .entity-actions {
+      display: flex;
+      gap: var(--space-sm);
+      margin-top: auto;
+    }
+
+    .entity-action-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: transparent;
+      border: 1px solid var(--dawn-15);
+      color: var(--dawn-50);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+
+    .entity-action-btn:hover {
+      border-color: var(--dawn-30);
+      color: var(--dawn);
+    }
+
+    .entity-action-btn.primary {
+      border-color: var(--gold-40);
+      color: var(--gold);
+    }
+
+    .entity-action-btn.primary:hover {
+      border-color: var(--gold);
+      background: var(--gold-20);
+    }
+
+    /* Particle Aura Effect */
+    .entity-modal::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 200px;
+      width: 400px;
+      height: 400px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(
+        circle,
+        var(--gold-20) 0%,
+        transparent 60%
+      );
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.3;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .entity-modal {
+        flex-direction: column;
+        max-width: 100%;
+      }
+      
+      .entity-card-full {
+        width: 100%;
+        max-width: 400px;
+      }
+      
+      .entity-details {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Particle Canvas (Background) -->
+  <div class="particle-canvas">
+    <canvas id="particles"></canvas>
+  </div>
+
+  <!-- Entity Modal -->
+  <div class="entity-modal-overlay">
+    <div class="entity-modal">
+      <!-- Close Button -->
+      <button class="entity-modal-close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <!-- Entity Card (Image) -->
+      <div class="entity-card-full">
+        <div class="entity-card-image">
+          <div class="entity-card-image-placeholder"></div>
+          
+          <!-- Type Badge -->
+          <div class="entity-type-badge">
+            <span>EMERGENT</span>
+          </div>
+          
+          <!-- Sigil Badge -->
+          <div class="entity-sigil-badge">
+            <svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+              <polygon points="12,3 21,21 3,21" fill="none" stroke="rgb(202,165,84)" stroke-width="1"/>
+              <circle cx="12" cy="15" r="2" fill="rgb(202,165,84)"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entity Details -->
+      <div class="entity-details">
+        <!-- Header -->
+        <div class="entity-header">
+          <h1 class="entity-name">SPASMODITE</h1>
+          <p class="entity-epithet">The Twitching, It-That-Startles</p>
+        </div>
+
+        <!-- Domain -->
+        <div class="entity-domain">
+          <div class="entity-domain-sigil">
+            <svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+              <polygon points="12,3 21,21 3,21" fill="none" stroke="rgb(202,165,84)" stroke-width="1"/>
+            </svg>
+          </div>
+          <span class="entity-domain-name">STARHAVEN REACHES</span>
+        </div>
+
+        <div class="entity-divider"></div>
+
+        <!-- Threat Level -->
+        <div class="entity-threat">
+          <span class="entity-threat-label">THREAT LEVEL</span>
+          <div class="entity-threat-bar">
+            <div class="entity-threat-segment active benign"></div>
+            <div class="entity-threat-segment active cautious"></div>
+            <div class="entity-threat-segment"></div>
+            <div class="entity-threat-segment"></div>
+            <span class="entity-threat-text cautious">CAUTIOUS</span>
+          </div>
+        </div>
+
+        <!-- Parameters -->
+        <div class="entity-params">
+          <div class="entity-param">
+            <span class="entity-param-label">PHASE</span>
+            <div class="entity-param-bar">
+              <div class="entity-param-fill" style="width: 100%; background: var(--gold-70);"></div>
+            </div>
+            <span class="entity-param-value">VISIBLE</span>
+          </div>
+          <div class="entity-param">
+            <span class="entity-param-label">ABUNDANCE</span>
+            <div class="entity-param-bar">
+              <div class="entity-param-fill" style="width: 65%;"></div>
+            </div>
+            <span class="entity-param-value">0.65</span>
+          </div>
+          <div class="entity-param">
+            <span class="entity-param-label">VOLATILITY</span>
+            <div class="entity-param-bar">
+              <div class="entity-param-fill" style="width: 40%; background: var(--threat-volatile);"></div>
+            </div>
+            <span class="entity-param-value">0.40</span>
+          </div>
+        </div>
+
+        <div class="entity-divider"></div>
+
+        <!-- Description -->
+        <div class="entity-description">
+          <span class="entity-description-label">DOCUMENTATION</span>
+          <p class="entity-description-text">
+            A manifestation of sudden cognitive shifts, the Spasmodite appears at moments of unexpected insight. 
+            Its presence is marked by rapid, jerky movements in the semantic field—concepts flickering in and out 
+            of alignment. Observers report a sensation of startled recognition, as if encountering a thought 
+            they'd forgotten they were thinking.
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="entity-actions">
+          <button class="entity-action-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            DOWNLOAD
+          </button>
+          <button class="entity-action-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            EDIT
+          </button>
+          <button class="entity-action-btn primary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4M12 8h.01"/>
+            </svg>
+            VIEW LORE
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple background particles
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    const GRID = 3;
+    
+    function resize() {
+      canvas.width = window.innerWidth * window.devicePixelRatio;
+      canvas.height = window.innerHeight * window.devicePixelRatio;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const stars = [];
+    for (let i = 0; i < 100; i++) {
+      stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        alpha: 0.05 + Math.random() * 0.15,
+      });
+    }
+    
+    function draw() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      
+      stars.forEach(star => {
+        const px = Math.floor(star.x / GRID) * GRID;
+        const py = Math.floor(star.y / GRID) * GRID;
+        ctx.fillStyle = `rgba(236, 227, 214, ${star.alpha})`;
+        ctx.fillRect(px, py, GRID - 1, GRID - 1);
+      });
+      
+      requestAnimationFrame(draw);
+    }
+    
+    draw();
+  </script>
+</body>
+</html>
+
+
+

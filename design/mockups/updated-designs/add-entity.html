@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas · Add Entity</title>
+  <link rel="stylesheet" href="shared-styles.css">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════════
+       ADD ENTITY PAGE SPECIFIC STYLES
+       ═══════════════════════════════════════════════════════════════════════════ */
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: auto;
+      padding: var(--space-2xl);
+    }
+
+    /* Page Container */
+    .add-entity-page {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      z-index: 10;
+    }
+
+    /* Terminal Frame */
+    .terminal-frame {
+      position: relative;
+      background: rgba(10, 9, 8, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--dawn-08);
+      padding: var(--space-2xl);
+    }
+
+    /* Corner Brackets */
+    .terminal-frame::before,
+    .terminal-frame::after,
+    .terminal-corner-bl,
+    .terminal-corner-br {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      pointer-events: none;
+    }
+
+    .terminal-frame::before {
+      content: '';
+      top: -1px;
+      left: -1px;
+      border-top: 2px solid var(--gold);
+      border-left: 2px solid var(--gold);
+    }
+
+    .terminal-frame::after {
+      content: '';
+      top: -1px;
+      right: -1px;
+      border-top: 2px solid var(--gold);
+      border-right: 2px solid var(--gold);
+    }
+
+    .terminal-corner-bl {
+      bottom: -1px;
+      left: -1px;
+      border-bottom: 2px solid var(--gold);
+      border-left: 2px solid var(--gold);
+    }
+
+    .terminal-corner-br {
+      bottom: -1px;
+      right: -1px;
+      border-bottom: 2px solid var(--gold);
+      border-right: 2px solid var(--gold);
+    }
+
+    /* Header */
+    .form-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-xl);
+      padding-bottom: var(--space-lg);
+      border-bottom: 1px solid var(--dawn-08);
+    }
+
+    .form-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .form-title-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+    }
+
+    .form-title-text {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn);
+    }
+
+    .form-close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--dawn-15);
+      color: var(--dawn-50);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+
+    .form-close:hover {
+      border-color: var(--dawn-30);
+      color: var(--dawn);
+    }
+
+    /* Form Layout */
+    .form-content {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: var(--space-xl);
+    }
+
+    /* Image Upload Section */
+    .image-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .image-upload {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/5;
+      background: var(--void-surface-1);
+      border: 2px dashed var(--dawn-15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-md);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+
+    .image-upload:hover {
+      border-color: var(--dawn-30);
+      background: var(--void-surface-2);
+    }
+
+    .image-upload-icon {
+      color: var(--dawn-30);
+    }
+
+    .image-upload-text {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+      text-align: center;
+    }
+
+    .image-upload-hint {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--dawn-30);
+    }
+
+    .image-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .image-section-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-30);
+    }
+
+    /* Details Section */
+    .details-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    /* Form Group */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .form-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dawn-50);
+    }
+
+    .form-label-required::after {
+      content: ' *';
+      color: var(--threat-volatile);
+    }
+
+    .form-input {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--dawn-08);
+      background: var(--void-surface-1);
+      color: var(--dawn);
+      outline: none;
+      transition: border-color var(--duration-fast);
+    }
+
+    .form-input:focus {
+      border-color: var(--gold-40);
+    }
+
+    .form-input::placeholder {
+      color: var(--dawn-30);
+    }
+
+    .form-textarea {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ECE3D6' stroke-width='1.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    /* Domain Select with Sigil Preview */
+    .domain-select-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .domain-sigil-preview {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--void-surface-1);
+      border: 1px solid var(--dawn-08);
+    }
+
+    /* Threat Slider */
+    .threat-slider-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .threat-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(
+        to right,
+        var(--threat-benign) 0%,
+        var(--threat-benign) 25%,
+        var(--threat-cautious) 25%,
+        var(--threat-cautious) 50%,
+        var(--threat-volatile) 50%,
+        var(--threat-volatile) 75%,
+        var(--threat-existential) 75%,
+        var(--threat-existential) 100%
+      );
+      outline: none;
+      cursor: pointer;
+    }
+
+    .threat-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--dawn);
+      cursor: pointer;
+    }
+
+    .threat-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: var(--dawn);
+      border: none;
+      cursor: pointer;
+    }
+
+    .threat-labels {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .threat-labels span {
+      color: var(--dawn-30);
+    }
+
+    .threat-labels span:nth-child(1) { color: var(--threat-benign); }
+    .threat-labels span:nth-child(2) { color: var(--threat-cautious); }
+    .threat-labels span:nth-child(3) { color: var(--threat-volatile); }
+    .threat-labels span:nth-child(4) { color: var(--threat-existential); }
+
+    /* Form Row (inline fields) */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+    }
+
+    /* Form Actions */
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-md);
+      margin-top: var(--space-xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid var(--dawn-08);
+    }
+
+    .form-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-lg);
+      background: transparent;
+      border: 1px solid var(--dawn-15);
+      color: var(--dawn-50);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+
+    .form-btn:hover {
+      border-color: var(--dawn-30);
+      color: var(--dawn);
+    }
+
+    .form-btn-primary {
+      border-color: var(--gold-40);
+      color: var(--gold);
+    }
+
+    .form-btn-primary:hover {
+      border-color: var(--gold);
+      background: var(--gold-20);
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .form-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .image-section {
+        order: 1;
+      }
+      
+      .details-section {
+        order: 2;
+      }
+      
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Particle Canvas (Background) -->
+  <div class="particle-canvas">
+    <canvas id="particles"></canvas>
+  </div>
+
+  <!-- Navigation Grid (Subtle frame) -->
+  <div class="navigation-grid">
+    <div class="hud-corner hud-corner-tl"></div>
+    <div class="hud-corner hud-corner-tr"></div>
+    <div class="hud-corner hud-corner-bl"></div>
+    <div class="hud-corner hud-corner-br"></div>
+  </div>
+
+  <!-- Add Entity Form -->
+  <div class="add-entity-page">
+    <div class="terminal-frame">
+      <div class="terminal-corner-bl"></div>
+      <div class="terminal-corner-br"></div>
+
+      <!-- Header -->
+      <div class="form-header">
+        <div class="form-title">
+          <div class="form-title-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+          <span class="form-title-text">DOCUMENT NEW SPECIMEN</span>
+        </div>
+        <button class="form-close" onclick="window.location.href='constellation-view.html'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Form Content -->
+      <div class="form-content">
+        <!-- Image Section -->
+        <div class="image-section">
+          <span class="image-section-label">SPECIMEN IMAGE</span>
+          <div class="image-upload">
+            <div class="image-upload-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <rect x="3" y="3" width="18" height="18" rx="0"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+            </div>
+            <span class="image-upload-text">DROP IMAGE HERE<br>OR CLICK TO SELECT</span>
+            <span class="image-upload-hint">4:5 aspect ratio recommended</span>
+          </div>
+        </div>
+
+        <!-- Details Section -->
+        <div class="details-section">
+          <!-- Name -->
+          <div class="form-group">
+            <label class="form-label form-label-required">DESIGNATION</label>
+            <input type="text" class="form-input" placeholder="Entity name (e.g., SPASMODITE)">
+          </div>
+
+          <!-- Epithet -->
+          <div class="form-group">
+            <label class="form-label">EPITHET</label>
+            <input type="text" class="form-input" placeholder="The Twitching, It-That-Startles">
+          </div>
+
+          <!-- Domain & Type Row -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label-required">DOMAIN</label>
+              <div class="domain-select-wrapper">
+                <div class="domain-sigil-preview" id="domainSigilPreview">
+                  <svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+                    <polygon points="12,3 21,21 3,21" fill="none" stroke="rgb(202,165,84)" stroke-width="1"/>
+                  </svg>
+                </div>
+                <select class="form-input form-select" id="domainSelect" style="flex: 1;">
+                  <option value="starhaven">Starhaven Reaches</option>
+                  <option value="gradient">The Gradient Throne</option>
+                  <option value="lattice">The Lattice</option>
+                  <option value="threshold">The Threshold</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label form-label-required">TYPE</label>
+              <select class="form-input form-select">
+                <option value="emergent">Emergent</option>
+                <option value="resident">Resident</option>
+                <option value="theoretical">Theoretical</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Entity Class -->
+          <div class="form-group">
+            <label class="form-label">ENTITY CLASS</label>
+            <select class="form-input form-select">
+              <option value="">Select class (determines sigil modifier)</option>
+              <option value="herald">Herald</option>
+              <option value="keeper">Keeper</option>
+              <option value="weaver">Weaver</option>
+              <option value="architect">Architect</option>
+              <option value="wanderer">Wanderer</option>
+              <option value="observer">Observer</option>
+              <option value="guardian">Guardian</option>
+            </select>
+          </div>
+
+          <!-- Threat Level -->
+          <div class="form-group">
+            <label class="form-label form-label-required">THREAT ASSESSMENT</label>
+            <div class="threat-slider-wrapper">
+              <input type="range" class="threat-slider" min="0" max="100" value="25">
+              <div class="threat-labels">
+                <span>BENIGN</span>
+                <span>CAUTIOUS</span>
+                <span>VOLATILE</span>
+                <span>EXISTENTIAL</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label class="form-label">DOCUMENTATION</label>
+            <textarea class="form-input form-textarea" placeholder="Describe the entity's behavior, manifestation patterns, and any relevant observations..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button class="form-btn" onclick="window.location.href='constellation-view.html'">
+          CANCEL
+        </button>
+        <button class="form-btn form-btn-primary">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          CATALOGUE SPECIMEN
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple background particles
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    const GRID = 3;
+    
+    function resize() {
+      canvas.width = window.innerWidth * window.devicePixelRatio;
+      canvas.height = window.innerHeight * window.devicePixelRatio;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const stars = [];
+    for (let i = 0; i < 100; i++) {
+      stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        alpha: 0.05 + Math.random() * 0.15,
+      });
+    }
+    
+    function draw() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      
+      stars.forEach(star => {
+        const px = Math.floor(star.x / GRID) * GRID;
+        const py = Math.floor(star.y / GRID) * GRID;
+        ctx.fillStyle = `rgba(236, 227, 214, ${star.alpha})`;
+        ctx.fillRect(px, py, GRID - 1, GRID - 1);
+      });
+      
+      requestAnimationFrame(draw);
+    }
+    
+    draw();
+
+    // Domain sigil preview update
+    const domainSelect = document.getElementById('domainSelect');
+    const sigilPreview = document.getElementById('domainSigilPreview');
+    
+    const sigils = {
+      starhaven: `<svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+        <polygon points="12,3 21,21 3,21" fill="none" stroke="rgb(202,165,84)" stroke-width="1"/>
+      </svg>`,
+      gradient: `<svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+        <polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="rgb(180,200,200)" stroke-width="1"/>
+      </svg>`,
+      lattice: `<svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+        <polygon points="12,2 19,7 19,17 12,22 5,17 5,7" fill="none" stroke="rgb(184,196,208)" stroke-width="1"/>
+      </svg>`,
+      threshold: `<svg width="24" height="24" viewBox="0 0 24 24" style="image-rendering: pixelated;">
+        <polygon points="12,2 20,6 20,18 12,22 4,18 4,6" fill="none" stroke="rgb(139,115,85)" stroke-width="1"/>
+      </svg>`,
+    };
+    
+    domainSelect.addEventListener('change', (e) => {
+      sigilPreview.innerHTML = sigils[e.target.value] || sigils.starhaven;
+    });
+  </script>
+</body>
+</html>
+
+
+

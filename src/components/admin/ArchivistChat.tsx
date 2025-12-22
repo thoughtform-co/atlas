@@ -44,6 +44,32 @@ interface ArchivistChatProps {
 // Session cache key prefix
 const SESSION_CACHE_PREFIX = 'archivist_session_';
 
+/**
+ * Escape HTML entities to prevent XSS attacks
+ * Applied before markdown transformation
+ */
+function escapeHtml(text: string): string {
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return text.replace(/[&<>"']/g, (char) => htmlEntities[char] || char);
+}
+
+/**
+ * Safely render markdown-like content
+ * Escapes HTML first, then applies safe markdown transformations
+ */
+function renderSafeMarkdown(content: string): string {
+  return escapeHtml(content)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br />');
+}
+
 export function ArchivistChat({ 
   formData, 
   onApplyField, 
@@ -559,10 +585,7 @@ export function ArchivistChat({
           <div key={msg.id} className={`${styles.message} ${styles[msg.role]}`}>
             <div className={styles.messageContent}>
               <span dangerouslySetInnerHTML={{ 
-                __html: msg.content
-                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                  .replace(/\n/g, '<br />')
+                __html: renderSafeMarkdown(msg.content)
               }} />
               
               {renderToolUsage(msg)}

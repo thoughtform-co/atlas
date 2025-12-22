@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Domain } from '@/lib/types';
+import { requireAuth } from '@/lib/supabase-server';
+import { isUserAdmin } from '@/lib/auth/admin-check';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -10,9 +12,22 @@ interface RouteParams {
  * PUT /api/domains/[id]
  * Update a domain (name, description, etc.)
  * When domain name is updated, all denizens with that domain are also updated
+ * Requires admin role.
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    // Check authentication
+    const user = await requireAuth();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check admin role
+    const isAdmin = await isUserAdmin(user.id);
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase-server';
+import { isUserAdmin } from '@/lib/auth/admin-check';
 import { createServerClient } from '@/lib/supabase-server';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
@@ -62,6 +63,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check admin role
+    const isAdmin = await isUserAdmin(user.id);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
       );
     }
 

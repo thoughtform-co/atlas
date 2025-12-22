@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase-server';
+import { isUserAdmin } from '@/lib/auth/admin-check';
 import { fetchDenizens, createDenizen } from '@/lib/data';
 import type { Denizen, DenizenType, Allegiance, ThreatLevel, PhaseState } from '@/lib/types';
 
@@ -107,6 +108,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check admin role
+    const isAdmin = await isUserAdmin(user.id);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
       );
     }
 
