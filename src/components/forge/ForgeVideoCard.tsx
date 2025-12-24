@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo, useOptimistic } from 'react';
 import styles from './ForgeVideoCard.module.css';
 
 export interface ForgeGeneration {
@@ -72,6 +72,12 @@ export function ForgeVideoCard({ generation, onApprove, onReuse, onSendToLibrary
   const [elapsedTime, setElapsedTime] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Optimistic UI: Show approval state instantly, rollback on error
+  const [optimisticApproved, setOptimisticApproved] = useOptimistic(
+    generation.approved,
+    (_currentApproved, newApproved: boolean) => newApproved
+  );
 
   const isLoading = generation.status === 'pending' || generation.status === 'processing';
   const isFailed = generation.status === 'failed';
@@ -282,8 +288,8 @@ export function ForgeVideoCard({ generation, onApprove, onReuse, onSendToLibrary
           />
         )}
 
-        {/* Approved Badge */}
-        {generation.approved && (
+        {/* Approved Badge - uses optimistic state for instant feedback */}
+        {optimisticApproved && (
           <div className={styles.approvedBadge}>
             <span>✓</span>
           </div>
@@ -292,16 +298,20 @@ export function ForgeVideoCard({ generation, onApprove, onReuse, onSendToLibrary
         {/* Hover Actions */}
         {isHovered && isCompleted && (
           <div className={styles.hoverActions}>
-            {/* Favourite */}
+            {/* Favourite - uses optimistic state for instant feedback */}
             <button 
-              className={`${styles.actionButton} ${generation.approved ? styles.actionActive : ''}`}
+              className={`${styles.actionButton} ${optimisticApproved ? styles.actionActive : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
-                onApprove?.(generation.id, !generation.approved);
+                const newApproved = !optimisticApproved;
+                // Instant UI feedback via optimistic state
+                setOptimisticApproved(newApproved);
+                // Actual API call - if it fails, React will rollback optimistic state
+                onApprove?.(generation.id, newApproved);
               }}
-              title={generation.approved ? 'Remove from favourites' : 'Add to favourites'}
+              title={optimisticApproved ? 'Remove from favourites' : 'Add to favourites'}
             >
-              <svg className={styles.actionIcon} viewBox="0 0 24 24" width="16" height="16" fill={generation.approved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+              <svg className={styles.actionIcon} viewBox="0 0 24 24" width="16" height="16" fill={optimisticApproved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
             </button>

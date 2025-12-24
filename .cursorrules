@@ -3,6 +3,37 @@
 Platform: **Atlas** (dark mode bestiary)
 Design System: `thoughtform://` via MCP server
 
+## Context7 Documentation
+
+When working with libraries or answering questions about APIs, use Context7 to fetch up-to-date documentation instead of relying on training data.
+
+### Auto-Invoke Context7 For:
+- Next.js App Router, Server Components, Server Actions
+- React 19 hooks (use, useOptimistic, useFormStatus)
+- Supabase authentication, realtime, RLS policies
+- Anthropic/Claude SDK patterns
+- Google Generative AI / Gemini
+- Any library where the user asks "how do I..." or "what's the latest way to..."
+
+### How to Use Context7:
+```powershell
+# From project root - use the helper script
+.\.claude\skills\context7\fetch-docs.ps1 "vercel/next.js" 5000
+.\.claude\skills\context7\fetch-docs.ps1 "supabase/supabase-js" 5000
+```
+
+### Atlas Stack Library IDs:
+- Next.js: `vercel/next.js`
+- React: `facebook/react`
+- Supabase: `supabase/supabase-js`
+- Anthropic SDK: `anthropics/anthropic-sdk-typescript`
+- Google GenAI: `google/generative-ai`
+- Tailwind: `tailwindlabs/tailwindcss`
+
+### Key Files:
+- `.claude/skills/context7/SKILL.md` - Context7 skill details
+- `.claude/skills/context7/LIBRARIES.md` - Library ID reference
+
 ## Design System
 
 Use the Thoughtform design system for all UI work:

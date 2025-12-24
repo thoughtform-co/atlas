@@ -268,6 +268,7 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
 
 /**
  * Fetch all denizens from Supabase or return static data
+ * Note: For Server Components, use fetchDenizensCached from data-cached.ts for caching
  */
 export async function fetchDenizens(): Promise<Denizen[]> {
   const client = getDataClient();

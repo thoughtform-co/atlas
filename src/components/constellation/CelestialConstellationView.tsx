@@ -84,8 +84,8 @@ const DEFAULT_GLOBAL_CONFIG: GlobalConfig = {
   rotationSpeed: 0.0003,
   cardOffset: 1.4,
   domainSeparation: 700,
-  showBackgroundStars: false,
-  showNebulae: false,
+  showBackgroundStars: true,
+  showNebulae: true,
   showScanLines: false,
   showVignette: true,
 };

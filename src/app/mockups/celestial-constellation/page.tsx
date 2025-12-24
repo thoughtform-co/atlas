@@ -71,9 +71,9 @@ const DEFAULT_CONFIG: Config = {
   coreParticleRatio: 0.2, // 20% in core, 80% in shell
   nebulaScale: 1.0, // nebula cloud size multiplier
   attractorType: 'lorenz', // default to lorenz attractor
-  // Background effects - ALL OFF by default for safety
-  showBackgroundStars: false,
-  showNebulae: false,
+  // Background effects
+  showBackgroundStars: true,
+  showNebulae: true,
   showScanLines: false,
   showVignette: true, // vignette is safe, just darkens edges
 };
