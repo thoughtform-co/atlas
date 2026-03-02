@@ -68,32 +68,19 @@ supabase/
 
 ## Reliability
 
-Follows the Sentinel pattern: auth gating, RLS policies on Supabase, environment variable discipline. Canvas-first rendering for exports ensures pixel-perfect fidelity without DOM capture fragility. Inverted ref control prevents circular dependencies. CSS-only visual hints reduce GPU usage for non-critical indicators.
+Follows the Sentinel pattern: auth gating, RLS policies on storage, configuration discipline. Canvas-first rendering for exports ensures pixel-perfect fidelity without DOM capture fragility. Inverted ref control prevents circular dependencies. CSS-only visual hints reduce GPU usage for non-critical indicators.
 
 ## Getting started
 
 Prerequisites: Node.js 18+, npm.
 
-The app works out of the box with static data. To enable Supabase:
+The app works out of the box with static data. To enable the database layer:
 
-1. Create a Supabase project. Note your project URL and anon key from Settings > API.
+1. Create a Supabase project and run the migrations in `supabase/migrations/` and `supabase/seed.sql`.
 
-2. Run database migrations in the SQL Editor:
-   - `supabase/migrations/001_create_tables.sql`
-   - `supabase/seed.sql`
+2. Configure your local project settings with the required database credentials.
 
-3. Configure environment:
-```bash
-cp .env.example .env.local
-```
-
-Add:
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-```
-
-4. Install and run:
+3. Install and run:
 ```bash
 npm install
 npm run dev
