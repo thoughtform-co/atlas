@@ -26,7 +26,7 @@ Cataloging a denizen is not data entry. It is semantic cartography: mapping each
 
 ## The constellation
 
-Atlas is the second repo in the Thoughtform brand world. It inherited the Dawn-on-Void palette and embedding-as-navigation paradigm from Astrolabe. It contributed the particle system that ultimately became the Three.js wormhole powering the Thoughtform.co hero animation. The Archivist AI system pioneered here evolved into the prompt enhancement architecture used in Vesper and Sigil.
+Atlas is the second repo in the Thoughtform brand world. It inherited the Dawn-on-Void palette and embedding-as-navigation paradigm from Astrolabe. It contributed the particle system that ultimately became the Three.js wormhole powering the Thoughtform.co hero animation. The Archivist AI system pioneered here evolved into the prompt enhancement architecture used in Sigil and a generation platform I built at Loop Earplugs.
 
 Working on Atlas also refined brand elements that felt missing from the Astrolabe. And it introduced the Sentinel document pattern: evergreen development principles learned from real bugs, applied as a feedback loop.
 
