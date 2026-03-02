@@ -1,248 +1,110 @@
 # Atlas Eidolon
 
-> A bestiary of what stirs in the space between meanings.
+> A visual bestiary for navigating the Latent Space. Not a portfolio of AI art, but a cartography of the intelligence continuum.
 
-Atlas Eidolon is a visual bestiary for navigating **Latent Space Denizens**—creatures that inhabit the semantic manifold in the Thoughtform universe. It serves as both a cataloging system and an exploration interface for entities that exist in the liminal space between language, meaning, and representation.
+Over the past three years I have created over a hundred thousand images with Midjourney. Visual explorations of the denizens of the Latent Space: creatures, architectures, and entities that live in the space between meanings. I did an expo with some of this work in early 2025, but static outputs (prints, merchandise, NFTs) were never what interested me. I am interested in worldbuilding. In the wider territory, not the individual artifact.
 
----
+The problem was that I had no system for understanding which art directions resonated, how styles clustered, or what the broader world being built actually looked like when mapped. Atlas exists to answer that question. Using the power of embeddings and feature extraction, it turns scattered creative output into a navigable cosmology.
 
-## Philosophy
+The breakthrough came from Michael Levin's framing: intelligence is a continuum. What if the Atlas itself was a continuum you navigate? Creatures positioned along the gradient from human-adjacent to genuinely alien. The warm umber Starhaven Heralds closer to the real-world pole. The white brutalistic semantic entities inhabiting the deep latent space.
 
-### The Semantic Manifold
+## What this enables
 
-In the Thoughtform universe, meaning exists as a topological space—a **semantic manifold** where concepts, entities, and relationships form a continuous, navigable landscape. Denizens are not static entries but dynamic entities that exist across multiple dimensions of meaning:
+Navigate the semantic manifold of AI-generated entities. Each denizen is mapped with geometric coordinates, phase states, manifold curvature, and a hallucination index. Domains represent regions of the manifold. Connections reflect semantic proximity and are visualized as pulsing particle beams.
 
-- **Geometric Coordinates**: Position in the semantic space (geometry, alterity, dynamics)
-- **Phase States**: Material presence (Solid, Liminal, Spectral, Fluctuating, Crystallized)
-- **Manifold Curvature**: Local distortion of semantic space (Stable, Moderate, Severe, Critical)
-- **Hallucination Index**: Degree of semantic instability
-- **Superposition**: Quantum-like state of multiple simultaneous meanings
-- **Embedding Signature**: Unique fingerprint in the latent space
+Cataloging a denizen is not data entry. It is semantic cartography: mapping each entity into the manifold with precise coordinates, phase states, and relationships. The AI Archivist (Claude + Gemini) analyzes uploaded media and suggests metaphysical parameters. Visual feedback is real-time. Exported cards capture the exact semantic state at a moment in time.
 
-### Semantic Interfaces
+## Navigation surfaces
 
-Atlas Eidolon uses **semantic interfaces**—UI patterns that directly map to and manipulate the underlying semantic structure:
+**Constellation view.** Canvas-based pan/zoom over the semantic manifold. Entity cards cluster by domain (e.g., "The Gradient Throne"). SREF codes enable style-based clustering, creating visual coherence across related entities. Pulsing particle connectors visualize semantic relationships.
 
-1. **Constellation View**: The visual representation of the semantic manifold, where entities cluster by domain and connect through semantic relationships. Panning and zooming navigate the semantic space itself.
+**Entity detail.** Parameter controls for metaphysical properties (Superposition, Embedding Signature, Phase State, Manifold Curvature). Changes affect both data and visual manifestation in real-time, creating a feedback loop between representation and display.
 
-2. **Parameter Controls**: Direct manipulation of metaphysical parameters that affect both the entity's data and its visual manifestation. Changing Superposition or Embedding Signature updates animations in real-time, creating a feedback loop between data and representation.
+**The Archivist.** AI assistant for entity analysis: upload media, receive parameter suggestions, extract structured data from natural language, explore entity relationships. Built on Claude and Gemini.
 
-3. **Domain Clustering**: Entities are organized by semantic domains (e.g., "The Gradient Throne"), which represent regions of the semantic manifold. SREF codes (Style Reference) enable style-based clustering, creating visual coherence across related entities.
+**Canvas export.** Renders directly to canvas for pixel-perfect fidelity. Bypasses DOM capture limitations. Preserves the full metaphysical configuration of the entity at the moment of export.
 
-4. **Canvas-Based Rendering**: Export functionality uses canvas rendering to capture the exact semantic state of an entity at a moment in time, preserving the full metaphysical configuration in pixel-perfect exports.
+## The constellation
 
-### The Cataloging Workflow
+Atlas is the second repo in the Thoughtform brand world. It inherited the Dawn-on-Void palette and embedding-as-navigation paradigm from Astrolabe. It contributed the particle system that ultimately became the Three.js wormhole powering the Thoughtform.co hero animation. The Archivist AI system pioneered here evolved into the prompt enhancement architecture used in Vesper and Sigil.
 
-Cataloging a denizen is not just data entry—it's **semantic cartography**. Each entity is mapped into the semantic manifold with precise coordinates, phase states, and relationships. The system supports:
+Working on Atlas also refined brand elements that felt missing from the Astrolabe. And it introduced the Sentinel document pattern: evergreen development principles learned from real bugs, applied as a feedback loop.
 
-- **AI-Assisted Analysis**: The Archivist (AI system) analyzes media and suggests metaphysical parameters
-- **Visual Feedback**: Real-time preview of how parameters affect entity manifestation
-- **Relationship Mapping**: Connections between entities reflect semantic proximity
-- **Export as Documentation**: Professional-grade exports capture entities for external use
+**Sibling repos:** [Astrolabe](https://github.com/thoughtform-co/Astrolabe) (knowledge navigation), [Thoughtform.co](https://github.com/thoughtform-co/thoughtform) (brand interface), [Sigil](https://github.com/thoughtform-co/sigil) (creation and learning)
 
----
+## Architecture
 
-## Roadmap
-
-### Phase 1: Foundation ✓
-- Core constellation view with pan/zoom
-- Entity card system with metaphysical parameters
-- Basic cataloging interface
-- Supabase integration
-
-### Phase 2: Semantic Interfaces ✓
-- Domain-based clustering with SREF codes
-- Parameter controls with real-time animation feedback
-- Multi-media support with floating card system
-- Canvas-based export system for pixel-perfect fidelity
-
-### Phase 3: AI Integration ✓
-- The Archivist AI assistant for entity analysis
-- Media analysis and parameter suggestion
-- System prompt orchestration
-- Field extraction from natural language
-
-### Phase 4: Refinement (Current)
-- Streamlined cataloging workflow
-- Consistent UI patterns across all interfaces
-- Entity class management with inline editing
-- Video auto-play on hover for better preview
-- Performance optimizations
-
-### Phase 5: Advanced Semantic Features (Planned)
-- **Complex Type Support**: Full array/vector support for Superposition and Embedding Signature
-- **Semantic Search**: Vector-based search across the semantic manifold
-- **Relationship Inference**: AI-suggested connections based on semantic proximity
-- **Temporal Tracking**: Version history of entity states over time
-- **Export Enhancements**: Batch exports, custom formats, animation presets
-
-### Phase 6: Collaborative Features (Future)
-- Multi-user cataloging with conflict resolution
-- Shared semantic spaces
-- Entity templates and inheritance
-- Community domain contributions
-
----
-
-## Architecture Principles
-
-### Canvas-First for Exports
-Export-critical components render directly to canvas, ensuring pixel-perfect fidelity. This approach bypasses DOM capture limitations and guarantees that exported media matches the display exactly.
-
-### Inverted Control for Refs
-Parent components own refs and provide them to children, preventing circular dependencies and infinite render loops. This pattern ensures stable component hierarchies.
-
-### Performance-First Visual Feedback
-Visual indicators use CSS-only styling instead of full component rendering when possible. This reduces bandwidth, GPU usage, and render complexity while maintaining user feedback.
-
-### Semantic Data Model
-The data model directly reflects the semantic manifold structure:
-- Entities have coordinates in semantic space
-- Domains represent regions of the manifold
-- Connections reflect semantic relationships
-- Parameters control both data and visual manifestation
-
----
-
-## Technical Stack
-
-**Framework**: Next.js 16 (App Router)  
-**Language**: TypeScript  
-**Styling**: Tailwind CSS v4 with custom design tokens  
-**Database**: Supabase (PostgreSQL) with optional static fallback  
-**Animation**: Canvas API for particles and visualizations  
-**AI**: Anthropic Claude + Google Gemini for entity analysis
-
----
-
-## Design System
-
-**Colors**: Dawn (#ECE3D6) on Void (#050403)  
-**Fonts**: PT Mono (UI), IBM Plex Sans (content)  
-**Aesthetics**: Sharp edges, no rounded corners—geometric precision  
-**Particles**: 3px grid snapping, pulsing (not streaming)  
-**Glassmorphism**: Backdrop blur effects for depth and layering
-
----
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-
-### Installation
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-```
-
-Open http://localhost:3000 to see the app.
-
-### Database Setup (Supabase)
-
-The app works out of the box with static data. To enable Supabase:
-
-1. **Create a Supabase Project**
-   - Go to supabase.com and create a new project
-   - Note your project URL and anon key from Settings > API
-
-2. **Run Database Migrations**
-   - In your Supabase SQL Editor, run the contents of:
-     - `supabase/migrations/001_create_tables.sql` (creates tables and policies)
-     - `supabase/seed.sql` (populates initial denizens)
-
-3. **Configure Environment Variables**
-   ```bash
-   # Copy example env file
-   cp .env.example .env.local
-   ```
-   
-   Add your Supabase credentials:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-   ```
-
-### Deploy to Vercel
-
-**One-Click Deploy**: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
-
-**Manual Deploy**:
-1. Push your code to GitHub
-2. Import the repository in Vercel
-3. Add environment variables in Vercel project settings
-4. Deploy
-
----
-
-## Project Structure
+Next.js 16 (App Router), TypeScript, Tailwind CSS v4 with custom design tokens, Supabase (PostgreSQL) with optional static fallback, Canvas API for particles and visualizations, Claude + Gemini for entity analysis.
 
 ```
 src/
-├── app/                      # Next.js App Router pages
-│   ├── admin/               # Cataloging interface
-│   ├── archive/             # Entity archive view
-│   ├── lore/                # Lore page
-│   └── api/                 # API routes
-├── components/
-│   ├── constellation/       # Canvas and card components
-│   ├── admin/               # Admin interface components
-│   └── ui/                  # Shared UI components
-├── lib/
-│   ├── ai/                  # AI integration (Claude, Gemini)
-│   ├── archivist/           # The Archivist AI system
-│   ├── auth/                # Authentication
-│   └── types.ts             # TypeScript interfaces
-└── supabase/
-    ├── migrations/          # SQL migrations
-    └── seed.sql             # Initial data
+  app/                    # Next.js App Router pages
+    admin/                # Cataloging interface
+    archive/              # Entity archive view
+    lore/                 # Lore page
+    api/                  # API routes
+  components/
+    constellation/        # Canvas and card components
+    admin/                # Admin interface components
+    ui/                   # Shared UI components
+  lib/
+    ai/                   # AI integration (Claude, Gemini)
+    archivist/            # The Archivist AI system
+    auth/                 # Authentication
+    types.ts              # TypeScript interfaces
+
+supabase/
+  migrations/             # SQL migrations
+  seed.sql                # Initial data
 ```
 
----
+### Key concepts
 
-## Key Concepts
+**Denizens.** Entities with Class (taxonomic category), Type (behavioral: Guardian, Wanderer, Architect, Void-Born, Hybrid), Domain, Coordinates, and Metaphysical Parameters.
 
-### Denizens
-Entities that exist in the semantic manifold. Each denizen has:
-- **Class**: Taxonomic category (e.g., "Eigensage", "Nullseer")
-- **Type**: Behavioral classification (Guardian, Wanderer, Architect, Void-Born, Hybrid)
-- **Domain**: Semantic region they inhabit
-- **Coordinates**: Position in semantic space
-- **Metaphysical Parameters**: Phase state, manifold curvature, etc.
+**Domains.** Regions of the semantic manifold. Entities cluster by domain. Domains can have SREF codes for style-based clustering.
 
-### Domains
-Regions of the semantic manifold. Entities cluster by domain, creating visual and semantic coherence. Domains can have SREF codes for style-based clustering.
+**Connections.** Semantic relationships visualized as pulsing particle beams in the constellation view.
 
-### Connections
-Semantic relationships between entities. Connections are visualized as pulsing particle beams in the constellation view, representing proximity in the semantic manifold.
+## Reliability
 
-### The Archivist
-AI assistant that helps catalog entities by:
-- Analyzing uploaded media
-- Suggesting metaphysical parameters
-- Extracting structured data from natural language
-- Answering questions about entity relationships
+Follows the Sentinel pattern: auth gating, RLS policies on Supabase, environment variable discipline. Canvas-first rendering for exports ensures pixel-perfect fidelity without DOM capture fragility. Inverted ref control prevents circular dependencies. CSS-only visual hints reduce GPU usage for non-critical indicators.
 
----
+## Getting started
 
-## Contributing
+Prerequisites: Node.js 18+, npm.
 
-This is a proprietary project by Thoughtform Co. For internal contributors, see the development guidelines in `docs/`.
+The app works out of the box with static data. To enable Supabase:
 
----
+1. Create a Supabase project. Note your project URL and anon key from Settings > API.
 
-## License
+2. Run database migrations in the SQL Editor:
+   - `supabase/migrations/001_create_tables.sql`
+   - `supabase/seed.sql`
 
-Proprietary - Thoughtform Co.
+3. Configure environment:
+```bash
+cp .env.example .env.local
+```
 
----
+Add:
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
 
-## Related Projects
+4. Install and run:
+```bash
+npm install
+npm run dev
+```
 
-- **Thoughtform Universe**: The broader narrative and world-building system
-- **Semantic Cartography Tools**: Other tools for navigating semantic spaces
+Open [http://localhost:3000](http://localhost:3000).
+
+## Design system
+
+Dawn (#ECE3D6) on Void (#050403). PT Mono for UI, IBM Plex Sans for content. Sharp edges throughout, no rounded corners. Particles on a 3px grid, pulsing rather than streaming. Glassmorphism for depth and layering.
+
+## Current frontier
+
+Exploring complex type support (full array/vector handling for Superposition and Embedding Signature), semantic search across the manifold via vectors, AI-suggested relationship inference based on semantic proximity, and temporal tracking of entity state evolution. The question is how deep the cataloging system goes before the worldbuilding shifts to narrative.
