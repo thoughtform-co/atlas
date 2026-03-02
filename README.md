@@ -1,6 +1,6 @@
 # Atlas Eidolon
 
-> A visual bestiary for navigating the Latent Space. Not a portfolio of AI art, but a cartography of the intelligence continuum.
+> Thoughtform is the discipline of navigating the intelligence between thought and form. As the Navigator, I use Atlas to map visual worldbuilding as a semantic continuum rather than a static portfolio.
 
 Over the past three years I have created over a hundred thousand images with Midjourney. Visual explorations of the denizens of the Latent Space: creatures, architectures, and entities that live in the space between meanings. I did an expo with some of this work in early 2025, but static outputs (prints, merchandise, NFTs) were never what interested me. I am interested in worldbuilding. In the wider territory, not the individual artifact.
 
