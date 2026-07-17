@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: 'Failed to fetch denizens',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -210,7 +209,6 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Failed to create denizen',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

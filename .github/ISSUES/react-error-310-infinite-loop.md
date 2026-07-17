@@ -1,5 +1,14 @@
 # React Error #310: Infinite Loop in DenizenModalV3
 
+> **STATUS: RESOLVED (retained for historical context).** The modal was
+> stabilized with the "Sentinel" doctrine — primitive-dependency effects and
+> inverted-ref patterns (see the `// Sentinel:` comments in
+> `src/components/constellation/DenizenModalV3.tsx` and the accompanying
+> `.sentinel.md`). Note this write-up predates the current stack: it references
+> "Next.js 14 / React 18" and the since-removed `FloatingMediaCards` /
+> `MediaTendrilCanvas` components; the app now runs Next 16 / React 19. Treat
+> the specifics below as a post-mortem, not the current state.
+
 ## Problem Description
 
 When clicking on an entity card to open the Denizen Modal popup, the application crashes with a React error #310, indicating an infinite loop in component rendering. The error occurs immediately upon opening the modal and prevents the application from functioning.

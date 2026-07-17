@@ -5,9 +5,9 @@
 
 .sidebarContainer {
   position: fixed;
-  top: calc(clamp(32px, 5vw, 64px) + 24px);
-  left: calc(clamp(32px, 5vw, 64px) + clamp(48px, 8vw, 120px) + 4px);
-  bottom: calc(clamp(32px, 5vw, 64px) + 24px);
+  top: calc(var(--hud-margin) + 24px);
+  left: calc(var(--hud-margin) + var(--hud-rail-width) + 4px);
+  bottom: calc(var(--hud-margin) + 24px);
   z-index: 50;
   display: flex;
   flex-direction: column;

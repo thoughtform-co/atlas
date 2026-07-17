@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getServiceClient } from '@/lib/supabase/service';
 import { Domain } from '@/lib/types';
 import { requireAuth } from '@/lib/supabase-server';
 import { isUserAdmin } from '@/lib/auth/admin-check';
@@ -28,14 +28,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
+    const supabase = getServiceClient();
+    if (!supabase) {
       return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const { id } = await params;
     const body = await request.json();
 
@@ -111,18 +108,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Transform response
+    // Transform response. Colors + timestamps are nullable in the DB row but
+    // non-nullable on the Domain type; cast to match the GET handler's mapping.
     const domain: Domain = {
       id: updatedDomain.id,
       name: updatedDomain.name,
       srefCode: updatedDomain.sref_code,
       description: updatedDomain.description,
-      colorR: updatedDomain.color_r,
-      colorG: updatedDomain.color_g,
-      colorB: updatedDomain.color_b,
-      colorHex: updatedDomain.color_hex,
-      createdAt: updatedDomain.created_at,
-      updatedAt: updatedDomain.updated_at,
+      colorR: updatedDomain.color_r as number,
+      colorG: updatedDomain.color_g as number,
+      colorB: updatedDomain.color_b as number,
+      colorHex: updatedDomain.color_hex as string,
+      createdAt: updatedDomain.created_at as string,
+      updatedAt: updatedDomain.updated_at as string,
     };
 
     return NextResponse.json({ domain });

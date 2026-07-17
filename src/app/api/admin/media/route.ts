@@ -117,7 +117,6 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Failed to upload media',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

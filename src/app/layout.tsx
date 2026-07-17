@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./chrome.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { Navigation } from "@/components/ui/Navigation";
+import { HudChrome } from "@/components/chrome/HudChrome";
+import { HudNav } from "@/components/chrome/HudNav";
 
 export const metadata: Metadata = {
   title: "Atlas - Latent Space Bestiary",
@@ -25,7 +27,8 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <Navigation />
+          <HudChrome />
+          <HudNav />
           {children}
         </AuthProvider>
       </body>

@@ -18,7 +18,7 @@
   transform: translateX(-50%);
   display: flex;
   gap: 24px;
-  z-index: 100;
+  z-index: 58; /* below the hamburger nav overlay (z 60) */
   /* No border or background - ghost style */
 }
 
@@ -85,8 +85,8 @@
   position: absolute;
   /* Account for: HUD corners + sidebar + padding */
   top: 140px;
-  left: calc(clamp(32px, 5vw, 64px) + 96px); /* HUD rail + sidebar width (72px + 24px padding) */
-  right: clamp(32px, 5vw, 64px);
+  left: calc(var(--hud-margin) + 96px); /* HUD rail + sidebar width (72px + 24px padding) */
+  right: var(--hud-margin);
   bottom: 140px; /* Space for prompt bar */
   overflow-y: auto;
   overflow-x: hidden;

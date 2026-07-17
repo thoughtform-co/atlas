@@ -1,0 +1,480 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ATLAS · v7 HUD CHROME
+   Ported 1:1 from thoughtform.co v7 (01_thoughtform/components/landing/
+   v7/landing.css, lines 51–147 tokens · 277–814 chrome · 6873–6890
+   responsive). Kept as a standalone file so it stays diffable against
+   upstream on future harmonization passes. Imported AFTER globals.css
+   in app/layout.tsx, so it can assume globals' :root tokens exist.
+
+   Z-STACK (single source of truth):
+     .hud frame ............ 50
+     .hud__brand (wordmark)  52
+     DenizenModalV3 backdrop 50 / card 55 (untouched)
+     NavigationHUD panels .. 56  (z-[56] on its root; above modal card, below nav)
+     Forge tabBar / ticker . ≤ 58
+     .hud-nav-overlay ...... 60  (menu list 30 within its own context)
+
+   Atlas divergences from upstream (intentional):
+     - .hud__rail is pointer-events:none so the constellation can be
+       dragged/panned across the rail gutters.
+     - Adds --hud-content-inset for the filter panels + readouts, and a
+       re-targeted energy-beam (.hud__rail--r.has-scroll::after) for the
+       one scrolling surface (Forge).
+     - Skips: inline nav row, rail-manifest diamond, .hud__depth,
+       .hud__brandmark sigil slot, .hud__top (the nav overlay owns
+       top-right).
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* v7 chrome geometry — landing.css:51–147 / prototypes/v7/tokens.css */
+  --font-pt-mono: "PT Mono", ui-monospace, Menlo, monospace;
+  --hud-margin: clamp(16px, min(2.8125vw, 5vmin), 54px);
+  --hud-rail-width: clamp(48px, 4.27vw, 82px);
+  --hud-corner-zone: clamp(28px, 4.17vmin, 45px);
+  --hud-rail-y-start: calc(
+    var(--hud-margin) + var(--hud-corner-zone) + clamp(16px, 1.8vw, 32px)
+  );
+  --hud-rail-guide-inset: 0px; /* landing.css value — line flush with corners */
+  --hud-rail-line: rgba(235, 227, 214, 0.55);
+  --hud-rail-line-soft: rgba(235, 227, 214, 0.28);
+  /* Where interactive content (filter panels, readouts) starts — just
+     inside the rail. Collapses when the rail hides (≤960px). */
+  --hud-content-inset: calc(
+    var(--hud-margin) + var(--hud-rail-width) + clamp(24px, 3vw, 56px)
+  );
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Motion-layer var the menu transitions reference upstream; local fallback. */
+  --m-ease-instr: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --track-wide: 0.08em;
+  --track-wider: 0.1em;
+  --track-widest: 0.15em;
+}
+
+/* ── Frame ─────────────────────────────────────────────────────────── */
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+.hud > * {
+  pointer-events: auto;
+}
+/* Atlas: the rails are decorative measurement chrome — never capture the
+   pointer, so the constellation drag-pan works across the gutters. */
+.hud__rail,
+.hud__rail * {
+  pointer-events: none;
+}
+
+/* ── Corner brackets — TL + BR only (BL owned by wordmark, TR by nav) ── */
+.hud__corner {
+  position: absolute;
+  width: var(--hud-corner-zone);
+  height: var(--hud-corner-zone);
+  pointer-events: none;
+}
+.hud__corner--tl {
+  top: var(--hud-margin);
+  left: var(--hud-margin);
+  border-top: 2px solid var(--hud-rail-line);
+  border-left: 2px solid var(--hud-rail-line);
+}
+.hud__corner--br {
+  bottom: var(--hud-margin);
+  right: var(--hud-margin);
+  border-bottom: 2px solid var(--hud-rail-line);
+  border-right: 2px solid var(--hud-rail-line);
+}
+
+/* ── Bottom-left wordmark lockup (ADR-043) ──────────────────────────── */
+.hud__brand {
+  position: absolute;
+  bottom: var(--hud-margin);
+  left: var(--hud-margin);
+  width: clamp(104px, 8.5vw, 150px);
+  display: block;
+  pointer-events: auto;
+  z-index: 52;
+  transform-origin: bottom left;
+  transform: scale(1);
+  transition:
+    opacity 0.4s var(--ease-out),
+    transform 0.4s var(--ease-out);
+}
+/* Dormant upstream-parity hook — nothing toggles it in Atlas (no scroll
+   journey). Kept so a future scroll surface can reuse the morph. */
+.hud__brand.is-collapsed {
+  transform: scale(0.68);
+}
+.hud__brand img {
+  width: 100%;
+  height: auto;
+  display: block;
+  color: var(--dawn);
+}
+@media (max-width: 640px) {
+  .hud__brand {
+    width: clamp(108px, 34vw, 150px);
+  }
+}
+
+/* ── NAV · bare three-line trigger, aligned to the right rail ───────── */
+.hud__nav {
+  position: relative;
+  font-family: var(--font-pt-mono);
+  font-size: 10px;
+  letter-spacing: var(--track-wider);
+  text-transform: uppercase;
+  color: var(--dawn-70);
+}
+.hud__nav__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -12px -12px 0 0;
+  background: none;
+  border: 0;
+  color: var(--dawn);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+.hud__nav__btn .bars {
+  position: relative;
+  width: 20px;
+  height: 14px;
+  display: block;
+}
+.hud__nav__btn .bars span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: currentColor;
+  transition:
+    transform 260ms var(--ease-out),
+    opacity 180ms var(--ease-out),
+    top 260ms var(--ease-out),
+    width 260ms var(--ease-out);
+}
+.hud__nav__btn .bars span:nth-child(1) {
+  top: 0;
+}
+.hud__nav__btn .bars span:nth-child(2) {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 70%;
+}
+.hud__nav__btn .bars span:nth-child(3) {
+  bottom: 0;
+  top: auto;
+}
+.hud__nav__btn:hover {
+  color: var(--gold);
+}
+/* Hamburger → X when the menu is open */
+.hud__nav.is-open .hud__nav__btn .bars span:nth-child(1) {
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+}
+.hud__nav.is-open .hud__nav__btn .bars span:nth-child(2) {
+  opacity: 0;
+}
+.hud__nav.is-open .hud__nav__btn .bars span:nth-child(3) {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%) rotate(-45deg);
+  width: 100%;
+}
+
+/* Slide-in list — opens leftward from the trigger */
+.hud__nav__list {
+  position: absolute;
+  top: -10px;
+  right: calc(100% + 16px);
+  width: 280px;
+  background: rgba(5, 4, 3, 0.94);
+  border: 1px solid var(--dawn-08);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transform: translateX(8px);
+  transform-origin: top right;
+  pointer-events: none;
+  transition:
+    opacity 220ms var(--m-ease-instr),
+    transform 260ms var(--m-ease-instr);
+  padding: 10px 0;
+  z-index: 30;
+}
+.hud__nav__list__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 18px 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed var(--dawn-15);
+  font-family: var(--font-pt-mono);
+  font-size: 9px;
+  letter-spacing: var(--track-widest);
+  text-transform: uppercase;
+  color: var(--dawn-30);
+}
+.hud__nav__list__head .k {
+  color: var(--gold);
+}
+.hud__nav.is-open .hud__nav__list {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* Links + action buttons share the same instrument treatment */
+.hud__nav a,
+.hud__nav__action {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  font-family: var(--font-pt-mono);
+  font-size: 11px;
+  letter-spacing: var(--track-wider);
+  text-transform: uppercase;
+  color: var(--dawn-70);
+  text-decoration: none;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 8px 18px 8px 26px;
+  position: relative;
+  transition:
+    color 180ms var(--ease-out),
+    background 180ms var(--ease-out),
+    padding-left 200ms var(--ease-out);
+}
+.hud__nav a::before,
+.hud__nav__action::before {
+  content: ">";
+  position: absolute;
+  left: 14px;
+  top: 8px;
+  color: var(--gold);
+  opacity: 0;
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+.hud__nav a:hover,
+.hud__nav__action:hover {
+  color: var(--dawn);
+  background: rgba(202, 165, 84, 0.05);
+  padding-left: 30px;
+}
+.hud__nav a:hover::before,
+.hud__nav__action:hover::before {
+  opacity: 1;
+  transform: translateX(2px);
+}
+.hud__nav a.is-active {
+  color: var(--gold);
+}
+.hud__nav a.is-active::before {
+  opacity: 1;
+}
+.hud__nav a .num,
+.hud__nav__action .num {
+  color: var(--dawn-30);
+  margin-right: 2px;
+  display: inline !important;
+  font-size: 10px;
+}
+.hud__nav a.is-active .num {
+  color: var(--gold);
+}
+
+/* Auth / status readouts folded inside the menu */
+.hud__nav__status {
+  padding: 10px 18px 4px;
+  border-top: 1px dashed var(--dawn-08);
+  margin-top: 6px;
+  font-family: var(--font-pt-mono);
+  font-size: 9px;
+  letter-spacing: var(--track-wider);
+  text-transform: uppercase;
+  color: var(--dawn-30);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hud__nav__status .k {
+  color: var(--gold);
+  margin-right: 4px;
+}
+
+/* ── HudNav overlay (fixed top-right wrapper) ───────────────────────── */
+.hud-nav-overlay {
+  position: fixed;
+  top: var(--hud-margin);
+  right: var(--hud-margin);
+  z-index: 60;
+  pointer-events: none;
+}
+.hud-nav-overlay > * {
+  pointer-events: auto;
+}
+
+/* ── Rails — measurement instrument (clear the corners above/below) ─── */
+.hud__rail {
+  position: absolute;
+  top: var(--hud-rail-y-start);
+  /* Bottom mirrors the top; the max() arm guards the bottom-left
+     wordmark lockup on short viewports. */
+  bottom: max(
+    calc(var(--hud-margin) + var(--hud-corner-zone) + clamp(16px, 1.8vw, 32px)),
+    calc(var(--hud-margin) + clamp(44px, 3.6vw, 63px) + 8px)
+  );
+  width: var(--hud-rail-width);
+  display: flex;
+  flex-direction: column;
+}
+.hud__rail--l {
+  left: var(--hud-margin);
+}
+.hud__rail--r {
+  right: var(--hud-margin);
+}
+/* Guide hairline — solid 2px, flush with the corner brackets */
+.hud__rail__track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--hud-rail-line);
+}
+.hud__rail--l .hud__rail__track {
+  left: var(--hud-rail-guide-inset);
+}
+.hud__rail--r .hud__rail__track {
+  right: var(--hud-rail-guide-inset);
+}
+/* Ticks — extend OUTWARD from the guide. Minor 7px, major 21px. */
+.hud__rail__tick {
+  position: absolute;
+  height: 2px;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--hud-rail-line);
+}
+.hud__rail--l .hud__rail__tick {
+  left: calc(var(--hud-rail-guide-inset) - 7px);
+  width: 7px;
+}
+.hud__rail--l .hud__rail__tick--major {
+  left: calc(var(--hud-rail-guide-inset) - 21px);
+  width: 21px;
+}
+.hud__rail--r .hud__rail__tick {
+  right: calc(var(--hud-rail-guide-inset) - 7px);
+  width: 7px;
+}
+.hud__rail--r .hud__rail__tick--major {
+  right: calc(var(--hud-rail-guide-inset) - 21px);
+  width: 21px;
+}
+/* Bearing labels — sit just INSIDE the guide */
+.hud__rail__label {
+  position: absolute;
+  z-index: 2;
+  font-family: var(--font-pt-mono);
+  font-size: 9px;
+  color: var(--dawn-50);
+  letter-spacing: var(--track-wider);
+}
+.hud__rail--l .hud__rail__label {
+  left: calc(var(--hud-rail-guide-inset) + 10px);
+}
+.hud__rail--r .hud__rail__label {
+  right: calc(var(--hud-rail-guide-inset) + 10px);
+}
+
+/* ── Energy beam — Forge-only scroll indicator, re-targeted onto the
+   right rail's 2px track. Toggled by the Forge layout via `.has-scroll`
+   + `--scroll-beam-position`. ─────────────────────────────────────── */
+@keyframes hudEnergyFlow {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 120px;
+  }
+}
+.hud__rail--r.has-scroll::after {
+  content: "";
+  position: absolute;
+  right: var(--hud-rail-guide-inset);
+  width: 2px;
+  height: 120px;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--gold) 15%,
+      var(--gold) 85%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 4px,
+      rgba(202, 165, 84, 0.3) 4px,
+      rgba(202, 165, 84, 0.3) 6px
+    );
+  opacity: 0.7;
+  top: var(--scroll-beam-position, 0%);
+  transition:
+    top 0.15s ease-out,
+    opacity 0.3s ease;
+  box-shadow:
+    0 0 8px var(--gold-dim),
+    0 0 16px rgba(202, 165, 84, 0.25);
+  pointer-events: none;
+  z-index: 1;
+  animation: hudEnergyFlow 2s linear infinite;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .hud__rail__label {
+    display: none;
+  }
+}
+@media (max-width: 960px) {
+  :root {
+    --hud-content-inset: clamp(24px, 6vw, 40px);
+  }
+  .hud__rail {
+    display: none;
+  }
+  .hud__nav a .num,
+  .hud__nav__action .num {
+    display: none;
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hud__nav__list,
+  .hud__nav__btn .bars span,
+  .hud__nav a,
+  .hud__nav__action,
+  .hud__brand,
+  .hud__rail--r.has-scroll::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

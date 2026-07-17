@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getServiceClient } from '@/lib/supabase/service';
 import { Domain } from '@/lib/types';
 import { requireAuth } from '@/lib/supabase-server';
 import { isUserAdmin } from '@/lib/auth/admin-check';
@@ -23,7 +24,7 @@ export async function GET() {
 
     if (error) {
       console.error('[GET /api/domains] Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch domains' }, { status: 500 });
     }
 
     // Transform snake_case to camelCase
@@ -62,14 +63,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
+    const supabase = getServiceClient();
+    if (!supabase) {
       return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const body = await request.json();
 
     const { name, srefCode, description, colorR, colorG, colorB, colorHex } = body;
@@ -99,21 +97,22 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'A domain with this name already exists' }, { status: 409 });
       }
       console.error('[POST /api/domains] Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to create domain' }, { status: 500 });
     }
 
-    // Transform response
+    // Transform response. Colors + timestamps are nullable in the DB row but
+    // non-nullable on the Domain type; cast to match the GET handler's mapping.
     const domain: Domain = {
       id: data.id,
       name: data.name,
       srefCode: data.sref_code,
       description: data.description,
-      colorR: data.color_r,
-      colorG: data.color_g,
-      colorB: data.color_b,
-      colorHex: data.color_hex,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      colorR: data.color_r as number,
+      colorG: data.color_g as number,
+      colorB: data.color_b as number,
+      colorHex: data.color_hex as string,
+      createdAt: data.created_at as string,
+      updatedAt: data.updated_at as string,
     };
 
     return NextResponse.json({ domain }, { status: 201 });

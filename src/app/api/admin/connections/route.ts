@@ -24,7 +24,6 @@ export async function GET() {
       {
         success: false,
         error: 'Failed to fetch connections',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -107,7 +106,6 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'Failed to create connection',
-          details: error.message,
         },
         { status: 500 }
       );
@@ -133,7 +131,6 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Failed to create connection',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

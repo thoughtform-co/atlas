@@ -63,7 +63,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       {
         success: false,
         error: 'Failed to update media name',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

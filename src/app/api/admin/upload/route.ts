@@ -6,10 +6,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getServiceClient } from '@/lib/supabase/service';
 import { getAuthUser } from '@/lib/supabase-server';
 import { isUserAdmin } from '@/lib/auth/admin-check';
-import type { Database } from '@/lib/database.types';
 
 const BUCKET_NAME = 'entity-media';
 
@@ -82,17 +81,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Supabase client with service role
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
+    const supabase = getServiceClient();
+    if (!supabase) {
       return NextResponse.json(
         { error: 'Storage not configured' },
         { status: 500 }
       );
     }
-
-    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     // Generate unique file path
     const timestamp = Date.now();
@@ -184,17 +179,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
+    const supabase = getServiceClient();
+    if (!supabase) {
       return NextResponse.json(
         { error: 'Storage not configured' },
         { status: 500 }
       );
     }
-
-    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     // Delete from storage
     const { error } = await supabase.storage

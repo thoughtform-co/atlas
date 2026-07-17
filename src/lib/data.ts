@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { createClient } from '@supabase/supabase-js';
+import { getServiceClient } from './supabase/service';
 import { Denizen, Connection, DenizenMedia, PhaseState } from './types';
 import { denizens as staticDenizens, connections as staticConnections } from '@/data/denizens';
 import type { Database, Json } from './database.types';
@@ -27,20 +28,11 @@ function getDataClient() {
 }
 
 /**
- * Get an admin Supabase client for write operations
- * Uses the service role key which bypasses RLS
- * Only use this on the server-side for admin operations
+ * Get an admin Supabase client for write operations.
+ * Delegates to the shared service-role factory (bypasses RLS; server-only).
  */
 function getAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('[getAdminClient] Missing SUPABASE_SERVICE_ROLE_KEY');
-    return null;
-  }
-  
-  return createClient<Database>(supabaseUrl, supabaseServiceKey);
+  return getServiceClient();
 }
 
 // Type aliases for Supabase table operations
@@ -268,7 +260,6 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealth> {
 
 /**
  * Fetch all denizens from Supabase or return static data
- * Note: For Server Components, use fetchDenizensCached from data-cached.ts for caching
  */
 export async function fetchDenizens(): Promise<Denizen[]> {
   const client = getDataClient();

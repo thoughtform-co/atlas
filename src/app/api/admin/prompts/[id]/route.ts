@@ -5,9 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getServiceClient } from '@/lib/supabase/service';
 import { getUserFromRequest, isUserAdmin } from '@/lib/auth/admin-check';
-import type { Database } from '@/lib/database.types';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -18,17 +17,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
+    const supabase = getServiceClient();
+    if (!supabase) {
       return NextResponse.json(
         { error: 'Database not configured' },
         { status: 500 }
       );
     }
-
-    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     const { data, error } = await (supabase as any)
       .from('system_prompts')
@@ -78,17 +73,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const body = await request.json();
     const { name, description, content, is_active } = body;
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
+    const supabase = getServiceClient();
+    if (!supabase) {
       return NextResponse.json(
         { error: 'Database not configured' },
         { status: 500 }
       );
     }
-
-    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     // Build update object with only provided fields
     const updates: {
@@ -112,7 +103,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (error) {
       console.error('[prompts] Update error:', error);
       return NextResponse.json(
-        { error: error.message || 'Failed to update prompt' },
+        { error: 'Failed to update prompt' },
         { status: 500 }
       );
     }
@@ -149,17 +140,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
+    const supabase = getServiceClient();
+    if (!supabase) {
       return NextResponse.json(
         { error: 'Database not configured' },
         { status: 500 }
       );
     }
-
-    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     const { error } = await (supabase as any)
       .from('system_prompts')

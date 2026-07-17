@@ -83,7 +83,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       {
         success: false,
         error: 'Failed to update media',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -130,7 +129,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       {
         success: false,
         error: 'Failed to delete media',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

@@ -5,9 +5,11 @@
 
 .ticker {
   position: fixed;
-  top: calc(clamp(32px, 5vw, 64px) + 24px);
-  right: calc(clamp(32px, 5vw, 64px) + 24px);
-  z-index: 100;
+  /* Sits below the 44px hamburger trigger, flush to the right margin,
+     under the nav overlay (z 60). */
+  top: calc(var(--hud-margin) + 52px);
+  right: var(--hud-margin);
+  z-index: 58;
   display: flex;
   flex-direction: column;
   align-items: flex-end;

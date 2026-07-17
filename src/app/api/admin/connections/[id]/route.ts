@@ -57,7 +57,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         {
           success: false,
           error: 'Failed to delete connection',
-          details: error.message,
         },
         { status: 500 }
       );
@@ -77,7 +76,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       {
         success: false,
         error: 'Failed to delete connection',
-        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

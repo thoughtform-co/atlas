@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { MessageParam, ContentBlock, ToolUseBlock, TextBlock } from '@anthropic-ai/sdk/resources/messages';
 import { randomUUID } from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { getServiceClient } from '@/lib/supabase/service';
 import type { Database } from '@/lib/database.types';
 import type {
   ArchivistSession,
@@ -42,14 +42,11 @@ const anthropic = new Anthropic({
  * This bypasses RLS to allow the Archivist to manage sessions
  */
 function getSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
+  const client = getServiceClient();
+  if (!client) {
     throw new Error('Supabase credentials not configured for Archivist');
   }
-
-  return createClient<Database>(supabaseUrl, supabaseServiceKey);
+  return client;
 }
 
 /**

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Archived v1 snapshot (also excluded from tsconfig) and legacy live-API
+    // scratch scripts — not application code, kept for reference only.
+    "design/backups/**",
+    "scripts/legacy/**",
   ]),
 ]);
 

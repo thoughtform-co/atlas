@@ -3,8 +3,7 @@ import { requireAuth } from '@/lib/supabase-server';
 import { isUserAdmin } from '@/lib/auth/admin-check';
 import { createServerClient } from '@/lib/supabase-server';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/database.types';
+import { getServiceClient } from '@/lib/supabase/service';
 
 /**
  * GET /api/admin/entity-classes
@@ -99,18 +98,14 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Use service role key for admin operations (bypasses RLS)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
+    // Use service role client for admin operations (bypasses RLS)
+    const adminClient = getServiceClient();
+    if (!adminClient) {
       return NextResponse.json(
         { error: 'Admin credentials not configured' },
         { status: 503 }
       );
     }
-
-    const adminClient = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     // Update all denizens with the old class name to the new class name
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

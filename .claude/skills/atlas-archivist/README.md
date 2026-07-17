@@ -116,7 +116,7 @@ This Skill is part of the Atlas project. To update:
 
 ## Related Documentation
 
-- [Atlas Architecture Overview](../../ARCHITECTURE_OVERVIEW.md)
+- [Atlas Architecture Overview](../../docs/ARCHITECTURE_OVERVIEW.md)
 - [Archivist Summary](../../src/lib/archivist/README.md)
 - [Design Philosophy](../../DESIGN_PHILOSOPHY.md)
 

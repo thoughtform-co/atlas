@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { getServiceClient } from '@/lib/supabase/service';
 import { estimateCost, type ReplicateWebhookPayload } from '@/lib/replicate';
-
-// Use service role client for webhook (bypasses RLS)
-function getServiceClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase service role credentials not configured');
-  }
-  
-  return createClient(supabaseUrl, serviceRoleKey);
-}
 
 /**
  * Verify Replicate webhook signature using HMAC-SHA256
@@ -70,8 +58,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
       }
     } else {
-      // Log warning but don't block - allows gradual rollout
-      console.warn('[Forge Webhook] REPLICATE_WEBHOOK_SECRET not configured - signature verification skipped');
+      // Fail closed: without the secret we cannot verify authenticity, so
+      // reject rather than trust an unsigned payload. An attacker who could
+      // POST here unsigned would otherwise be able to forge generation
+      // status + cost rows. Provision REPLICATE_WEBHOOK_SECRET to enable.
+      console.error('[Forge Webhook] REPLICATE_WEBHOOK_SECRET not configured - rejecting unverifiable webhook');
+      return NextResponse.json({ error: 'Webhook verification unavailable' }, { status: 503 });
     }
 
     const payload: ReplicateWebhookPayload = JSON.parse(rawBody);
@@ -88,6 +80,10 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getServiceClient();
+    if (!supabase) {
+      console.error('[Forge Webhook] Service client unavailable');
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+    }
 
     // Find the generation by replicate_prediction_id
     const { data: generation, error: findError } = await supabase

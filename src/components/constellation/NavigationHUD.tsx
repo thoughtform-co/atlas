@@ -208,93 +208,23 @@ export function NavigationHUD({
     };
   }, [filters, availableDomains.length, availableEntityTypes.length]);
 
-  // Generate tick marks (matching Thoughtform implementation)
-  const tickCount = 20;
-  const tickLabels: Record<number, string> = {
-    0: "0",
-    5: "2",
-    10: "5",
-    15: "7",
-    20: "10",
-  };
-
   return (
-    <div className="fixed inset-0 pointer-events-none z-[60]" data-navigation-hud>
-      {/* Corner Brackets */}
-      <div className="hud-corner hud-corner-tl" />
-      <div className="hud-corner hud-corner-tr" />
-      <div className="hud-corner hud-corner-bl" />
-      <div className="hud-corner hud-corner-br" />
+    <div className="fixed inset-0 pointer-events-none z-[56]" data-navigation-hud>
+      {/* Corners, rails, and the bottom-left wordmark now live in the global
+          HudChrome layer (src/components/chrome/HudChrome.tsx). This HUD keeps
+          only the constellation's interactive filter panels + readouts,
+          anchored to the shared rail geometry via chrome.css tokens. */}
 
-      {/* Top Bar */}
-      <header 
-        className="fixed top-0 left-0 right-0 pointer-events-none"
-        style={{
-          padding: '20px clamp(48px, 8vw, 120px)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 70,
-        }}
-      >
-        <div 
-          className="pointer-events-auto"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'var(--dawn-50)',
-          }}
-        >
-          <span>ATLAS</span>
-          <span style={{ color: 'var(--dawn-30)', margin: '0 8px' }}>/</span>
-          <span style={{ color: hasActiveFilters ? 'var(--gold)' : 'var(--dawn-50)' }}>
-            {hasActiveFilters ? 'FILTERED' : 'CONSTELLATION'}
-          </span>
-        </div>
-
-        {/* User menu is now in Navigation.tsx - this space left intentionally empty */}
-      </header>
-
-      {/* Left Rail - Scale only */}
-      <aside className="hud-rail hud-rail-left pointer-events-none" style={{ zIndex: 70 }}>
-        <div className="rail-scale">
-          <div className="scale-ticks">
-            {Array.from({ length: tickCount + 1 }).map((_, i) => (
-              <div key={i} style={{ position: 'relative' }}>
-                <div
-                  className={`tick ${i % 5 === 0 ? 'tick-major' : 'tick-minor'}`}
-                />
-                {tickLabels[i] && (
-                  <span
-                    className="tick-label"
-                    style={{
-                      position: 'absolute',
-                      top: '-4px',
-                      left: '28px',
-                    }}
-                  >
-                    {tickLabels[i]}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      {/* Left Filter Panel - Positioned to the right of the rail */}
-      <div 
+      {/* Left Filter Panel - anchored just inside the left rail */}
+      <div
         className="pointer-events-auto"
         style={{
           position: 'fixed',
-          top: 'calc(clamp(32px, 5vw, 64px) + 60px)',
-          left: 'calc(clamp(32px, 5vw, 64px) + 48px)',
+          top: 'var(--hud-rail-y-start)',
+          left: 'var(--hud-content-inset)',
           display: 'flex',
           flexDirection: 'column',
           gap: '24px',
-          zIndex: 70,
         }}
       >
         {/* TYPE Filter */}
@@ -435,31 +365,16 @@ export function NavigationHUD({
         </div>
       </div>
 
-      {/* Right Rail - Scale only */}
-      <aside className="hud-rail hud-rail-right pointer-events-none" style={{ zIndex: 70 }}>
-        <div className="rail-scale">
-          <div className="scale-ticks">
-            {Array.from({ length: tickCount + 1 }).map((_, i) => (
-              <div
-                key={i}
-                className={`tick ${i % 5 === 0 ? 'tick-major' : 'tick-minor'}`}
-              />
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      {/* Right Filter Panel - Domains */}
-      <div 
+      {/* Right Filter Panel - Domains, anchored just inside the right rail */}
+      <div
         className="pointer-events-auto"
         style={{
           position: 'fixed',
-          top: 'calc(clamp(32px, 5vw, 64px) + 60px)',
-          right: 'calc(clamp(32px, 5vw, 64px) + 48px)',
+          top: 'var(--hud-rail-y-start)',
+          right: 'var(--hud-content-inset)',
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
-          zIndex: 70,
           alignItems: 'flex-end',
         }}
       >
@@ -650,7 +565,7 @@ export function NavigationHUD({
                     style={{
                       background: 'rgba(5, 4, 3, 0.85)',
                       backdropFilter: 'blur(8px)',
-                      border: '1px solid var(--dawn-20)',
+                      border: '1px solid var(--dawn-15)',
                       padding: '16px',
                       display: 'flex',
                       flexDirection: 'column',
@@ -694,7 +609,7 @@ export function NavigationHUD({
                           letterSpacing: '0.02em',
                           color: 'var(--dawn-70)',
                           background: 'rgba(5, 4, 3, 0.6)',
-                          border: '1px solid var(--dawn-20)',
+                          border: '1px solid var(--dawn-15)',
                           padding: '8px 10px',
                           cursor: 'pointer',
                           appearance: 'none',
@@ -873,7 +788,7 @@ export function NavigationHUD({
                         appearance: none;
                         width: 100%;
                         height: 2px;
-                        background: var(--dawn-20);
+                        background: var(--dawn-15);
                         outline: none;
                         cursor: pointer;
                       }
@@ -898,11 +813,11 @@ export function NavigationHUD({
                       }
                       .domain-slider::-webkit-slider-runnable-track {
                         height: 2px;
-                        background: var(--dawn-20);
+                        background: var(--dawn-15);
                       }
                       .domain-slider::-moz-range-track {
                         height: 2px;
-                        background: var(--dawn-20);
+                        background: var(--dawn-15);
                       }
                     `}</style>
                   </div>
@@ -913,28 +828,33 @@ export function NavigationHUD({
         </div>
       </div>
 
-      {/* Bottom Bar */}
-      <footer 
-        className="fixed bottom-0 left-0 right-0 pointer-events-none"
+      {/* Bottom-right readout — POSITION + LANDMARK stacked (the bottom-left
+          corner is now owned by the global wordmark). Anchored just inside
+          the right rail, matching the right filter panel's column. */}
+      <div
+        className="pointer-events-none"
         style={{
-          padding: '20px clamp(48px, 8vw, 120px)',
+          position: 'fixed',
+          bottom: 'var(--hud-margin)',
+          right: 'var(--hud-content-inset)',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: 'linear-gradient(to top, var(--void) 60%, transparent)',
-          zIndex: 70,
+          flexDirection: 'column',
+          gap: '12px',
+          alignItems: 'flex-end',
+          textAlign: 'right',
         }}
       >
         {/* Coordinates - Current position in semantic space */}
-        <div 
+        <div
           className="pointer-events-auto"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '4px',
+            alignItems: 'flex-end',
           }}
         >
-          <div 
+          <div
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '9px',
@@ -945,7 +865,7 @@ export function NavigationHUD({
           >
             POSITION
           </div>
-          <div 
+          <div
             style={{
               display: 'flex',
               gap: '24px',
@@ -962,13 +882,14 @@ export function NavigationHUD({
         </div>
 
         {/* LANDMARK Label - Current location in semantic terrain */}
-        <div 
+        <div
           className="pointer-events-auto"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '4px',
             textAlign: 'right',
+            alignItems: 'flex-end',
           }}
         >
           <div
@@ -988,6 +909,7 @@ export function NavigationHUD({
               fontSize: '10px',
               letterSpacing: '0.02em',
               color: 'var(--dawn-50)',
+              maxWidth: '280px',
             }}
           >
             {landmarkLabel}
@@ -1019,7 +941,7 @@ export function NavigationHUD({
             </button>
           )}
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
