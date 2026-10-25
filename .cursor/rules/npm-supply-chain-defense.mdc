@@ -12,7 +12,7 @@ This repo participates in the `npm-supply-chain-defense` skill. The agent must f
 
 1. **Never run `npm install`, `npm update`, `npm audit fix`, `npx`, `pnpx`, `bunx`, or any package-manager install command on the user's machine** without confirming:
    - `package.json` has a pinned `packageManager` field, **and**
-   - `.npmrc` / `pnpm-workspace.yaml` / `bunfig.toml` / `.yarnrc.yml` declares a release-age cooldown (`minimum-release-age >= 10080` or equivalent), **and**
+   - `.npmrc` / `pnpm-workspace.yaml` / `bunfig.toml` / `.yarnrc.yml` declares a release-age cooldown (npm ≥ 11.10: `min-release-age >= 7` days; pnpm: `minimum-release-age >= 10080` minutes; or equivalent; npm below 11.10 enforces neither), **and**
    - `ignore-scripts=true` is set or the user has explicitly approved running lifecycle scripts for this change.
 2. **Never introduce a `pull_request_target` workflow** in this repo.
 3. **Never restore a cache in the publish workflow that was written by a PR/test/fork workflow.** Publish jobs install fresh.

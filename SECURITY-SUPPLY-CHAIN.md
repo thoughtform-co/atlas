@@ -5,7 +5,7 @@ This repo follows the [`npm-supply-chain-defense`](https://github.com/thoughtfor
 ## Baseline
 
 - Baseline: **B (npm)**
-- Cooldown: `minimum-release-age=10080` minutes (7 days)
+- Cooldown: `min-release-age=7` days (npm 11.10+ reads this key; `minimum-release-age` is pnpm's spelling and npm 11 ignores it with an "Unknown project config" warning). npm below 11.10, including the npm 10 that Node 20/22 bundle, enforces no cooldown at all.
 - Lifecycle scripts: `ignore-scripts=true` (or `ignoreScripts = true` for Bun)
 - Git dependencies: `allow-git=none` (npm only; pnpm/Yarn/Bun enforced via lockfile review)
 - Migration to pnpm@11 is recommended but **deferred**: pinning `packageManager` and running `pnpm install` should happen in a supervised step after the cooldown is verified.
